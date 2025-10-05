@@ -36,18 +36,33 @@ importers:
         specifier: ^4.1.11
         version: 4.1.11
     devDependencies:
+      '@eslint/js':
+        specifier: ^9.37.0
+        version: 9.37.0
       '@types/bun':
         specifier: ^1.1.17
         version: 1.2.23(@types/react@19.2.0)
+      '@types/micromatch':
+        specifier: ^4.0.9
+        version: 4.0.9
       drizzle-kit:
         specifier: ^0.30.1
         version: 0.30.6
+      eslint:
+        specifier: ^9.37.0
+        version: 9.37.0(jiti@2.6.1)
+      globals:
+        specifier: ^16.4.0
+        version: 16.4.0
       prettier:
         specifier: ^3.6.2
         version: 3.6.2
       typescript:
         specifier: ^5.7.3
         version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.45.0
+        version: 8.45.0(eslint@9.37.0(jiti@2.6.1))(typescript@5.9.3)
 
   packages/ui:
     dependencies:
@@ -1000,6 +1015,9 @@ packages:
   '@types/babel__traverse@7.28.0':
     resolution: {integrity: sha512-8PvcXf70gTDZBgt9ptxJ8elBeBjcLOAcOtoO/mPJjtji1+CdGbHgm77om1GrsPxsiE+uXIpNSK64UYaIwQXd4Q==}
 
+  '@types/braces@3.0.5':
+    resolution: {integrity: sha512-SQFof9H+LXeWNz8wDe7oN5zu7ket0qwMu5vZubW4GCJ8Kkeh6nBWUz87+KTz/G3Kqsrp0j/W253XJb3KMEeg3w==}
+
   '@types/bun@1.2.23':
     resolution: {integrity: sha512-le8ueOY5b6VKYf19xT3McVbXqLqmxzPXHsQT/q9JHgikJ2X22wyTW3g3ohz2ZMnp7dod6aduIiq8A14Xyimm0A==}
 
@@ -1011,6 +1029,9 @@ packages:
 
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
+
+  '@types/micromatch@4.0.9':
+    resolution: {integrity: sha512-7V+8ncr22h4UoYRLnLXSpTxjQrNUXtWHGeMPRJt1nULXI57G9bIcpyrHlmrQ7QK24EyyuXvYcSSWAM8GA9nqCg==}
 
   '@types/node@24.6.2':
     resolution: {integrity: sha512-d2L25Y4j+W3ZlNAeMKcy7yDsK425ibcAOO2t7aPTz6gNMH0z2GThtwENCDc0d/Pw9wgyRqE5Px1wkV7naz8ang==}
@@ -3566,6 +3587,8 @@ snapshots:
     dependencies:
       '@babel/types': 7.28.4
 
+  '@types/braces@3.0.5': {}
+
   '@types/bun@1.2.23(@types/react@19.2.0)':
     dependencies:
       bun-types: 1.2.23(@types/react@19.2.0)
@@ -3577,6 +3600,10 @@ snapshots:
   '@types/estree@1.0.8': {}
 
   '@types/json-schema@7.0.15': {}
+
+  '@types/micromatch@4.0.9':
+    dependencies:
+      '@types/braces': 3.0.5
 
   '@types/node@24.6.2':
     dependencies:

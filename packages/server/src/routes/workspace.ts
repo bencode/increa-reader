@@ -44,19 +44,25 @@ type RepoResource = {
   files: TreeNode[]
 }
 
-const TreeNodeSchema = z.object({
-  type: z.enum(['dir', 'file']),
-  name: z.string(),
-  path: z.string(),
-  children: z.array(z.any()).optional(),
-})
+const TreeNodeSchema = z
+  .object({
+    type: z.enum(['dir', 'file']),
+    name: z.string(),
+    path: z.string(),
+    children: z.array(z.any()).optional(),
+  })
+  .openapi('TreeNode')
 
 const RepoResourceSchema = z.object({
   name: z.string(),
   files: z.array(TreeNodeSchema),
 })
 
-async function buildTree(dirPath: string, rootPath: string, excludes: string[]): Promise<TreeNode[]> {
+async function buildTree(
+  dirPath: string,
+  rootPath: string,
+  excludes: string[]
+): Promise<TreeNode[]> {
   const entries = await readdir(dirPath, { withFileTypes: true })
   const nodes: TreeNode[] = []
 
@@ -121,6 +127,6 @@ export function registerWorkspaceRoutes(app: OpenAPIHono) {
       })
     }
 
-    return c.json({ data: result })
+    return c.json({ data: result as z.infer<typeof RepoResourceSchema>[] })
   })
 }
