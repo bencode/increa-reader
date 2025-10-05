@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 
 import { Layout } from './layout'
+import { FileViewer } from './file-viewer'
 
 function HomePage() {
   return (
@@ -15,6 +16,7 @@ function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route path="/" element={<HomePage />} />
+        <Route path="/views/:repoName/*" element={<FileViewer />} />
       </Route>
     </Routes>
   )

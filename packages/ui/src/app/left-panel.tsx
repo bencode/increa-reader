@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import { fetchWorkspaceTree } from './api'
 import { FileTree } from './file-tree'
@@ -16,6 +17,7 @@ type RepoResource = {
 export function LeftPanel() {
   const [repos, setRepos] = useState<RepoResource[]>([])
   const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
 
   useEffect(() => {
     fetchWorkspaceTree()
@@ -23,10 +25,6 @@ export function LeftPanel() {
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [])
-
-  const handleFileClick = (path: string) => {
-    console.log('File clicked:', path)
-  }
 
   if (loading) {
     return <div className="p-4">Loading...</div>
@@ -37,7 +35,10 @@ export function LeftPanel() {
       {repos.map((repo) => (
         <div key={repo.name} className="mb-4">
           <h3 className="font-semibold px-2 py-1 text-sm border-b">{repo.name}</h3>
-          <FileTree nodes={repo.files} onFileClick={handleFileClick} />
+          <FileTree
+            nodes={repo.files}
+            onFileClick={(path) => navigate(`/views/${repo.name}${path}`)}
+          />
         </div>
       ))}
     </div>
