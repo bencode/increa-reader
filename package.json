@@ -1,0 +1,14 @@
+{
+  "name": "increa-reader",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter \"./packages/*\" dev",
+    "build": "pnpm --filter \"./packages/*\" build",
+    "test": "pnpm --filter \"./packages/*\" test"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}
