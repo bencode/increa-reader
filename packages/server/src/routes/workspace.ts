@@ -1,106 +1,129 @@
-import { createRoute, z } from "@hono/zod-openapi";
-import type { OpenAPIHono } from "@hono/zod-openapi";
-import { readdir, stat } from "node:fs/promises";
-import { join, relative, basename } from "node:path";
+import { createRoute, z } from '@hono/zod-openapi'
+import type { OpenAPIHono } from '@hono/zod-openapi'
+import { readdir } from 'node:fs/promises'
+import { join, relative } from 'node:path'
+import micromatch from 'micromatch'
 
 type Workspace = {
-  title: string;
-  repos: string[];
-  excludes: RegExp[];
-};
+  title: string
+  repos: RepoItem[]
+  excludes: string[]
+}
+
+type RepoItem = {
+  name: string
+  root: string
+}
 
 const session = {
   workspace: {
-    title: "Brain 2",
-    repos: ["/Users/bencode/work/brain2/pages", "/Users/bencode/book"],
-    excludes: [/\/node_modules\//, /\/\.\w+$/],
+    title: 'Brain 2',
+    repos: [
+      {
+        name: 'brain2',
+        root: '/Users/bencode/work/brain2/pages',
+      },
+      {
+        name: 'book',
+        root: '/Users/bencode/book',
+      },
+    ],
+    excludes: ['node_modules/', '.*'],
   } as Workspace,
-};
+}
 
 type TreeNode = {
-  type: "dir" | "file";
-  name: string;
-  path?: string;
-  children?: TreeNode[];
-};
+  type: 'dir' | 'file'
+  name: string
+  path: string
+  children?: TreeNode[]
+}
+
+type RepoResource = {
+  name: string
+  root: string
+  files: TreeNode[]
+}
 
 const TreeNodeSchema = z.object({
-  type: z.enum(["dir", "file"]),
+  type: z.enum(['dir', 'file']),
   name: z.string(),
-  path: z.string().optional(),
+  path: z.string(),
   children: z.array(z.any()).optional(),
-});
+})
 
-async function buildTree(
-  dirPath: string,
-  excludes: RegExp[],
-): Promise<TreeNode[]> {
-  const entries = await readdir(dirPath, { withFileTypes: true });
-  const nodes: TreeNode[] = [];
+const RepoResourceSchema = z.object({
+  name: z.string(),
+  root: z.string(),
+  files: z.array(TreeNodeSchema),
+})
+
+async function buildTree(dirPath: string, rootPath: string, excludes: string[]): Promise<TreeNode[]> {
+  const entries = await readdir(dirPath, { withFileTypes: true })
+  const nodes: TreeNode[] = []
 
   for (const entry of entries) {
-    const fullPath = join(dirPath, entry.name);
+    const fullPath = join(dirPath, entry.name)
+    const relativePath = relative(rootPath, fullPath)
 
-    if (excludes.some((pattern) => pattern.test(fullPath))) {
-      continue;
+    if (micromatch.isMatch(entry.name, excludes)) {
+      continue
     }
 
     if (entry.isDirectory()) {
-      const children = await buildTree(fullPath, excludes);
+      const children = await buildTree(fullPath, rootPath, excludes)
       nodes.push({
-        type: "dir",
+        type: 'dir',
         name: entry.name,
-        path: fullPath,
+        path: relativePath,
         children,
-      });
+      })
     } else if (entry.isFile()) {
       nodes.push({
-        type: "file",
+        type: 'file',
         name: entry.name,
-        path: fullPath,
-      });
+        path: relativePath,
+      })
     }
   }
 
   return nodes.sort((a, b) => {
-    if (a.type === b.type) return a.name.localeCompare(b.name);
-    return a.type === "dir" ? -1 : 1;
-  });
+    if (a.type === b.type) return a.name.localeCompare(b.name)
+    return a.type === 'dir' ? -1 : 1
+  })
 }
 
 const getWorkspaceTreeRoute = createRoute({
-  method: "get",
-  path: "/api/workspace/tree",
+  method: 'get',
+  path: '/api/workspace/tree',
   responses: {
     200: {
       content: {
-        "application/json": {
+        'application/json': {
           schema: z.object({
-            data: z.array(TreeNodeSchema),
+            data: z.array(RepoResourceSchema),
           }),
         },
       },
-      description: "Get workspace file tree",
+      description: 'Get workspace file tree',
     },
   },
-});
+})
 
 export function registerWorkspaceRoutes(app: OpenAPIHono) {
-  app.openapi(getWorkspaceTreeRoute, async (c) => {
-    const { repos, excludes } = session.workspace;
-    const trees: TreeNode[] = [];
+  app.openapi(getWorkspaceTreeRoute, async c => {
+    const { repos, excludes } = session.workspace
+    const result: RepoResource[] = []
 
     for (const repo of repos) {
-      const repoName = basename(repo);
-      const children = await buildTree(repo, excludes);
-      trees.push({
-        type: "dir",
-        name: repoName,
-        path: repo,
-        children,
-      });
+      const files = await buildTree(repo.root, repo.root, excludes)
+      result.push({
+        name: repo.name,
+        root: repo.root,
+        files,
+      })
     }
 
-    return c.json({ data: trees });
-  });
+    return c.json({ data: result })
+  })
 }
