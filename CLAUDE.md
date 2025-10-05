@@ -3,6 +3,7 @@
 ## 项目结构
 - monorepo 使用 pnpm workspace
 - packages/ui: 前端 UI 包
+- packages/server: 后端服务包
 
 ## UI 包技术栈
 - React 19
@@ -43,3 +44,20 @@
 
 ## API 代理配置
 - `/api` 请求会被代理到 `http://localhost:3000`
+
+## Server 包技术栈
+- Hono - Web 框架
+- Drizzle ORM - 数据库 ORM
+- Bun - 运行时
+- @hono/zod-openapi - OpenAPI/Swagger 集成
+- Zod - Schema 验证
+
+### Server 可用命令
+- `pnpm --filter @increa-reader/server dev`: 开发模式
+- `pnpm --filter @increa-reader/server build`: 构建
+- `pnpm --filter @increa-reader/server start`: 运行构建产物
+
+### Server API 端点
+- `/docs` - OpenAPI JSON 文档
+- `/docs/ui` - Swagger UI 界面
+- `/api` - 服务器信息

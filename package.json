@@ -9,6 +9,7 @@
     "test": "pnpm --filter \"./packages/*\" test"
   },
   "devDependencies": {
+    "shadcn": "^3.3.1",
     "typescript": "^5.7.2"
   }
 }
