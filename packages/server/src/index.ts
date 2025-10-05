@@ -1,6 +1,8 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
 import { swaggerUI } from '@hono/swagger-ui'
 
+import { registerWorkspaceRoutes } from './routes/workspace'
+
 const app = new OpenAPIHono()
 
 const route = createRoute({
@@ -21,6 +23,8 @@ const route = createRoute({
 })
 
 app.openapi(route, (c) => c.json({ message: 'Increa Reader Server' }))
+
+registerWorkspaceRoutes(app)
 
 app.doc('/docs', {
   openapi: '3.0.0',
