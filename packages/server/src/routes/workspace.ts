@@ -41,7 +41,6 @@ type TreeNode = {
 
 type RepoResource = {
   name: string
-  root: string
   files: TreeNode[]
 }
 
@@ -54,7 +53,6 @@ const TreeNodeSchema = z.object({
 
 const RepoResourceSchema = z.object({
   name: z.string(),
-  root: z.string(),
   files: z.array(TreeNodeSchema),
 })
 
@@ -119,7 +117,6 @@ export function registerWorkspaceRoutes(app: OpenAPIHono) {
       const files = await buildTree(repo.root, repo.root, excludes)
       result.push({
         name: repo.name,
-        root: repo.root,
         files,
       })
     }
