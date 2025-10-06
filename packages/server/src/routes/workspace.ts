@@ -3,46 +3,7 @@ import type { OpenAPIHono } from '@hono/zod-openapi'
 import { readdir } from 'node:fs/promises'
 import { join, relative } from 'node:path'
 import micromatch from 'micromatch'
-
-type Workspace = {
-  title: string
-  repos: RepoItem[]
-  excludes: string[]
-}
-
-type RepoItem = {
-  name: string
-  root: string
-}
-
-const session = {
-  workspace: {
-    title: 'Brain 2',
-    repos: [
-      {
-        name: 'brain2',
-        root: '/Users/bencode/work/brain2/pages',
-      },
-      {
-        name: 'book',
-        root: '/Users/bencode/book',
-      },
-    ],
-    excludes: ['node_modules/', '.*'],
-  } as Workspace,
-}
-
-type TreeNode = {
-  type: 'dir' | 'file'
-  name: string
-  path: string
-  children?: TreeNode[]
-}
-
-type RepoResource = {
-  name: string
-  files: TreeNode[]
-}
+import type { WorkspaceConfig, RepoItem, TreeNode, RepoResource } from '../types'
 
 const TreeNodeSchema = z
   .object({
@@ -116,7 +77,8 @@ const getWorkspaceTreeRoute = createRoute({
 
 export function registerWorkspaceRoutes(app: OpenAPIHono) {
   app.openapi(getWorkspaceTreeRoute, async c => {
-    const { repos, excludes } = session.workspace
+    const workspace = c.get('workspace')
+    const { repos, excludes } = workspace
     const result: RepoResource[] = []
 
     for (const repo of repos) {

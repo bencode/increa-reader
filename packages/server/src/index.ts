@@ -3,6 +3,7 @@ import { swaggerUI } from '@hono/swagger-ui'
 
 import { registerWorkspaceRoutes } from './routes/workspace'
 import { registerViewsRoutes } from './routes/views'
+import { sessionMiddleware } from './middleware/session'
 
 const app = new OpenAPIHono()
 
@@ -22,6 +23,8 @@ const route = createRoute({
     },
   },
 })
+
+app.use('/api/*', sessionMiddleware())
 
 app.openapi(route, c => c.json({ message: 'Increa Reader Server' }))
 

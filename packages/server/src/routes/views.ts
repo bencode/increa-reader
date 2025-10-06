@@ -3,34 +3,7 @@ import type { OpenAPIHono } from '@hono/zod-openapi'
 import { readFile, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileTypeFromBuffer } from 'file-type'
-
-type Workspace = {
-  title: string
-  repos: RepoItem[]
-  excludes: string[]
-}
-
-type RepoItem = {
-  name: string
-  root: string
-}
-
-const session = {
-  workspace: {
-    title: 'Brain 2',
-    repos: [
-      {
-        name: 'brain2',
-        root: '/Users/bencode/work/brain2/pages',
-      },
-      {
-        name: 'book',
-        root: '/Users/bencode/book',
-      },
-    ],
-    excludes: ['node_modules/', '.*'],
-  } as Workspace,
-}
+import type { WorkspaceConfig, RepoItem } from '../types'
 
 const ViewResponseSchema = z.object({
   type: z.enum(['text', 'binary']),
@@ -101,7 +74,8 @@ export function registerViewsRoutes(app: OpenAPIHono) {
   app.openapi(getContentViewRoute, async c => {
     const { repo, path } = c.req.param()
 
-    const repoConfig = session.workspace.repos.find(r => r.name === repo)
+    const workspace = c.get('workspace')
+    const repoConfig = workspace.repos.find(r => r.name === repo)
     if (!repoConfig) {
       return c.json({ error: `Repository '${repo}' not found` }, 404)
     }
