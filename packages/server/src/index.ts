@@ -2,6 +2,8 @@ import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
 import { swaggerUI } from '@hono/swagger-ui'
 
 import { registerWorkspaceRoutes } from './routes/workspace'
+import { registerViewsRoutes } from './routes/views'
+import { sessionMiddleware } from './middleware/session'
 
 const app = new OpenAPIHono()
 
@@ -22,9 +24,12 @@ const route = createRoute({
   },
 })
 
+app.use('/api/*', sessionMiddleware())
+
 app.openapi(route, c => c.json({ message: 'Increa Reader Server' }))
 
 registerWorkspaceRoutes(app)
+registerViewsRoutes(app)
 
 app.doc('/docs', {
   openapi: '3.0.0',
@@ -36,7 +41,9 @@ app.doc('/docs', {
 
 app.get('/docs/ui', swaggerUI({ url: '/docs' }))
 
+const port = Number(process.env.PORT) || 3000
+
 export default {
-  port: 3000,
+  port,
   fetch: app.fetch,
 }
