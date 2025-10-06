@@ -56,21 +56,13 @@ const getContentViewRoute = createRoute({
 
 const getPreviewRoute = createRoute({
   method: 'get',
-  path: '/api/preview/{repo}/{path}',
-  parameters: [
-    {
-      name: 'repo',
-      in: 'path',
-      required: true,
-      schema: z.string(),
-    },
-    {
-      name: 'path',
-      in: 'path',
-      required: true,
-      schema: z.string(),
-    },
-  ],
+  path: '/api/preview',
+  request: {
+    query: z.object({
+      repo: z.string(),
+      path: z.string(),
+    }),
+  },
   responses: {
     200: {
       content: {
@@ -183,7 +175,7 @@ function detectFileType(filename: string) {
     return { type: 'code', lang }
   }
 
-  return { type: 'unknown' }
+  return { type: 'unsupported' }
 }
 
 export function registerViewsRoutes(app: OpenAPIHono) {
@@ -221,7 +213,7 @@ export function registerViewsRoutes(app: OpenAPIHono) {
   })
 
   app.openapi(getPreviewRoute, async c => {
-    const { repo, path } = c.req.param()
+    const { repo, path } = c.req.valid('query')
 
     const workspace = c.get('workspace')
     const repoConfig = workspace.repos.find(r => r.name === repo)
@@ -262,7 +254,7 @@ export function registerViewsRoutes(app: OpenAPIHono) {
     }
 
     return c.json({
-      type: 'unknown',
+      type: 'unsupported',
       path,
     })
   })
