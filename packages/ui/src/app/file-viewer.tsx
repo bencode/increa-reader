@@ -63,7 +63,7 @@ export function FileViewer() {
   return (
     <div className="h-full overflow-auto">
       {preview.type === 'markdown' && (
-        <div className="prose prose-slate dark:prose-invert max-w-none p-8">
+        <div className="prose prose-slate dark:prose-invert max-w-none p-8 [&_pre]:!p-0 [&_pre]:!m-0">
           <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkMath]}
             rehypePlugins={[rehypeKatex]}
@@ -75,6 +75,7 @@ export function FileViewer() {
                     language={match[1]}
                     style={vscDarkPlus}
                     PreTag="div"
+                    customStyle={{ margin: 0, padding: '1rem', borderRadius: '0.375rem' }}
                     {...props}
                   >
                     {String(children).replace(/\n$/, '')}
