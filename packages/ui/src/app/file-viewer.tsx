@@ -4,6 +4,10 @@ import ReactMarkdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { FileQuestion } from 'lucide-react'
+import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
+import 'katex/dist/katex.min.css'
 
 import { fetchPreview } from './api'
 
@@ -59,8 +63,32 @@ export function FileViewer() {
   return (
     <div className="h-full overflow-auto">
       {preview.type === 'markdown' && (
-        <div className="prose prose-sm max-w-none p-8">
-          <ReactMarkdown>{preview.body}</ReactMarkdown>
+        <div className="prose prose-slate dark:prose-invert max-w-none p-8">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[rehypeKatex]}
+            components={{
+              code({ inline, className, children, ...props }) {
+                const match = /language-(\w+)/.exec(className || '')
+                return !inline && match ? (
+                  <SyntaxHighlighter
+                    language={match[1]}
+                    style={vscDarkPlus}
+                    PreTag="div"
+                    {...props}
+                  >
+                    {String(children).replace(/\n$/, '')}
+                  </SyntaxHighlighter>
+                ) : (
+                  <code className={className} {...props}>
+                    {children}
+                  </code>
+                )
+              },
+            }}
+          >
+            {preview.body}
+          </ReactMarkdown>
         </div>
       )}
 
