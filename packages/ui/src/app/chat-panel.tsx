@@ -233,26 +233,24 @@ export const ChatPanel = () => {
   }
 
   return (
-    <div className="flex flex-col h-full bg-black text-green-400 font-mono text-sm">
-      <div className="px-4 py-2 border-b border-green-900/50 text-xs opacity-60">
-        claude-code session [{new Date().toLocaleTimeString()}]
-      </div>
-
-      <ScrollArea className="flex-1 px-2 py-2">
-        {messages.map((msg, i) => (
-          <Message key={i} {...msg} />
-        ))}
-        <div ref={scrollRef} />
+    <div className="flex flex-col h-full font-mono bg-gray-50 dark:bg-gray-900">
+      <ScrollArea className="flex-1 min-h-0 px-2 py-2">
+        <div className="">
+          {messages.map((msg, i) => (
+            <Message key={i} {...msg} />
+          ))}
+          <div ref={scrollRef} />
+        </div>
       </ScrollArea>
 
-      <div className="px-4 py-3 border-t border-green-900/50 flex items-center gap-2">
-        <span className="text-green-500">user@{currentRepo === '~' ? '~' : currentRepo}</span>
-        <span className="text-green-600">$</span>
+      <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex items-center gap-2">
+        <span className="text-blue-600 dark:text-blue-400">user@{currentRepo === '~' ? '~' : currentRepo}</span>
+        <span className="text-blue-700 dark:text-blue-500">$</span>
         <input
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="flex-1 bg-transparent outline-none caret-green-400"
+          className="flex-1 bg-transparent outline-none caret-blue-500"
           placeholder="type /help for commands"
           spellCheck={false}
           disabled={isStreaming}
