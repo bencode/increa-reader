@@ -61,7 +61,7 @@ export function FileViewer() {
   }
 
   return (
-    <div className="h-full overflow-auto">
+    <div className="h-full overflow-auto scroll-body">
       {preview.type === 'markdown' && (
         <div className="prose prose-slate dark:prose-invert max-w-none p-4">
           <ReactMarkdown
@@ -75,7 +75,7 @@ export function FileViewer() {
                     language={match[1]}
                     style={vscDarkPlus}
                     PreTag="div"
-                    customStyle={{ margin: 0, padding: '1rem', borderRadius: '0.375rem' }}
+                    customStyle={{ margin: 0, padding: 0, background: 'transparent' }}
                     {...props}
                   >
                     {String(children).replace(/\n$/, '')}
@@ -94,7 +94,7 @@ export function FileViewer() {
       )}
 
       {preview.type === 'code' && (
-        <div className="h-full">
+        <div>
           <SyntaxHighlighter
             language={preview.lang}
             style={vscDarkPlus}

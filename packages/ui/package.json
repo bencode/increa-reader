@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@radix-ui/react-scroll-area": "^1.2.10",
     "@radix-ui/react-slot": "^1.2.3",
     "@tailwindcss/typography": "^0.5.19",
     "class-variance-authority": "^0.7.1",

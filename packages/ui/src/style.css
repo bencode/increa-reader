@@ -130,3 +130,11 @@ html, body {
 #root {
   height: 100%;
 }
+
+.scroll-body {
+  height: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  contain: layout paint;
+  isolation: isolate;
+}
