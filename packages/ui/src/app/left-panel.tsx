@@ -10,7 +10,7 @@ type RepoResource = {
     type: 'dir' | 'file'
     name: string
     path: string
-    children?: any[]
+    children?: unknown[]
   }>
 }
 
@@ -37,6 +37,7 @@ export function LeftPanel() {
           <h3 className="font-semibold px-2 py-1 text-sm border-b">{repo.name}</h3>
           <FileTree
             nodes={repo.files}
+            repoName={repo.name}
             onFileClick={(path) => {
               const filePath = path.startsWith('/') ? path.slice(1) : path
               navigate(`/views/${repo.name}/${filePath}`)

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   ChevronRight,
   ChevronDown,
@@ -69,8 +69,16 @@ function getFileIcon(filename: string) {
   return TYPE_TO_ICON[type]
 }
 
-function TreeItem({ node, onFileClick }: TreeItemProps) {
-  const [isOpen, setIsOpen] = useState(false)
+function TreeItem({ node, onFileClick, repoName }: TreeItemProps) {
+  const storageKey = `filetree-${repoName}-${node.path}`
+  const [isOpen, setIsOpen] = useState(() => {
+    const stored = localStorage.getItem(storageKey)
+    return stored ? JSON.parse(stored) : false
+  })
+
+  useEffect(() => {
+    localStorage.setItem(storageKey, JSON.stringify(isOpen))
+  }, [isOpen, storageKey])
 
   if (node.type === 'file') {
     return (
@@ -105,7 +113,12 @@ function TreeItem({ node, onFileClick }: TreeItemProps) {
       {isOpen && node.children && (
         <div className="pl-4">
           {node.children.map((child, index) => (
-            <TreeItem key={index} node={child} onFileClick={onFileClick} />
+            <TreeItem
+              key={index}
+              node={child}
+              onFileClick={onFileClick}
+              repoName={repoName}
+            />
           ))}
         </div>
       )}
@@ -116,13 +129,19 @@ function TreeItem({ node, onFileClick }: TreeItemProps) {
 type FileTreeProps = {
   nodes: TreeNode[]
   onFileClick?: (path: string) => void
+  repoName: string
 }
 
-export function FileTree({ nodes, onFileClick }: FileTreeProps) {
+export function FileTree({ nodes, onFileClick, repoName }: FileTreeProps) {
   return (
     <div className="text-foreground">
       {nodes.map((node, index) => (
-        <TreeItem key={index} node={node} onFileClick={onFileClick} />
+        <TreeItem
+          key={index}
+          node={node}
+          onFileClick={onFileClick}
+          repoName={repoName}
+        />
       ))}
     </div>
   )
