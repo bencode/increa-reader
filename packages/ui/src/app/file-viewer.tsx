@@ -63,7 +63,7 @@ export function FileViewer() {
   return (
     <div className="h-full overflow-auto scroll-body">
       {preview.type === 'markdown' && (
-        <div className="prose prose-slate dark:prose-invert max-w-none p-4">
+        <div className="prose prose-slate dark:prose-invert max-w-none p-4 prose-headings:text-lg prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-h4:text-base prose-h5:text-sm prose-h6:text-xs">
           <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkMath]}
             rehypePlugins={[rehypeKatex]}
