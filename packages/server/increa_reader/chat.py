@@ -30,34 +30,24 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
             print(f"  Repo: {request.repo} | SessionId: {request.sessionId}")
             print("="*80 + "\n")
 
-        # Find working directory based on repo context
+        # Determine working directory and accessible directories
         cwd = None
-        system_prompt_append = ""
+        add_dirs = [r.root for r in workspace_config.repos]
 
-        if request.repo and request.repo != "~":
+        if request.repo:
+            # Set specific repo as cwd
             repo_config = next((r for r in workspace_config.repos if r.name == request.repo), None)
             if repo_config:
                 cwd = repo_config.root
-                system_prompt_append = f"""
-当前工作目录: {request.repo} ({cwd})
-你可以直接使用相对路径访问此仓库的文件。
-如需访问其他仓库，请使用完整路径：
-{chr(10).join([f"- {r.name}: {r.root}" for r in workspace_config.repos if r.name != request.repo])}
-                """.strip()
             else:
                 return JSONResponse(
                     content={"error": f"Repository '{request.repo}' not found"},
                     status_code=404
                 )
         else:
+            # No specific repo, use first repo as default cwd
             if workspace_config.repos:
                 cwd = workspace_config.repos[0].root
-                system_prompt_append = f"""
-你正在协助分析多个代码仓库：
-{chr(10).join([f"- {r.name}: {r.root}" for r in workspace_config.repos])}
-
-请根据用户的问题，搜索相关仓库或询问用户具体需求。
-                """.strip()
 
         # Configure MCP servers and default tools
         pdf_server = create_sdk_mcp_server(
@@ -81,8 +71,7 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
             resume=request.sessionId,
             system_prompt={
                 "type": "preset",
-                "preset": "claude_code",
-                "append": system_prompt_append
+                "preset": "claude_code"
             },
             max_turns=request.options.get("maxTurns") if request.options else None,
             env={
@@ -90,7 +79,7 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
                 "ANTHROPIC_AUTH_TOKEN": os.getenv("ANTHROPIC_AUTH_TOKEN"),
                 "ANTHROPIC_API_KEY": os.getenv("ANTHROPIC_API_KEY", ""),
             },
-            add_dirs=[r.root for r in workspace_config.repos],
+            add_dirs=add_dirs,
             stderr=lambda line: print(f"[CLI] {line}", flush=True) if DEBUG else None
         )
 

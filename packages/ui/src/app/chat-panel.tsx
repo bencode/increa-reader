@@ -6,15 +6,14 @@ import type { Message as MessageType, Repo } from '@/types/chat'
 
 const HELP_TEXT = `Available commands:
   /cd <repo>   Switch to repo context
-  /cd ~        Switch to all repos
   /pwd         Show current context
   /clear       Clear messages
   /help        Show this help
 
 Examples:
-  $ /cd increa-reader
+  $ /cd pages
   $ where is FileTree?
-  $ /cd ~
+  $ /cd book
 `
 
 const parseCommand = (input: string) => {
@@ -51,7 +50,7 @@ const extractTextContent = (msg: any): string => {
 export const ChatPanel = () => {
   const [messages, setMessages] = useState<MessageType[]>([])
   const [input, setInput] = useState('')
-  const [currentRepo, setCurrentRepo] = useState<string>('~')
+  const [currentRepo, setCurrentRepo] = useState<string>('')
   const [sessionId, setSessionId] = useState<string>()
   const [isStreaming, setIsStreaming] = useState(false)
   const [repos, setRepos] = useState<Repo[]>([])
@@ -72,7 +71,12 @@ export const ChatPanel = () => {
     fetch('/api/workspace/tree')
       .then(res => res.json())
       .then(data => {
-        setRepos(data.data || [])
+        const repoList = data.data || []
+        setRepos(repoList)
+        // Set first repo as default
+        if (repoList.length > 0 && !currentRepo) {
+          setCurrentRepo(repoList[0].name)
+        }
       })
       .catch(console.error)
   }, [])
@@ -113,25 +117,20 @@ export const ChatPanel = () => {
     switch (name) {
       case 'cd':
         if (!args) {
-          addMessage('error', 'Usage: /cd <repo|~>')
+          addMessage('error', 'Usage: /cd <repo>')
           return
         }
-        if (args === '~') {
-          setCurrentRepo('~')
-          addMessage('system', 'Context → all repos')
+        const found = repos.find(r => r.name === args)
+        if (found) {
+          setCurrentRepo(args)
+          addMessage('system', `Context → ${args}`)
         } else {
-          const found = repos.find(r => r.name === args)
-          if (found) {
-            setCurrentRepo(args)
-            addMessage('system', `Context → ${args}`)
-          } else {
-            addMessage('error', `Repo not found: ${args}`)
-          }
+          addMessage('error', `Repo not found: ${args}`)
         }
         break
 
       case 'pwd':
-        addMessage('system', currentRepo === '~' ? 'all repos' : currentRepo)
+        addMessage('system', currentRepo || 'No repo selected')
         break
 
       case 'help':
@@ -293,7 +292,7 @@ export const ChatPanel = () => {
             <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
               <div className="flex items-center gap-1">
                 <span className="text-blue-600 dark:text-blue-400">
-                  user@{currentRepo === '~' ? '~' : currentRepo}
+                  user@{currentRepo || 'loading...'}
                 </span>
               </div>
 
