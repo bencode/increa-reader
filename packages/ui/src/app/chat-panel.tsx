@@ -250,7 +250,7 @@ export const ChatPanel = () => {
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="flex-1 bg-transparent outline-none caret-blue-500"
+          className="flex-1 bg-transparent outline-none caret-blue-500 text-blue-700 dark:text-blue-300 placeholder:text-gray-500 dark:placeholder:text-gray-400"
           placeholder="type /help for commands"
           spellCheck={false}
           disabled={isStreaming}

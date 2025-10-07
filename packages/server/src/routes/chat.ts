@@ -18,7 +18,9 @@ const queryRoute = createRoute({
             options: z
               .object({
                 allowedTools: z.array(z.string()).optional(),
-                permissionMode: z.enum(['default', 'acceptEdits', 'bypassPermissions', 'plan']).optional(),
+                permissionMode: z
+                  .enum(['default', 'acceptEdits', 'bypassPermissions', 'plan'])
+                  .optional(),
                 maxTurns: z.number().optional(),
               })
               .optional(),
@@ -57,7 +59,10 @@ export const registerChatRoutes = (app: OpenAPIHono) => {
 当前工作目录: ${repo} (${cwd})
 你可以直接使用相对路径访问此仓库的文件。
 如需访问其他仓库，请使用完整路径：
-${workspace.repos.filter(r => r.name !== repo).map(r => `- ${r.name}: ${r.root}`).join('\n')}
+${workspace.repos
+  .filter(r => r.name !== repo)
+  .map(r => `- ${r.name}: ${r.root}`)
+  .join('\n')}
       `.trim()
     } else {
       cwd = workspace.repos[0].root
@@ -71,6 +76,7 @@ ${workspace.repos.map(r => `- ${r.name}: ${r.root}`).join('\n')}
 
     const queryOptions = {
       cwd,
+      executable: process.env.BUN_PATH,
       additionalDirectories: workspace.repos.map(r => r.root),
       allowedTools: options.allowedTools || ['Read', 'Grep', 'Glob'],
       permissionMode: options.permissionMode || 'bypassPermissions',
@@ -82,16 +88,58 @@ ${workspace.repos.map(r => `- ${r.name}: ${r.root}`).join('\n')}
         append: systemPromptAppend,
       },
       maxTurns: options.maxTurns,
+      env: {
+        ANTHROPIC_BASE_URL: process.env.ANTHROPIC_BASE_URL,
+        ANTHROPIC_AUTH_TOKEN: process.env.ANTHROPIC_AUTH_TOKEN,
+        ANTHROPIC_API_KEY: '',
+      },
     }
 
     return streamSSE(c, async stream => {
       try {
+        console.log('🚀 [Chat] Starting query...')
+        console.log('   Prompt:', prompt.slice(0, 50) + '...')
+        console.log('   Session ID:', sessionId || '(new)')
+        console.log('   Repo:', repo || 'all')
+        console.log('   CWD:', cwd)
+
+        let messageCount = 0
+
         for await (const msg of query({ prompt, options: queryOptions })) {
+          messageCount++
+          console.log(`📨 [Chat] Message #${messageCount}: type=${msg.type}`)
+
+          // 详细日志
+          if (msg.type === 'system' && msg.subtype === 'init') {
+            console.log('   ✓ System initialized, session_id:', msg.session_id)
+          }
+
+          if (msg.type === 'assistant') {
+            console.log('   ✓ Assistant message received')
+          }
+
+          if (msg.type === 'stream_event') {
+            console.log('   ✓ Stream event:', msg.event?.type)
+          }
+
+          if (msg.type === 'result') {
+            console.log('   ✓ Result:', msg.subtype)
+            console.log('   Duration:', msg.duration_ms + 'ms')
+            console.log('   Tokens:', `in=${msg.usage?.input_tokens} out=${msg.usage?.output_tokens}`)
+          }
+
           await stream.writeSSE({
             data: JSON.stringify(msg),
           })
         }
+
+        console.log('✅ [Chat] Query completed, total messages:', messageCount)
+
       } catch (error) {
+        console.error('❌ [Chat] Error occurred:')
+        console.error('   Message:', error instanceof Error ? error.message : 'Unknown error')
+        console.error('   Stack:', error instanceof Error ? error.stack : '')
+
         await stream.writeSSE({
           data: JSON.stringify({
             type: 'error',

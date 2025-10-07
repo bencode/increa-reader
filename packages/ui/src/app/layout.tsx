@@ -13,7 +13,7 @@ export function Layout() {
       </ResizablePanel>
       <ResizableHandle />
       <ResizablePanel defaultSize={50} minSize={1}>
-        <div className="h-full">
+        <div className="h-full bg-white dark:bg-gray-950">
           <Outlet />
         </div>
       </ResizablePanel>
