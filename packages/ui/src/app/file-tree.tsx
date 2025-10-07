@@ -22,6 +22,8 @@ type TreeNode = {
 type TreeItemProps = {
   node: TreeNode
   onFileClick?: (path: string) => void
+  repoName: string
+  selectedPath?: string | null
 }
 
 type FileIconType = 'code' | 'config' | 'text' | 'image' | 'pdf' | 'default'
@@ -69,21 +71,37 @@ function getFileIcon(filename: string) {
   return TYPE_TO_ICON[type]
 }
 
-function TreeItem({ node, onFileClick, repoName }: TreeItemProps) {
+function TreeItem({ node, onFileClick, repoName, selectedPath }: TreeItemProps) {
   const storageKey = `filetree-${repoName}-${node.path}`
+  const isSelected = selectedPath === `${repoName}/${node.path}`
+
   const [isOpen, setIsOpen] = useState(() => {
     const stored = localStorage.getItem(storageKey)
-    return stored ? JSON.parse(stored) : false
+    return stored ? JSON.parse(stored) : shouldAutoOpen()
   })
+
+  const shouldAutoOpen = () => {
+    if (!selectedPath) return false
+    return selectedPath.startsWith(`${repoName}/${node.path}/`) || isSelected
+  }
 
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify(isOpen))
   }, [isOpen, storageKey])
 
+  // Auto-expand if this path contains the selected path
+  useEffect(() => {
+    if (shouldAutoOpen() && !isOpen) {
+      setIsOpen(true)
+    }
+  }, [selectedPath])
+
   if (node.type === 'file') {
     return (
       <div
-        className="py-1 px-2 hover:bg-accent cursor-pointer text-sm flex items-center gap-2"
+        className={`py-1 px-2 hover:bg-accent cursor-pointer text-sm flex items-center gap-2 ${
+          isSelected ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium' : ''
+        }`}
         onClick={() => onFileClick?.(node.path)}
       >
         {getFileIcon(node.name)}
@@ -118,6 +136,7 @@ function TreeItem({ node, onFileClick, repoName }: TreeItemProps) {
               node={child}
               onFileClick={onFileClick}
               repoName={repoName}
+              selectedPath={selectedPath}
             />
           ))}
         </div>
@@ -130,9 +149,10 @@ type FileTreeProps = {
   nodes: TreeNode[]
   onFileClick?: (path: string) => void
   repoName: string
+  selectedPath?: string | null
 }
 
-export function FileTree({ nodes, onFileClick, repoName }: FileTreeProps) {
+export function FileTree({ nodes, onFileClick, repoName, selectedPath }: FileTreeProps) {
   return (
     <div className="text-foreground">
       {nodes.map((node, index) => (
@@ -141,6 +161,7 @@ export function FileTree({ nodes, onFileClick, repoName }: FileTreeProps) {
           node={node}
           onFileClick={onFileClick}
           repoName={repoName}
+          selectedPath={selectedPath}
         />
       ))}
     </div>
