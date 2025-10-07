@@ -27,15 +27,24 @@ const parseCommand = (input: string) => {
 }
 
 const extractTextContent = (msg: any): string => {
+  // Handle Python SDK assistant message format
+  if (msg.type === 'assistant' && msg.content) {
+    return msg.content
+  }
+
+  // Handle TypeScript SDK message format (backward compatibility)
   if (msg.type === 'assistant' && msg.message?.content) {
     return msg.message.content
       .filter((block: any) => block.type === 'text')
       .map((block: any) => block.text)
       .join('\n')
   }
+
+  // Handle stream events
   if (msg.type === 'stream_event' && msg.event?.type === 'content_block_delta') {
     return msg.event.delta?.text || ''
   }
+
   return ''
 }
 
