@@ -6,7 +6,7 @@ import { LeftPanel } from './left-panel'
 
 export function Layout() {
   return (
-    <ResizablePanelGroup direction="horizontal" className="h-screen">
+    <ResizablePanelGroup direction="horizontal" className="h-full">
       <ResizablePanel defaultSize={20} minSize={1}>
         <LeftPanel />
       </ResizablePanel>

@@ -63,14 +63,14 @@ export function FileViewer() {
   return (
     <div className="h-full overflow-auto">
       {preview.type === 'markdown' && (
-        <div className="prose prose-slate dark:prose-invert max-w-none p-8 [&_pre]:!p-0 [&_pre]:!m-0">
+        <div className="prose prose-slate dark:prose-invert max-w-none p-4">
           <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkMath]}
             rehypePlugins={[rehypeKatex]}
             components={{
-              code({ inline, className, children, ...props }) {
+              code({ className, children, ...props }) {
                 const match = /language-(\w+)/.exec(className || '')
-                return !inline && match ? (
+                return match ? (
                   <SyntaxHighlighter
                     language={match[1]}
                     style={vscDarkPlus}
@@ -95,7 +95,11 @@ export function FileViewer() {
 
       {preview.type === 'code' && (
         <div className="h-full">
-          <SyntaxHighlighter language={preview.lang} style={vscDarkPlus} customStyle={{ margin: 0, height: '100%' }}>
+          <SyntaxHighlighter
+            language={preview.lang}
+            style={vscDarkPlus}
+            customStyle={{ margin: 0, height: '100%' }}
+          >
             {preview.body}
           </SyntaxHighlighter>
         </div>
@@ -103,7 +107,11 @@ export function FileViewer() {
 
       {preview.type === 'image' && (
         <div className="h-full flex items-center justify-center p-8">
-          <img src={`/api/views/${repoName}/${preview.path}`} alt={preview.path} className="max-w-full max-h-full object-contain" />
+          <img
+            src={`/api/views/${repoName}/${preview.path}`}
+            alt={preview.path}
+            className="max-w-full max-h-full object-contain"
+          />
         </div>
       )}
 

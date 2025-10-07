@@ -37,7 +37,10 @@ export function LeftPanel() {
           <h3 className="font-semibold px-2 py-1 text-sm border-b">{repo.name}</h3>
           <FileTree
             nodes={repo.files}
-            onFileClick={(path) => navigate(`/views/${repo.name}${path}`)}
+            onFileClick={(path) => {
+              const filePath = path.startsWith('/') ? path.slice(1) : path
+              navigate(`/views/${repo.name}/${filePath}`)
+            }}
           />
         </div>
       ))}
