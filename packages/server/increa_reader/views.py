@@ -8,10 +8,12 @@ from pathlib import Path
 from typing import Dict, Any
 
 import aiofiles
+import fitz  # PyMuPDF
 from fastapi import HTTPException
 
 from .models import ViewResponse, WorkspaceConfig, RepoItem, RepoResource
 from .workspace import build_file_tree, is_text_file
+from .pdf_processor import extract_page_markdown
 
 
 def create_workspace_routes(app, workspace_config: WorkspaceConfig):
@@ -109,6 +111,79 @@ def create_view_routes(app, workspace_config: WorkspaceConfig):
 
         # PDF files - special handling
         if ext == '.pdf':
-            return {"type": "pdf", "path": path}
+            return await get_pdf_metadata(file_path, path)
 
         return {"type": "unsupported", "path": path}
+
+    @app.get("/api/pdf/page")
+    async def get_pdf_page_content(repo: str, path: str, page: int):
+        """获取PDF指定页面的Markdown内容"""
+        # Find repository
+        repo_config = next((r for r in workspace_config.repos if r.name == repo), None)
+        if not repo_config:
+            raise HTTPException(status_code=404, detail=f"Repository '{repo}' not found")
+
+        file_path = Path(repo_config.root) / path
+
+        if not file_path.exists() or not file_path.is_file():
+            raise HTTPException(status_code=404, detail="File not found")
+
+        # 确保是PDF文件
+        if file_path.suffix.lower() != '.pdf':
+            raise HTTPException(status_code=400, detail="Not a PDF file")
+
+        # 验证页码
+        if page < 1:
+            raise HTTPException(status_code=400, detail="Page number must be >= 1")
+
+        try:
+            # 使用PDF处理器提取页面内容
+            result = extract_page_markdown(str(file_path), page)
+
+            return {
+                "type": "markdown",
+                "body": result["markdown"],
+                "page": result["page"],
+                "has_tables": result["has_tables"],
+                "has_images": result["has_images"],
+                "estimated_reading_time": result["estimated_reading_time"]
+            }
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to process PDF page: {str(e)}")
+
+
+async def get_pdf_metadata(file_path: Path, path: str) -> Dict[str, Any]:
+    """获取PDF文件的元数据"""
+    try:
+        doc = fitz.open(file_path)
+
+        # 提取元数据
+        metadata = doc.metadata
+
+        return {
+            "type": "pdf",
+            "path": path,
+            "metadata": {
+                "page_count": doc.page_count,
+                "title": metadata.get('title', ''),
+                "author": metadata.get('author', ''),
+                "subject": metadata.get('subject', ''),
+                "creator": metadata.get('creator', ''),
+                "producer": metadata.get('producer', ''),
+                "creation_date": metadata.get('creationDate', ''),
+                "modification_date": metadata.get('modDate', ''),
+                "encrypted": doc.is_encrypted
+            }
+        }
+    except Exception as e:
+        # 如果无法读取PDF元数据，返回基本信息
+        return {
+            "type": "pdf",
+            "path": path,
+            "metadata": {
+                "page_count": 0,
+                "error": f"无法读取PDF元数据: {str(e)}"
+            }
+        }
