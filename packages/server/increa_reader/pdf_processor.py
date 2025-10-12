@@ -358,6 +358,14 @@ class PDFPageProcessor:
             # 普通段落
             return f"\n{text}\n"
 
+    def render_page_svg(self, page_num: int) -> str:
+        """渲染页面为SVG矢量图"""
+        if page_num < 1 or page_num > self.doc.page_count:
+            raise ValueError(f"Page {page_num} out of range (1-{self.doc.page_count})")
+
+        page = self.doc[page_num - 1]
+        return page.get_svg_image()
+
 
 def extract_page_markdown(doc_path: str, page_num: int) -> Dict[str, Any]:
     """
@@ -373,5 +381,23 @@ def extract_page_markdown(doc_path: str, page_num: int) -> Dict[str, Any]:
     processor = PDFPageProcessor(doc_path)
     try:
         return processor._extract_page_content(page_num)
+    finally:
+        processor.close()
+
+
+def render_page_svg(doc_path: str, page_num: int) -> str:
+    """
+    渲染PDF页面为SVG矢量图
+
+    Args:
+        doc_path: PDF文件路径
+        page_num: 页码（1-based）
+
+    Returns:
+        SVG content as string
+    """
+    processor = PDFPageProcessor(doc_path)
+    try:
+        return processor.render_page_svg(page_num)
     finally:
         processor.close()

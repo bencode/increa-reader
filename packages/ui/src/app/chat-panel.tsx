@@ -198,6 +198,7 @@ export const ChatPanel = () => {
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const data = line.slice(6)
+            console.log('message', { data })
             try {
               const msg = JSON.parse(data)
 
@@ -206,22 +207,22 @@ export const ChatPanel = () => {
               }
 
               if (msg.type === 'assistant') {
-                assistantContent = extractTextContent(msg)
+                const content = extractTextContent(msg)
                 setMessages(prev => [
-                  ...prev,
-                  { ...assistantMsg, content: assistantContent, isStreaming: true },
+                  ...prev.slice(0, -1),
+                  { ...assistantMsg, content, isStreaming: true },
                 ])
               }
 
               if (msg.type === 'stream_event') {
-                // const deltaText = extractTextContent(msg)
-                // if (deltaText) {
-                //   assistantContent += deltaText
-                //   setMessages(prev => [
-                //     ...prev,
-                //     { ...assistantMsg, content: assistantContent, isStreaming: true },
-                //   ])
-                // }
+                const deltaText = extractTextContent(msg)
+                if (deltaText) {
+                  assistantContent += deltaText
+                  setMessages(prev => [
+                    ...prev.slice(0, -1),
+                    { ...assistantMsg, content: assistantContent, isStreaming: true },
+                  ])
+                }
               }
 
               if (msg.type === 'result') {
@@ -231,15 +232,6 @@ export const ChatPanel = () => {
                   duration: msg.duration_ms,
                   usage: msg.usage,
                 })
-
-                setMessages(prev => [
-                  ...prev,
-                  {
-                    ...assistantMsg,
-                    content: assistantContent,
-                    isStreaming: false,
-                  },
-                ])
                 setIsStreaming(false)
               }
             } catch (e) {

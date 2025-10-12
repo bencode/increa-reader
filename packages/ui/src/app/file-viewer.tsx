@@ -8,14 +8,27 @@ import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
-
 import { fetchPreview } from './api'
+import { PDFViewer } from './pdf-viewer'
 
 type PreviewData =
   | { type: 'markdown'; body: string }
   | { type: 'code'; lang: string; body: string }
   | { type: 'image'; path: string }
+  | { type: 'pdf'; path: string; metadata: PDFMetadata }
   | { type: 'unsupported'; path: string }
+
+type PDFMetadata = {
+  page_count: number
+  title: string
+  author: string
+  subject: string
+  creator: string
+  producer: string
+  creation_date: string
+  modification_date: string
+  encrypted: boolean
+}
 
 export function FileViewer() {
   const { repoName, '*': filePath } = useParams<{ repoName: string; '*': string }>()
@@ -113,6 +126,10 @@ export function FileViewer() {
             className="max-w-full max-h-full object-contain"
           />
         </div>
+      )}
+
+      {preview.type === 'pdf' && (
+        <PDFViewer repo={repoName!} filePath={preview.path} metadata={preview.metadata} />
       )}
 
       {preview.type === 'unsupported' && (

@@ -7,7 +7,7 @@ import uvicorn
 import os
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 3000))
+    port = int(os.getenv("PORT", 3010))
     uvicorn.run(
         "increa_reader.main:app",
         host="0.0.0.0",

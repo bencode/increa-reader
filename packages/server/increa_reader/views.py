@@ -10,10 +10,11 @@ from typing import Dict, Any
 import aiofiles
 import fitz  # PyMuPDF
 from fastapi import HTTPException
+from fastapi.responses import Response
 
 from .models import ViewResponse, WorkspaceConfig, RepoItem, RepoResource
 from .workspace import build_file_tree, is_text_file
-from .pdf_processor import extract_page_markdown
+from .pdf_processor import extract_page_markdown, render_page_svg
 
 
 def create_workspace_routes(app, workspace_config: WorkspaceConfig):
@@ -152,6 +153,35 @@ def create_view_routes(app, workspace_config: WorkspaceConfig):
             raise HTTPException(status_code=400, detail=str(e))
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to process PDF page: {str(e)}")
+
+    @app.get("/api/pdf/page-render")
+    async def get_pdf_page_render(repo: str, path: str, page: int):
+        """渲染PDF页面为SVG矢量图"""
+        # Find repository
+        repo_config = next((r for r in workspace_config.repos if r.name == repo), None)
+        if not repo_config:
+            raise HTTPException(status_code=404, detail=f"Repository '{repo}' not found")
+
+        file_path = Path(repo_config.root) / path
+
+        if not file_path.exists() or not file_path.is_file():
+            raise HTTPException(status_code=404, detail="File not found")
+
+        # 确保是PDF文件
+        if file_path.suffix.lower() != '.pdf':
+            raise HTTPException(status_code=400, detail="Not a PDF file")
+
+        # 验证页码
+        if page < 1:
+            raise HTTPException(status_code=400, detail="Page number must be >= 1")
+
+        try:
+            svg_content = render_page_svg(str(file_path), page)
+            return Response(content=svg_content, media_type="image/svg+xml")
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to render PDF page: {str(e)}")
 
 
 async def get_pdf_metadata(file_path: Path, path: str) -> Dict[str, Any]:
