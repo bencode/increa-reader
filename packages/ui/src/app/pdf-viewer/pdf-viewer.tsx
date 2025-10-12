@@ -96,10 +96,11 @@ export function PDFViewer({ repo, filePath, metadata }: PDFViewerProps) {
 
   const items = rowVirtualizer.getVirtualItems()
 
-  // 追踪当前可见页面
+  // 追踪可见项中间的页面
   useEffect(() => {
     if (items.length > 0) {
-      setCurrentPage(items[0].index + 1)
+      const middleIndex = items[0].index + Math.floor(items.length / 2) - 1
+      setCurrentPage(middleIndex + 1)
     }
   }, [items])
 
