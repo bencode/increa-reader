@@ -99,14 +99,14 @@ export function PDFViewer({ repo, filePath, metadata }: PDFViewerProps) {
   // 追踪可见项中间的页面
   useEffect(() => {
     if (items.length > 0) {
-      const middleIndex = items[0].index + Math.floor(items.length / 2) - 1
+      const middleIndex = items[Math.floor(items.length / 2)].index
       setCurrentPage(middleIndex + 1)
     }
   }, [items])
 
   // 跳转到指定页面
   const scrollToPage = (page: number) => {
-    rowVirtualizer.scrollToIndex(page - 1, { align: 'start' })
+    rowVirtualizer.scrollToIndex(page - 1, { align: 'center' })
   }
 
   // 提取文件名作为 fallback 标题
@@ -152,7 +152,11 @@ export function PDFViewer({ repo, filePath, metadata }: PDFViewerProps) {
         </div>
       </div>
 
-      <PDFPagination currentPage={currentPage} totalPages={metadata.page_count} onPageChange={scrollToPage} />
+      <PDFPagination
+        currentPage={currentPage}
+        totalPages={metadata.page_count}
+        onPageChange={scrollToPage}
+      />
     </div>
   )
 }
