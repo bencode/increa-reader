@@ -183,6 +183,39 @@ def create_view_routes(app, workspace_config: WorkspaceConfig):
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to render PDF page: {str(e)}")
 
+    @app.get("/api/temp-image/{filepath:path}")
+    async def get_temp_image(filepath: str):
+        """获取PDF提取的临时图片"""
+        import tempfile
+        from pathlib import Path
+
+        # 验证文件路径安全性（防止路径遍历）
+        if ".." in filepath or filepath.startswith("/") or filepath.startswith("\\"):
+            raise HTTPException(status_code=400, detail="Invalid filepath")
+
+        # 构建临时文件路径
+        temp_dir = Path(tempfile.gettempdir())
+        img_path = temp_dir / filepath
+
+        # 确保路径在临时目录内（安全检查）
+        try:
+            img_path = img_path.resolve()
+            if not str(img_path).startswith(str(temp_dir.resolve())):
+                raise HTTPException(status_code=400, detail="Invalid filepath")
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid filepath")
+
+        if not img_path.exists() or not img_path.is_file():
+            raise HTTPException(status_code=404, detail="Image not found")
+
+        # 读取并返回图片
+        try:
+            with open(img_path, 'rb') as f:
+                image_data = f.read()
+            return Response(content=image_data, media_type="image/png")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to read image: {str(e)}")
+
 
 async def get_pdf_metadata(file_path: Path, path: str) -> Dict[str, Any]:
     """获取PDF文件的元数据"""

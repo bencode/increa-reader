@@ -4,6 +4,7 @@ uvicorn>=0.30.0
 aiofiles>=24.0.0
 python-dotenv>=1.0.0
 PyMuPDF>=1.24.0
+pymupdf4llm>=0.0.17
 claude-agent-sdk>=0.1.1
 mcp>=1.0.0
 fastmcp>=0.1.0

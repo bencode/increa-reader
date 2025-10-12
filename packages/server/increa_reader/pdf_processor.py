@@ -8,6 +8,7 @@ import tempfile
 from pathlib import Path
 from typing import Dict, List, Tuple, Any
 import fitz  # PyMuPDF
+import pymupdf4llm
 
 
 class PDFPageProcessor:
@@ -134,6 +135,7 @@ class PDFPageProcessor:
 
         try:
             image_list = page.get_images()
+            print(f"Page {page_num}: Found {len(image_list)} images")  # 调试日志
 
             for img_idx, img in enumerate(image_list):
                 # 获取图片
@@ -158,12 +160,16 @@ class PDFPageProcessor:
                         "height": pix.height,
                         "markdown": f"![图片{img_idx + 1}](/api/temp-image/{img_filename})"
                     })
+                    print(f"  Image {img_idx + 1} extracted: {img_filename}")  # 调试日志
+                else:
+                    print(f"  Image {img_idx + 1} skipped (CMYK)")  # 调试日志
 
                 pix = None  # 释放内存
 
         except Exception as e:
             print(f"Error extracting images: {e}")
 
+        print(f"Page {page_num}: Total {len(images)} images extracted")  # 调试日志
         return images
 
     def _process_text_blocks(self, text_blocks: Dict, table_regions: List, page_rect) -> List[Dict[str, Any]]:
@@ -272,6 +278,7 @@ class PDFPageProcessor:
 
     def _assemble_markdown(self, text_content: List[Dict], tables: List[Dict], images: List[Dict], page_num: int) -> str:
         """组装最终的Markdown内容"""
+        print(f"Assembling markdown for page {page_num}: {len(text_content)} texts, {len(tables)} tables, {len(images)} images")  # 调试
         markdown_parts = []
 
         # 按位置排序所有内容
@@ -298,6 +305,7 @@ class PDFPageProcessor:
 
         # 添加图片
         for idx, image in enumerate(images):
+            print(f"  Adding image to content: {image['markdown']}")  # 调试
             all_content.append({
                 "type": "image",
                 "content": image,
@@ -315,6 +323,7 @@ class PDFPageProcessor:
             elif item["type"] == "table":
                 markdown_parts.append(f"\n{item['content']['markdown']}\n")
             elif item["type"] == "image":
+                print(f"  Appending image markdown: {item['content']['markdown']}")  # 调试
                 markdown_parts.append(f"\n{item['content']['markdown']}\n")
 
         # 添加页面分隔符
@@ -369,7 +378,7 @@ class PDFPageProcessor:
 
 def extract_page_markdown(doc_path: str, page_num: int) -> Dict[str, Any]:
     """
-    提取PDF页面的Markdown内容
+    提取PDF页面的Markdown内容（使用 pymupdf4llm）
 
     Args:
         doc_path: PDF文件路径
@@ -378,11 +387,52 @@ def extract_page_markdown(doc_path: str, page_num: int) -> Dict[str, Any]:
     Returns:
         Dict containing markdown content and metadata
     """
-    processor = PDFPageProcessor(doc_path)
     try:
-        return processor._extract_page_content(page_num)
-    finally:
-        processor.close()
+        doc = fitz.open(doc_path)
+
+        # 使用 pymupdf4llm 提取指定页面的 markdown
+        # 注意: pymupdf4llm 使用 0-based 页码
+        # write_images=True 会将图片写入磁盘
+        import tempfile
+        img_dir = Path(tempfile.gettempdir()) / "pymupdf4llm_images"
+        img_dir.mkdir(exist_ok=True)
+
+        md_text = pymupdf4llm.to_markdown(
+            doc,
+            pages=[page_num - 1],
+            write_images=True,
+            image_path=str(img_dir),
+            image_format="png"
+        )
+
+        # 替换绝对路径为 API 路径
+        # 从 /var/.../pymupdf4llm_images/xxx.png 替换为 /api/temp-image/pymupdf4llm_images/xxx.png
+        import re
+        img_dir_str = str(img_dir)
+        md_text = re.sub(
+            r'!\[(.*?)\]\(' + re.escape(img_dir_str) + r'/([^)]+)\)',
+            r'![\1](/api/temp-image/pymupdf4llm_images/\2)',
+            md_text
+        )
+
+        print(f"Page {page_num} markdown preview (after path replacement):\n{md_text[:500]}")  # 调试
+
+        # 检测是否有表格和图片（简单启发式）
+        has_tables = "|" in md_text and "---" in md_text  # Markdown 表格特征
+        has_images = "![" in md_text  # Markdown 图片特征
+
+        doc.close()
+
+        return {
+            "page": page_num,
+            "markdown": md_text,
+            "has_tables": has_tables,
+            "has_images": has_images,
+            "estimated_reading_time": len(md_text.split()) // 200
+        }
+    except Exception as e:
+        print(f"Error extracting markdown for page {page_num}: {e}")
+        raise
 
 
 def render_page_svg(doc_path: str, page_num: int) -> str:
