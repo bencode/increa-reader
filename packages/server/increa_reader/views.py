@@ -67,6 +67,55 @@ def create_view_routes(app, workspace_config: WorkspaceConfig):
                 filename=Path(path).name
             )
 
+    # Extension to language mapping for code files
+    EXT_TO_LANG = {
+        '.js': 'javascript', '.jsx': 'jsx', '.mjs': 'javascript', '.cjs': 'javascript',
+        '.ts': 'typescript', '.tsx': 'tsx', '.mts': 'typescript', '.cts': 'typescript',
+        '.py': 'python', '.pyi': 'python',
+        '.java': 'java', '.c': 'c', '.cpp': 'cpp', '.cc': 'cpp', '.cxx': 'cpp',
+        '.h': 'c', '.hpp': 'cpp', '.hh': 'cpp',
+        '.go': 'go', '.rs': 'rust', '.php': 'php',
+        '.html': 'html', '.htm': 'html',
+        '.css': 'css', '.scss': 'scss', '.sass': 'sass', '.less': 'less',
+        '.json': 'json', '.jsonc': 'json',
+        '.yaml': 'yaml', '.yml': 'yaml',
+        '.xml': 'xml', '.svg': 'xml',
+        '.sh': 'bash', '.bash': 'bash', '.zsh': 'bash', '.fish': 'bash',
+        '.vim': 'vim', '.vimrc': 'vim',
+        '.toml': 'toml', '.ini': 'ini', '.cfg': 'ini', '.conf': 'ini',
+        '.txt': 'text', '.log': 'text',
+        '.nu': 'bash',
+        '.sql': 'sql',
+        '.dockerfile': 'dockerfile',
+        '.gitignore': 'text', '.gitattributes': 'text',
+        '.env': 'bash', '.envrc': 'bash',
+        '.rb': 'ruby', '.rake': 'ruby',
+        '.lua': 'lua',
+        '.pl': 'perl', '.pm': 'perl',
+        '.r': 'r',
+        '.swift': 'swift',
+        '.kt': 'kotlin', '.kts': 'kotlin',
+        '.scala': 'scala',
+        '.clj': 'clojure', '.cljs': 'clojure',
+        '.ex': 'elixir', '.exs': 'elixir',
+        '.erl': 'erlang', '.hrl': 'erlang',
+        '.hs': 'haskell',
+        '.elm': 'elm',
+        '.dart': 'dart',
+        '.proto': 'protobuf',
+        '.graphql': 'graphql', '.gql': 'graphql',
+    }
+
+    # Special filenames (without extension) to language mapping
+    FILENAME_TO_LANG = {
+        'makefile': 'makefile',
+        'dockerfile': 'dockerfile',
+        'cmakelists.txt': 'cmake',
+        'gemfile': 'ruby', 'rakefile': 'ruby', 'vagrantfile': 'ruby',
+        'podfile': 'ruby',
+        'brewfile': 'ruby',
+    }
+
     @app.get("/api/preview")
     async def get_file_preview(repo: str, path: str):
         """Get file preview information"""
@@ -80,13 +129,17 @@ def create_view_routes(app, workspace_config: WorkspaceConfig):
         if not file_path.exists():
             raise HTTPException(status_code=404, detail="File not found")
 
-        # File type detection logic
         ext = Path(path).suffix.lower()
+        filename = Path(path).name.lower()
 
-        # Image files
-        image_exts = ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp', '.ico']
+        # Image files (excluding SVG which is text/XML)
+        image_exts = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.ico']
         if ext in image_exts:
             return {"type": "image", "path": path}
+
+        # PDF files
+        if ext == '.pdf':
+            return await get_pdf_metadata(file_path, path)
 
         # Markdown files
         if ext in ['.md', '.markdown']:
@@ -94,25 +147,20 @@ def create_view_routes(app, workspace_config: WorkspaceConfig):
                 content = await f.read()
             return {"type": "markdown", "body": content}
 
-        # Code files (simplified language detection)
-        code_langs = {
-            '.js': 'javascript', '.jsx': 'jsx',
-            '.ts': 'typescript', '.tsx': 'tsx',
-            '.py': 'python', '.java': 'java',
-            '.c': 'c', '.cpp': 'cpp', '.h': 'c',
-            '.go': 'go', '.rs': 'rust', '.php': 'php',
-            '.html': 'html', '.css': 'css', '.json': 'json',
-            '.yaml': 'yaml', '.yml': 'yaml', '.xml': 'xml'
-        }
-
-        if ext in code_langs:
+        # Known code/text files by extension or filename
+        lang = FILENAME_TO_LANG.get(filename) or EXT_TO_LANG.get(ext)
+        if lang:
             async with aiofiles.open(file_path, 'r', encoding='utf-8') as f:
                 content = await f.read()
-            return {"type": "code", "lang": code_langs[ext], "body": content}
+            return {"type": "code", "lang": lang, "body": content}
 
-        # PDF files - special handling
-        if ext == '.pdf':
-            return await get_pdf_metadata(file_path, path)
+        # Unknown extension: try to detect if it's a text file
+        async with aiofiles.open(file_path, 'rb') as f:
+            content_bytes = await f.read()
+
+        if is_text_file(content_bytes):
+            content = content_bytes.decode('utf-8', errors='replace')
+            return {"type": "code", "lang": "text", "body": content}
 
         return {"type": "unsupported", "path": path}
 
