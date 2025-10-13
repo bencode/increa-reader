@@ -66,15 +66,39 @@ pnpm test  # 运行所有测试（目前尚未实现）
   - `/api/workspace/tree` - 获取文件树
   - `/api/views/{repo}/{path}` - 获取文件内容
   - `/api/preview` - 获取文件预览
-  - `/api/chat/query` - AI 聊天接口（流式）
+  - `/api/chat/query` - AI 聊天接口（流式，SSE 格式）
+  - `/api/pdf/page` - 获取 PDF 页面 Markdown 内容
+  - `/api/pdf/page-render` - 渲染 PDF 页面为 SVG
+  - `/api/temp-image/{filepath:path}` - 提供临时图片访问（用于 PDF 提取的图片）
 - **MCP 工具**:
   - `open_pdf`, `page_count`, `extract_text`, `render_page_png`, `search_text`, `close_pdf`
+  - 所有工具通过 `claude-agent-sdk` 注册，前缀为 `mcp__pdf-reader__`
 
 ### 数据流
+
+#### 文件浏览流程
 1. Server 启动时从 `INCREA_REPO` 环境变量读取仓库路径（用 `:` 分隔多个路径）
 2. UI 通过 `/api/workspace/tree` 获取所有仓库的文件树
 3. 用户点击文件时，通过 `/api/views/{repo}/{path}` 获取文件内容
 4. UI 根据文件类型（text/binary）决定如何显示
+
+#### PDF 阅读流程
+1. 用户打开 PDF 文件，进入 `/views/:repo/:path` 路由
+2. PDF Viewer 使用虚拟滚动加载可见页面
+3. 每页支持两种视图模式：
+   - **SVG 模式**：通过 `/api/pdf/page-render` 获取矢量图
+   - **Markdown 模式**：通过 `/api/pdf/page` 获取提取的文本/表格/图片（使用 pymupdf4llm）
+4. 提取的图片保存到临时目录，通过 `/api/temp-image/{filename}` 访问
+
+#### AI 聊天流程
+1. 用户在右侧面板输入问题，选择目标 repo 作为上下文
+2. 前端通过 `/api/chat/query` 发送 POST 请求（SSE 流式响应）
+3. Server 使用 `claude-agent-sdk` 调用 Claude API，提供以下能力：
+   - 文件读取（Read, Grep, Glob 工具）
+   - PDF 操作（MCP 工具：open_pdf, render_page_png 等）
+   - 代码分析和问答
+4. LLM 响应流式返回，前端实时渲染 Markdown 内容（含图片）
+5. Session 持久化到 localStorage，支持对话历史
 
 ## 重要配置说明
 
@@ -92,12 +116,35 @@ pnpm test  # 运行所有测试（目前尚未实现）
 - 依赖管理：`pip install -r requirements.txt`
 - 服务器启动：`python server.py`
 
-## 类型系统关键点
+## 关键实现细节
 
-### 共享类型
+### 图片处理机制
+**问题**：LLM 通过 MCP 工具截图时，需要将本地文件路径转换为浏览器可访问的 HTTP URL
+
+**解决方案**：
+1. **临时图片存储**：所有 PDF 提取/截图的图片保存到 `tempfile.gettempdir()`
+2. **API 访问端点**：`/api/temp-image/{filepath:path}` 提供临时图片访问（views.py:186）
+   - 支持路径安全检查，防止目录遍历攻击
+   - 自动识别子目录（如 `pymupdf4llm_images/xxx.png`）
+3. **MCP 工具返回格式**：
+   - `render_page_png` 返回 Markdown 格式：`![PDF Page N](/api/temp-image/{filename})`
+   - PDF 处理器（pymupdf4llm）提取的图片路径自动替换为 API URL
+4. **前端渲染**：
+   - Message 组件使用 `react-markdown` 渲染 Markdown（含图片）
+   - 图片通过 HTTP 请求加载，浏览器可正常访问
+
+### 聊天功能架构
+- **会话管理**：使用 `claude-agent-sdk` 的 session 机制，支持对话历史和上下文保持
+- **流式响应**：SSE (Server-Sent Events) 实时返回 LLM 输出
+- **权限控制**：`permissionMode: "bypassPermissions"` 允许工具自动执行
+- **上下文切换**：用户通过 `/cd <repo>` 命令切换工作目录
+
+### 类型系统关键点
+
+#### 共享类型
 UI 和 Server 各自定义了相似但独立的类型（`TreeNode`, `RepoResource`），未来可考虑提取到共享包。
 
-### 环境变量
+#### 环境变量
 - `INCREA_REPO`: 仓库路径，多个路径用 `:` 分隔（例如：`/path/to/repo1:/path/to/repo2`）
 - `PORT`: Server 端口（默认 3000）
 - `ANTHROPIC_API_KEY`: Claude API 密钥

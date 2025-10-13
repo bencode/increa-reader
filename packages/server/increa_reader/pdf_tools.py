@@ -103,7 +103,7 @@ async def extract_text(args: dict[str, Any]) -> dict[str, Any]:
     "required": ["doc_id", "page"]
 })
 async def render_page_png(args: dict[str, Any]) -> dict[str, Any]:
-    """Render a page as PNG image"""
+    """Render a page as PNG image and return markdown image link"""
     try:
         doc = _validate_doc_id(args["doc_id"])
         page = args["page"]
@@ -111,9 +111,13 @@ async def render_page_png(args: dict[str, Any]) -> dict[str, Any]:
         _validate_page_range(doc, page)
 
         pix = doc[page - 1].get_pixmap(dpi=dpi)
-        temp_file = Path(tempfile.gettempdir()) / f"pdf_page_{page}_{uuid.uuid4().hex[:8]}.png"
+        filename = f"pdf_page_{page}_{uuid.uuid4().hex[:8]}.png"
+        temp_file = Path(tempfile.gettempdir()) / filename
         pix.save(temp_file)
-        return {"content": [{"type": "text", "text": str(temp_file)}]}
+
+        # Return markdown image format for browser access
+        markdown_img = f"![PDF Page {page}](/api/temp-image/{filename})"
+        return {"content": [{"type": "text", "text": markdown_img}]}
     except (ValueError, KeyError) as e:
         return {"content": [{"type": "text", "text": str(e)}], "is_error": True}
 
