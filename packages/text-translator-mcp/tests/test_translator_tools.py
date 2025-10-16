@@ -3,18 +3,23 @@ Tests for translator tools
 """
 
 import json
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from mcp.types import TextContent
 
 from translator_server import (
+    _analyze_style,
     _format_numbered_paragraphs,
     _parse_json_safe,
     _parse_numbered_translations,
     _read_file_with_encoding,
     _split_paragraphs,
+    analyze_document,
     list_supported_languages,
     load_glossary,
     save_glossary,
+    translate_paragraphs,
 )
 
 
@@ -161,3 +166,211 @@ def test_list_supported_languages():
     assert "ja" in result
     assert result["zh-CN"] == "简体中文"
     assert result["en"] == "English"
+
+
+def test_generate_output_path_interleaved():
+    """Test generating output path for interleaved format"""
+    from translator_server import _generate_output_path
+
+    result = _generate_output_path("/path/to/document.md", "zh-CN", "interleaved")
+    assert result == "/path/to/document.zh-CN.bilingual.md"
+
+    result = _generate_output_path("/path/to/file.txt", "en", "interleaved")
+    assert result == "/path/to/file.en.bilingual.txt"
+
+
+def test_generate_output_path_translation_only():
+    """Test generating output path for translation_only format"""
+    from translator_server import _generate_output_path
+
+    result = _generate_output_path("/path/to/document.md", "zh-CN", "translation_only")
+    assert result == "/path/to/document.zh-CN.md"
+
+    result = _generate_output_path("/path/to/file.txt", "ja", "translation_only")
+    assert result == "/path/to/file.ja.txt"
+
+
+@pytest.mark.asyncio
+async def test_analyze_style():
+    """Test style analysis with mocked context"""
+    # Create mock context
+    mock_ctx = MagicMock()
+    mock_session = AsyncMock()
+    mock_ctx.session = mock_session
+
+    # Mock the create_message response
+    mock_result = MagicMock()
+    mock_result.content = TextContent(
+        type="text",
+        text='{"style": "technical", "tone": "formal", "domain": "physics", "initial_glossary": {"term1": "术语1"}}'
+    )
+    mock_session.create_message = AsyncMock(return_value=mock_result)
+
+    # Test the function
+    paragraphs = ["This is a technical document.", "It discusses quantum mechanics."]
+    result = await _analyze_style(paragraphs, "zh-CN", mock_ctx)
+
+    assert result["style"] == "technical"
+    assert result["tone"] == "formal"
+    assert result["domain"] == "physics"
+    assert "term1" in result["initial_glossary"]
+
+    # Verify create_message was called
+    mock_session.create_message.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_analyze_document(sample_text_file):
+    """Test document analysis with mocked context"""
+    # Create mock context
+    mock_ctx = MagicMock()
+    mock_session = AsyncMock()
+    mock_ctx.session = mock_session
+
+    # Mock the create_message response for style analysis
+    mock_result = MagicMock()
+    mock_result.content = TextContent(
+        type="text",
+        text='{"style": "technical", "tone": "neutral", "domain": "AI", "initial_glossary": {}}'
+    )
+    mock_session.create_message = AsyncMock(return_value=mock_result)
+
+    # Test the function
+    result_json = await analyze_document(sample_text_file, "zh-CN", mock_ctx)
+    result = json.loads(result_json)
+
+    assert "path" in result
+    assert "total_paragraphs" in result
+    assert "file_size" in result
+    assert "style_analysis" in result
+    assert result["total_paragraphs"] > 0
+    assert result["style_analysis"]["style"] == "technical"
+
+
+@pytest.mark.asyncio
+async def test_translate_paragraphs_empty_range(sample_text_file):
+    """Test translate_paragraphs with out-of-range start"""
+    # Create mock context
+    mock_ctx = MagicMock()
+
+    # Test with start beyond file length
+    result_json = await translate_paragraphs(
+        sample_text_file,
+        start=1000,
+        count=10,
+        target_lang="zh-CN",
+        ctx=mock_ctx
+    )
+    result = json.loads(result_json)
+
+    assert result["translations"] == []
+    assert result["count"] == 0
+    assert result["start"] == 1000
+
+
+@pytest.mark.asyncio
+async def test_translate_paragraphs_with_context(sample_text_file):
+    """Test translate_paragraphs with existing context"""
+    # Create mock context
+    mock_ctx = MagicMock()
+    mock_session = AsyncMock()
+    mock_ctx.session = mock_session
+
+    # Mock translation result
+    mock_trans_result = MagicMock()
+    mock_trans_result.content = TextContent(
+        type="text",
+        text="1. 这是翻译\n2. 第二段翻译"
+    )
+
+    # Mock term extraction result
+    mock_term_result = MagicMock()
+    mock_term_result.content = TextContent(
+        type="text",
+        text='{"新术语": "new term"}'
+    )
+
+    mock_session.create_message = AsyncMock(side_effect=[mock_trans_result, mock_term_result])
+
+    # Test with existing context
+    existing_context = {
+        "glossary": {"existing": "现有"},
+        "previous_paragraphs": [
+            {"original": "Previous text", "translation": "之前的文本"}
+        ],
+        "style_guide": {"style": "technical", "tone": "formal", "domain": "AI"}
+    }
+
+    result_json = await translate_paragraphs(
+        sample_text_file,
+        start=0,
+        count=2,
+        target_lang="zh-CN",
+        context=existing_context,
+        ctx=mock_ctx
+    )
+    result = json.loads(result_json)
+
+    assert result["count"] == 2
+    assert len(result["translations"]) == 2
+    assert "context" in result
+    assert result["context"]["glossary"]["existing"] == "现有"
+    assert "新术语" in result["context"]["glossary"]
+
+
+@pytest.mark.asyncio
+async def test_translate_paragraphs_no_context(sample_text_file):
+    """Test translate_paragraphs without existing context (first call)"""
+    # Create mock context
+    mock_ctx = MagicMock()
+    mock_session = AsyncMock()
+    mock_ctx.session = mock_session
+
+    # Mock style analysis result
+    mock_style_result = MagicMock()
+    mock_style_result.content = TextContent(
+        type="text",
+        text='{"style": "technical", "tone": "formal", "domain": "AI", "initial_glossary": {"AI": "人工智能"}}'
+    )
+
+    # Mock translation result
+    mock_trans_result = MagicMock()
+    mock_trans_result.content = TextContent(
+        type="text",
+        text="1. 机器学习是人工智能的一个子集\n2. 它使系统能够自动从数据中学习"
+    )
+
+    # Mock term extraction result
+    mock_term_result = MagicMock()
+    mock_term_result.content = TextContent(
+        type="text",
+        text='{"machine learning": "机器学习"}'
+    )
+
+    # Set up side_effect for multiple create_message calls
+    mock_session.create_message = AsyncMock(side_effect=[
+        mock_style_result,
+        mock_trans_result,
+        mock_term_result
+    ])
+
+    # Test without context (first call)
+    result_json = await translate_paragraphs(
+        sample_text_file,
+        start=0,
+        count=2,
+        target_lang="zh-CN",
+        context=None,
+        ctx=mock_ctx
+    )
+    result = json.loads(result_json)
+
+    assert result["count"] == 2
+    assert len(result["translations"]) == 2
+    assert "context" in result
+    assert result["context"]["glossary"]["AI"] == "人工智能"
+    assert result["context"]["style_guide"]["style"] == "technical"
+    assert "machine learning" in result["context"]["glossary"]
+
+    # Verify create_message was called 3 times (style + translation + terms)
+    assert mock_session.create_message.call_count == 3
