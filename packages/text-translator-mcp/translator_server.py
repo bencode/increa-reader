@@ -8,6 +8,8 @@ from pathlib import Path
 
 import chardet
 from mcp.server.fastmcp import Context, FastMCP
+from mcp.server.session import ServerSession
+from mcp.types import SamplingMessage, TextContent
 
 mcp = FastMCP("text-translator")
 
@@ -97,7 +99,7 @@ def _parse_json_safe(text: str) -> dict:
 
 
 @mcp.tool()
-async def analyze_document(path: str, target_lang: str = "zh-CN", ctx: Context = None) -> str:
+async def analyze_document(path: str, target_lang: str = "zh-CN", ctx: Context[ServerSession, None] = None) -> str:
     """
     Analyze document and return metadata (does NOT return paragraph content)
 
@@ -158,7 +160,7 @@ async def translate_paragraphs(
     target_lang: str,
     context: dict | None = None,
     extract_new_terms: bool = True,
-    ctx: Context = None,
+    ctx: Context[ServerSession, None] = None,
 ) -> str:
     """
     Translate a batch of paragraphs from file (typically 5-20 paragraphs per batch)
@@ -268,12 +270,20 @@ async def translate_paragraphs(
 **Output:** Numbered list of translations only, no explanations.
 """
 
-    translation_result = await ctx.sample(
-        messages=translation_prompt,
+    translation_result = await ctx.session.create_message(
+        messages=[
+            SamplingMessage(
+                role="user",
+                content=TextContent(type="text", text=translation_prompt),
+            )
+        ],
         max_tokens=3000,
     )
 
-    translations = _parse_numbered_translations(translation_result.text)
+    if translation_result.content.type == "text":
+        translations = _parse_numbered_translations(translation_result.content.text)
+    else:
+        translations = []
 
     # 4. Extract new terms (optional)
     new_terms = {}
@@ -294,12 +304,20 @@ Return ONLY JSON:
 {{"term1": "translation1", "term2": "translation2"}}
 """
 
-        term_result = await ctx.sample(
-            messages=term_prompt,
+        term_result = await ctx.session.create_message(
+            messages=[
+                SamplingMessage(
+                    role="user",
+                    content=TextContent(type="text", text=term_prompt),
+                )
+            ],
             max_tokens=500,
         )
 
-        new_terms = _parse_json_safe(term_result.text)
+        if term_result.content.type == "text":
+            new_terms = _parse_json_safe(term_result.content.text)
+        else:
+            new_terms = {}
         glossary.update(new_terms)
 
     # 5. Build new context (for next call)
@@ -331,7 +349,7 @@ Return ONLY JSON:
     )
 
 
-async def _analyze_style(paragraphs: list[str], target_lang: str, ctx: Context) -> dict:
+async def _analyze_style(paragraphs: list[str], target_lang: str, ctx: Context[ServerSession, None]) -> dict:
     """Analyze text style"""
     sample_text = "\n\n".join(paragraphs)
 
@@ -354,12 +372,19 @@ Return JSON:
 }}
 """
 
-    result = await ctx.sample(
-        messages=prompt,
+    result = await ctx.session.create_message(
+        messages=[
+            SamplingMessage(
+                role="user",
+                content=TextContent(type="text", text=prompt),
+            )
+        ],
         max_tokens=1000,
     )
 
-    return _parse_json_safe(result.text)
+    if result.content.type == "text":
+        return _parse_json_safe(result.content.text)
+    return {}
 
 
 @mcp.tool()
