@@ -2,8 +2,9 @@
 Pytest fixtures for Text Translator MCP Server tests
 """
 
-import os
+import json
 import tempfile
+from pathlib import Path
 
 import pytest
 
@@ -28,7 +29,7 @@ They consist of interconnected layers of nodes."""
     temp_file.close()
 
     yield temp_file.name
-    os.unlink(temp_file.name)
+    Path(temp_file.name).unlink()
 
 
 @pytest.fixture
@@ -44,11 +45,9 @@ def sample_glossary():
 @pytest.fixture
 def sample_glossary_file(sample_glossary):
     """Create a sample glossary JSON file"""
-    import json
-
     temp_file = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8")
     json.dump(sample_glossary, temp_file, ensure_ascii=False)
     temp_file.close()
 
     yield temp_file.name
-    os.unlink(temp_file.name)
+    Path(temp_file.name).unlink()

@@ -11,10 +11,10 @@ from translator_server import (
     _parse_json_safe,
     _parse_numbered_translations,
     _read_file_with_encoding,
+    _split_paragraphs,
     list_supported_languages,
     load_glossary,
     save_glossary,
-    split_document,
 )
 
 
@@ -31,17 +31,25 @@ def test_read_file_not_found():
         _read_file_with_encoding("/nonexistent/file.txt")
 
 
-def test_split_document(sample_text_file):
-    """Test splitting document into paragraphs"""
-    result_json = split_document(sample_text_file)
-    result = json.loads(result_json)
+def test_split_paragraphs(sample_text_file):
+    """Test splitting text into paragraphs"""
+    content = _read_file_with_encoding(sample_text_file)
+    paragraphs = _split_paragraphs(content)
 
-    assert "paragraphs" in result
-    assert "total" in result
-    assert result["total"] > 0
-    assert len(result["paragraphs"]) == result["total"]
-    assert "Introduction" in result["paragraphs"][0]
-    assert any("Machine learning" in p for p in result["paragraphs"])
+    assert len(paragraphs) > 0
+    assert "Introduction" in paragraphs[0]
+    assert any("Machine learning" in p for p in paragraphs)
+
+
+def test_split_paragraphs_empty_lines():
+    """Test splitting with empty lines"""
+    text = "Para 1\n\nPara 2\n\n\n\nPara 3"
+    paragraphs = _split_paragraphs(text)
+
+    assert len(paragraphs) == 3
+    assert paragraphs[0] == "Para 1"
+    assert paragraphs[1] == "Para 2"
+    assert paragraphs[2] == "Para 3"
 
 
 def test_format_numbered_paragraphs():
@@ -137,8 +145,9 @@ def test_save_glossary(tmp_path):
     assert tmp_path.joinpath("test_glossary.json").exists()
 
     # Verify content
-    with open(output_path, encoding="utf-8") as f:
-        loaded = json.load(f)
+    from pathlib import Path
+
+    loaded = json.loads(Path(output_path).read_text(encoding="utf-8"))
     assert loaded == glossary
 
 

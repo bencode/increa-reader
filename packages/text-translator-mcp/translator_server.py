@@ -39,6 +39,12 @@ def _read_file_with_encoding(path: str) -> str:
     return raw_data.decode(encoding, errors="replace")
 
 
+def _split_paragraphs(text: str) -> list[str]:
+    """Split text into paragraphs (consistent logic used everywhere)"""
+    paragraphs = text.split("\n\n")
+    return [p.strip() for p in paragraphs if p.strip()]
+
+
 def _format_numbered_paragraphs(paragraphs: list[str]) -> str:
     """Format paragraphs as a numbered list"""
     return "\n\n".join(f"{i+1}. {para}" for i, para in enumerate(paragraphs))
@@ -91,40 +97,75 @@ def _parse_json_safe(text: str) -> dict:
 
 
 @mcp.tool()
-def split_document(path: str) -> str:
+async def analyze_document(path: str, target_lang: str = "zh-CN") -> str:
     """
-    Read and split document into paragraphs (using \\n\\n separator)
+    Analyze document and return metadata (does NOT return paragraph content)
 
     Args:
         path: File path
+        target_lang: Target language for style analysis
 
     Returns:
         JSON: {
-            "paragraphs": ["paragraph1", "paragraph2", ...],
-            "total": 100
+            "path": "...",
+            "total_paragraphs": 500,
+            "file_size": 12345,
+            "encoding": "utf-8",
+            "style_analysis": {
+                "style": "technical/academic/casual",
+                "tone": "formal/informal",
+                "domain": "physics/programming/...",
+                "initial_glossary": {"term": "translation", ...}
+            }
         }
     """
+    path_obj = Path(path)
+    file_size = path_obj.stat().st_size
     text = _read_file_with_encoding(path)
-    paragraphs = text.split("\n\n")
+    paragraphs = _split_paragraphs(text)
 
-    # Filter empty paragraphs
-    paragraphs = [p.strip() for p in paragraphs if p.strip()]
+    # Sample paragraphs for style analysis (head, middle, tail)
+    total = len(paragraphs)
+    sample_indices = [
+        0,  # First
+        total // 3,  # 1/3
+        total * 2 // 3,  # 2/3
+    ] if total > 3 else list(range(total))
 
-    return json.dumps({"paragraphs": paragraphs, "total": len(paragraphs)}, ensure_ascii=False)
+    sample_paragraphs = [paragraphs[i] for i in sample_indices if i < total]
+
+    # Analyze style
+    style_result = await _analyze_style(sample_paragraphs, target_lang)
+
+    return json.dumps(
+        {
+            "path": str(path),
+            "total_paragraphs": total,
+            "file_size": file_size,
+            "encoding": "utf-8",
+            "style_analysis": style_result,
+        },
+        ensure_ascii=False,
+        indent=2,
+    )
 
 
 @mcp.tool()
 async def translate_paragraphs(
-    paragraphs: list[str],
+    file_path: str,
+    start: int,
+    count: int,
     target_lang: str,
     context: dict | None = None,
     extract_new_terms: bool = True,
 ) -> str:
     """
-    Translate a batch of paragraphs (typically 5-10)
+    Translate a batch of paragraphs from file (typically 5-20 paragraphs per batch)
 
     Args:
-        paragraphs: List of paragraphs to translate
+        file_path: Path to the file
+        start: Starting paragraph index (0-based)
+        count: Number of paragraphs to translate
         target_lang: Target language (zh-CN, en, ja, etc.)
         context: Context from previous translation
             {
@@ -140,6 +181,8 @@ async def translate_paragraphs(
     Returns:
         JSON: {
             "translations": ["translation1", "translation2", ...],
+            "start": 0,
+            "count": 10,
             "context": {
                 "glossary": {...},
                 "previous_paragraphs": [...],
@@ -152,6 +195,25 @@ async def translate_paragraphs(
             }
         }
     """
+    # Read and split file (using consistent logic)
+    text = _read_file_with_encoding(file_path)
+    all_paragraphs = _split_paragraphs(text)
+
+    # Extract target paragraphs
+    end = min(start + count, len(all_paragraphs))
+    paragraphs = all_paragraphs[start:end]
+
+    if not paragraphs:
+        return json.dumps(
+            {
+                "translations": [],
+                "start": start,
+                "count": 0,
+                "context": context or {},
+                "stats": {"translated": 0, "new_terms": 0, "glossary_size": 0},
+            }
+        )
+
     # 1. Initialize or load context
     if context is None:
         # First translation, analyze style from current paragraphs
@@ -254,6 +316,8 @@ Return ONLY JSON:
     return json.dumps(
         {
             "translations": translations,
+            "start": start,
+            "count": len(translations),
             "context": new_context,
             "stats": {
                 "translated": len(translations),
@@ -378,23 +442,28 @@ def translate_file(
 **Input file:** {input_path}
 **Target language:** {target_lang}
 **Output format:** {output_format}
+**Chunk size:** {chunk_size} paragraphs per batch
 
 Please follow these steps:
 
-## Step 1: Split the document
-Use the `split_document` tool to read and split the document:
+## Step 1: Analyze the document
+Use the `analyze_document` tool to get file metadata:
 ```
-split_document(path="{input_path}")
+analyze_document(path="{input_path}", target_lang="{target_lang}")
 ```
-Save the returned `paragraphs` and `total`.
+Save the returned `total_paragraphs` and `style_analysis`.
 
 ## Step 2: Translate in batches (preserving context)
-Use the `translate_paragraphs` tool, translating {chunk_size} paragraphs at a time:
+Use the `translate_paragraphs` tool to translate {chunk_size} paragraphs at a time.
 
-1. First batch (context=None):
+**Important:** Pass the file path (not paragraph content) to the tool!
+
+1. First batch (start=0, context=None):
    ```
    translate_paragraphs(
-       paragraphs=[first {chunk_size} paragraphs],
+       file_path="{input_path}",
+       start=0,
+       count={chunk_size},
        target_lang="{target_lang}",
        context=None
    )
@@ -403,46 +472,59 @@ Use the `translate_paragraphs` tool, translating {chunk_size} paragraphs at a ti
 2. Subsequent batches (pass previous context):
    ```
    translate_paragraphs(
-       paragraphs=[next {chunk_size} paragraphs],
+       file_path="{input_path}",
+       start=<next_start>,
+       count={chunk_size},
        target_lang="{target_lang}",
        context=<context from previous call>
    )
    ```
 
-3. Repeat until all paragraphs are translated
+3. Repeat until `start >= total_paragraphs`
 
-**Notes:**
-- Show progress after each batch: `Translated X/{'{total}'} paragraphs (glossary: Y terms)`
-- Save each returned `translations` to a list
+**Progress tracking:**
+- After each batch, show: `Translated X/{{total}} paragraphs (glossary: Y terms)`
+- Collect all `translations` from each batch
 - Pass each `context` to the next batch
 
-## Step 3: Save the file
+## Step 3: Reconstruct original paragraphs (for interleaved format only)
+If output_format is "interleaved", you need the original paragraphs.
+
+Use the Read tool to get file content, then split using the SAME logic as the server:
+```python
+# Use Read tool to get file content (this returns the text directly)
+file_content = <result from Read tool with file_path="{input_path}">
+
+# Split using SAME logic: split by "\\n\\n" and filter empty
+original_paragraphs = [p.strip() for p in file_content.split("\\n\\n") if p.strip()]
+```
+
+**Important**: The splitting logic MUST match what `translate_paragraphs` uses internally!
+
+## Step 4: Save the translated file
 Save according to `output_format`:
 
 ### If "interleaved" format:
 ```python
-# Combine original and translation
+# Combine original and translation (interleaved)
 lines = []
 for orig, trans in zip(original_paragraphs, all_translations):
-    lines.append(orig)      # Original
+    lines.append(orig)      # Original paragraph
     lines.append("")        # Empty line
     lines.append(trans)     # Translation
     lines.append("")        # Empty line
 
 content = "\\n".join(lines)
+Write(file_path="{output_path}", content=content)
 ```
 
 ### If "translation_only" format:
 ```python
 content = "\\n\\n".join(all_translations)
-```
-
-Use Write tool to save:
-```
 Write(file_path="{output_path}", content=content)
 ```
 
-## Step 4: Save the glossary
+## Step 5: Save the glossary
 Save the final glossary as JSON:
 ```
 Write(
@@ -456,7 +538,7 @@ Report translation results:
 - Output file: {output_path}
 - Glossary: {glossary_path}
 - Total paragraphs: X
-- Glossary size: Y
+- Glossary size: Y terms
 """,
             }
         ]
