@@ -1,0 +1,10 @@
+{
+  "name": "@increa/text-translator-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for context-aware text translation",
+  "private": true,
+  "scripts": {
+    "test": "cd ../.. && python -m pytest packages/text-translator-mcp/tests",
+    "test:cov": "cd ../.. && python -m pytest packages/text-translator-mcp/tests --cov"
+  }
+}
