@@ -1,0 +1,13 @@
+{
+  "name": "@increa/pdf-reader-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for PDF reading (Python package)",
+  "private": true,
+  "scripts": {
+    "dev": "python pdf_reader_server.py",
+    "test": "pytest tests/ -v",
+    "test:cov": "pytest tests/ --cov=pdf_reader_server",
+    "lint": "ruff check .",
+    "format": "ruff format ."
+  }
+}

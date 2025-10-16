@@ -8,14 +8,27 @@ import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
-
 import { fetchPreview } from './api'
+import { PDFViewer } from './pdf-viewer'
 
 type PreviewData =
   | { type: 'markdown'; body: string }
   | { type: 'code'; lang: string; body: string }
   | { type: 'image'; path: string }
+  | { type: 'pdf'; path: string; metadata: PDFMetadata }
   | { type: 'unsupported'; path: string }
+
+type PDFMetadata = {
+  page_count: number
+  title: string
+  author: string
+  subject: string
+  creator: string
+  producer: string
+  creation_date: string
+  modification_date: string
+  encrypted: boolean
+}
 
 export function FileViewer() {
   const { repoName, '*': filePath } = useParams<{ repoName: string; '*': string }>()
@@ -63,7 +76,7 @@ export function FileViewer() {
   return (
     <div className="h-full overflow-auto scroll-body">
       {preview.type === 'markdown' && (
-        <div className="prose prose-slate dark:prose-invert max-w-none p-4 prose-headings:text-lg prose-headings:my-2 prose-h1:text-2xl prose-h1:my-3 prose-h2:text-xl prose-h2:my-2.5 prose-h3:text-lg prose-h3:my-2 prose-h4:text-base prose-h4:my-1.5 prose-h5:text-sm prose-h5:my-1 prose-h6:text-xs prose-h6:my-1">
+        <div className="prose prose-slate dark:prose-invert max-w-none p-4 prose-headings:text-lg prose-headings:my-2 prose-h1:text-2xl prose-h1:my-3 prose-h2:text-xl prose-h2:my-2.5 prose-h3:text-lg prose-h3:my-2 prose-h4:text-base prose-h4:my-1.5 prose-h5:text-sm prose-h5:my-1 prose-h6:text-xs prose-h6:my-1 prose-p:my-1 prose-p:leading-relaxed">
           <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkMath]}
             rehypePlugins={[rehypeKatex]}
@@ -113,6 +126,10 @@ export function FileViewer() {
             className="max-w-full max-h-full object-contain"
           />
         </div>
+      )}
+
+      {preview.type === 'pdf' && (
+        <PDFViewer repo={repoName!} filePath={preview.path} metadata={preview.metadata} />
       )}
 
       {preview.type === 'unsupported' && (

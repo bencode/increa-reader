@@ -6,15 +6,14 @@ import type { Message as MessageType, Repo } from '@/types/chat'
 
 const HELP_TEXT = `Available commands:
   /cd <repo>   Switch to repo context
-  /cd ~        Switch to all repos
   /pwd         Show current context
   /clear       Clear messages
   /help        Show this help
 
 Examples:
-  $ /cd increa-reader
+  $ /cd pages
   $ where is FileTree?
-  $ /cd ~
+  $ /cd book
 `
 
 const parseCommand = (input: string) => {
@@ -27,25 +26,44 @@ const parseCommand = (input: string) => {
 }
 
 const extractTextContent = (msg: any): string => {
+  // Handle Python SDK assistant message format
+  if (msg.type === 'assistant' && msg.content) {
+    return msg.content
+  }
+
+  // Handle TypeScript SDK message format (backward compatibility)
   if (msg.type === 'assistant' && msg.message?.content) {
     return msg.message.content
       .filter((block: any) => block.type === 'text')
       .map((block: any) => block.text)
       .join('\n')
   }
+
+  // Handle stream events
   if (msg.type === 'stream_event' && msg.event?.type === 'content_block_delta') {
     return msg.event.delta?.text || ''
   }
+
   return ''
 }
 
 export const ChatPanel = () => {
   const [messages, setMessages] = useState<MessageType[]>([])
   const [input, setInput] = useState('')
-  const [currentRepo, setCurrentRepo] = useState<string>('~')
+  const [currentRepo, setCurrentRepo] = useState<string>('')
   const [sessionId, setSessionId] = useState<string>()
   const [isStreaming, setIsStreaming] = useState(false)
   const [repos, setRepos] = useState<Repo[]>([])
+  const [stats, setStats] = useState<{
+    sessionId?: string
+    duration?: number
+    usage?: {
+      input_tokens: number
+      output_tokens: number
+      cache_creation_input_tokens?: number
+      cache_read_input_tokens?: number
+    }
+  }>()
   const scrollRef = useRef<HTMLDivElement>(null)
   const eventSourceRef = useRef<EventSource>()
 
@@ -53,7 +71,12 @@ export const ChatPanel = () => {
     fetch('/api/workspace/tree')
       .then(res => res.json())
       .then(data => {
-        setRepos(data.repos || [])
+        const repoList = data.data || []
+        setRepos(repoList)
+        // Set first repo as default
+        if (repoList.length > 0 && !currentRepo) {
+          setCurrentRepo(repoList[0].name)
+        }
       })
       .catch(console.error)
   }, [])
@@ -94,25 +117,20 @@ export const ChatPanel = () => {
     switch (name) {
       case 'cd':
         if (!args) {
-          addMessage('error', 'Usage: /cd <repo|~>')
+          addMessage('error', 'Usage: /cd <repo>')
           return
         }
-        if (args === '~') {
-          setCurrentRepo('~')
-          addMessage('system', 'Context → all repos')
+        const found = repos.find(r => r.name === args)
+        if (found) {
+          setCurrentRepo(args)
+          addMessage('system', `Context → ${args}`)
         } else {
-          const found = repos.find(r => r.name === args)
-          if (found) {
-            setCurrentRepo(args)
-            addMessage('system', `Context → ${args}`)
-          } else {
-            addMessage('error', `Repo not found: ${args}`)
-          }
+          addMessage('error', `Repo not found: ${args}`)
         }
         break
 
       case 'pwd':
-        addMessage('system', currentRepo === '~' ? 'all repos' : currentRepo)
+        addMessage('system', currentRepo || 'No repo selected')
         break
 
       case 'help':
@@ -180,6 +198,7 @@ export const ChatPanel = () => {
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const data = line.slice(6)
+            console.log('message', { data })
             try {
               const msg = JSON.parse(data)
 
@@ -188,10 +207,10 @@ export const ChatPanel = () => {
               }
 
               if (msg.type === 'assistant') {
-                assistantContent = extractTextContent(msg)
+                const content = extractTextContent(msg)
                 setMessages(prev => [
                   ...prev.slice(0, -1),
-                  { ...assistantMsg, content: assistantContent, isStreaming: true },
+                  { ...assistantMsg, content, isStreaming: true },
                 ])
               }
 
@@ -207,10 +226,12 @@ export const ChatPanel = () => {
               }
 
               if (msg.type === 'result') {
-                setMessages(prev => [
-                  ...prev.slice(0, -1),
-                  { ...assistantMsg, content: assistantContent, isStreaming: false },
-                ])
+                // 更新统计信息
+                setStats({
+                  sessionId: msg.session_id,
+                  duration: msg.duration_ms,
+                  usage: msg.usage,
+                })
                 setIsStreaming(false)
               }
             } catch (e) {
@@ -244,8 +265,7 @@ export const ChatPanel = () => {
       </ScrollArea>
 
       <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex items-center gap-2">
-        <span className="text-blue-600 dark:text-blue-400">user@{currentRepo === '~' ? '~' : currentRepo}</span>
-        <span className="text-blue-700 dark:text-blue-500">$</span>
+        <span className="text-blue-700 dark:text-blue-500">&gt;</span>
         <input
           value={input}
           onChange={e => setInput(e.target.value)}
@@ -256,6 +276,94 @@ export const ChatPanel = () => {
           disabled={isStreaming}
         />
       </div>
+
+      {/* 统计信息底部 */}
+      {stats && (stats.sessionId || stats.duration || stats.usage) && (
+        <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
+              <div className="flex items-center gap-1">
+                <span className="text-blue-600 dark:text-blue-400">
+                  user@{currentRepo || 'loading...'}
+                </span>
+              </div>
+
+              {stats.sessionId && (
+                <div className="flex items-center gap-1">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"
+                    />
+                  </svg>
+                  <span className="font-mono">{stats.sessionId.slice(0, 8)}</span>
+                </div>
+              )}
+
+              {stats.duration && (
+                <div className="flex items-center gap-1">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <span>{(stats.duration / 1000).toFixed(1)}s</span>
+                </div>
+              )}
+
+              {stats.usage && (
+                <div className="flex items-center gap-2">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                    />
+                  </svg>
+                  <div className="flex items-center gap-1">
+                    <span className="text-gray-500">In:</span>
+                    <span className="font-medium">{stats.usage.input_tokens.toLocaleString()}</span>
+                  </div>
+                  <span className="text-gray-400">→</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-gray-500">Out:</span>
+                    <span className="font-medium">
+                      {stats.usage.output_tokens.toLocaleString()}
+                    </span>
+                  </div>
+                  {stats.usage.cache_creation_input_tokens && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-blue-600 dark:text-blue-400">
+                        +{stats.usage.cache_creation_input_tokens.toLocaleString()} cache
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {sessionId && (
+              <div className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span>Active</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -7,3 +7,18 @@ dist
 coverage
 .vite
 .turbo
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.venv/
+venv/
+ENV/
+
+# Test fixtures
+packages/ui/fixture/
+packages/server/test_*.py
