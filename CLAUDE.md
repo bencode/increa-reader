@@ -4,9 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目结构
 
-pnpm workspace monorepo，包含两个包：
+pnpm workspace monorepo，包含三个包：
 - `packages/ui` - React 前端应用
 - `packages/server` - FastAPI 后端服务 (Python)
+- `packages/pdf-reader-mcp` - MCP PDF 阅读器服务 (Python)
 
 ## 常用命令
 
@@ -37,6 +38,10 @@ cd packages/server && pip install -r requirements.txt
 ### 测试
 ```bash
 pnpm test  # 运行所有测试（目前尚未实现）
+
+# MCP 包测试
+pnpm --filter @increa/pdf-reader-mcp test       # 运行测试
+pnpm --filter @increa/pdf-reader-mcp test:cov   # 运行测试（含覆盖率）
 ```
 
 ## 架构概览
@@ -73,6 +78,7 @@ pnpm test  # 运行所有测试（目前尚未实现）
 - **MCP 工具**:
   - `open_pdf`, `page_count`, `extract_text`, `render_page_png`, `search_text`, `close_pdf`
   - 所有工具通过 `claude-agent-sdk` 注册，前缀为 `mcp__pdf-reader__`
+  - MCP 服务独立包：`packages/pdf-reader-mcp`（可单独部署到 Claude Desktop/Code）
 
 ### 数据流
 
@@ -113,7 +119,8 @@ pnpm test  # 运行所有测试（目前尚未实现）
 
 ### Python 环境
 - 推荐使用虚拟环境：`python -m venv .venv && source .venv/bin/activate`
-- 依赖管理：`pip install -r requirements.txt`
+- Server 包依赖管理：`cd packages/server && pip install -r requirements.txt`
+- MCP 包依赖管理：`cd packages/pdf-reader-mcp && pip install -e ".[dev]"`
 - 服务器启动：`python server.py`
 
 ## 关键实现细节
