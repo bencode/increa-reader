@@ -68,30 +68,54 @@ Prompt 会自动引导 Claude Code 完成：
 
 ### Available Tools
 
-#### 1. split_document
+#### 1. analyze_document
 
-Split a text file into paragraphs (using `\n\n` separator).
+Analyze document structure and writing style (returns metadata only, not content).
 
 ```python
-split_document(path="/path/to/file.txt")
-# Returns: {"paragraphs": [...], "total": 100}
+analyze_document(
+    path="/path/to/file.txt",
+    target_lang="zh-CN"
+)
+# Returns: {
+#   "path": "...",
+#   "total_paragraphs": 500,
+#   "file_size": 12345,
+#   "encoding": "utf-8",
+#   "style_analysis": {
+#     "style": "technical/academic/casual",
+#     "tone": "formal/informal",
+#     "domain": "physics/programming/...",
+#     "initial_glossary": {"term": "translation", ...}
+#   }
+# }
 ```
 
 #### 2. translate_paragraphs
 
-Translate a batch of paragraphs with context awareness.
+Translate a batch of paragraphs from file (by index range).
+
+**Important**: Pass the file path and index range, not the paragraph content!
 
 ```python
 translate_paragraphs(
-    paragraphs=["Para 1", "Para 2", ...],
+    file_path="/path/to/file.txt",
+    start=0,               # Starting paragraph index (0-based)
+    count=10,              # Number of paragraphs to translate
     target_lang="zh-CN",
-    context=None,  # First call, or pass previous context
+    context=None,          # First call, or pass previous context
     extract_new_terms=True
 )
 # Returns: {
-#   "translations": [...],
+#   "translations": ["translation1", "translation2", ...],
+#   "start": 0,
+#   "count": 10,
 #   "context": {...},  # Pass to next call
-#   "stats": {...}
+#   "stats": {
+#     "translated": 10,
+#     "new_terms": 5,
+#     "glossary_size": 25
+#   }
 # }
 ```
 
@@ -137,25 +161,34 @@ User: "翻译文件 /path/to/technical-doc.md，目标语言 en，仅保存译�
 ### 方式 2：手动调用工具（高级用户）
 
 ```python
-# 1. Split document
-result = split_document("/path/to/article.txt")
-paragraphs = result["paragraphs"]
+# 1. Analyze document to get total paragraphs
+import json
+metadata = json.loads(analyze_document(
+    path="/path/to/article.txt",
+    target_lang="zh-CN"
+))
+total_paragraphs = metadata["total_paragraphs"]
 
 # 2. Translate in chunks (e.g., 10 paragraphs at a time)
 context = None
 all_translations = []
+chunk_size = 10
 
-for i in range(0, len(paragraphs), 10):
-    chunk = paragraphs[i:i+10]
-    result = translate_paragraphs(
-        paragraphs=chunk,
+for start in range(0, total_paragraphs, chunk_size):
+    result = json.loads(translate_paragraphs(
+        file_path="/path/to/article.txt",
+        start=start,
+        count=chunk_size,
         target_lang="zh-CN",
         context=context  # Pass previous context
-    )
+    ))
     all_translations.extend(result["translations"])
     context = result["context"]  # Update for next chunk
 
-# 3. Save results (implement your own save logic)
+    # Progress tracking
+    print(f"Translated {start + result['count']}/{total_paragraphs} paragraphs")
+
+# 3. Save results (implement your own save logic using Write tool)
 ```
 
 ## How It Works

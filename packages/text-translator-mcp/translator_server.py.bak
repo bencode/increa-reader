@@ -101,32 +101,18 @@ def _parse_json_safe(text: str) -> dict:
 async def _call_claude(prompt: str) -> str:
     """Call claude --print to get LLM response"""
     import os
-    import shlex
 
     # Get claude command from environment variable or use default
     claude_cmd = os.getenv("CLAUDE_COMMAND", "claude")
 
-    # Escape the prompt for shell
-    escaped_prompt = shlex.quote(prompt)
-
-    # Build the full shell command
-    shell_cmd = f'{claude_cmd} --print --output-format text {escaped_prompt}'
-
-    # Prepare environment variables - inherit current env and pass through Anthropic settings
-    env = os.environ.copy()
-    # These env vars should already be set by MCP config, but we ensure they're passed through
-    if "ANTHROPIC_BASE_URL" in os.environ:
-        env["ANTHROPIC_BASE_URL"] = os.environ["ANTHROPIC_BASE_URL"]
-    if "ANTHROPIC_AUTH_TOKEN" in os.environ:
-        env["ANTHROPIC_AUTH_TOKEN"] = os.environ["ANTHROPIC_AUTH_TOKEN"]
-
     try:
-        process = await asyncio.create_subprocess_shell(
-            shell_cmd,
+        process = await asyncio.create_subprocess_exec(
+            claude_cmd,
+            "--print",
+            "--output-format", "text",
+            prompt,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
-            executable='/bin/bash',
-            env=env,  # Pass environment variables
         )
         stdout, stderr = await process.communicate()
 
@@ -135,8 +121,8 @@ async def _call_claude(prompt: str) -> str:
             raise RuntimeError(f"Claude command failed: {error_msg}")
 
         return stdout.decode('utf-8').strip()
-    except Exception as e:
-        raise RuntimeError(f"Claude command '{claude_cmd}' failed: {e}")
+    except FileNotFoundError:
+        raise RuntimeError(f"Claude command '{claude_cmd}' not found. Set CLAUDE_COMMAND environment variable in MCP config.")
 
 
 @mcp.tool()
@@ -395,6 +381,42 @@ Return ONLY JSON (no markdown):
     )
 
 
+async def _analyze_style(paragraphs: list[str], target_lang: str, ctx: Context[ServerSession, None]) -> dict:
+    """Analyze text style"""
+    sample_text = "\n\n".join(paragraphs)
+
+    prompt = f"""Analyze the style of this text:
+
+{sample_text}
+
+Extract:
+1. Writing style (technical/academic/casual/narrative)
+2. Tone (formal/informal/neutral)
+3. Domain/field
+4. Initial glossary: Extract 10-15 key terms that should be consistently translated to {target_lang}
+
+Return JSON:
+{{
+    "style": "...",
+    "tone": "...",
+    "domain": "...",
+    "initial_glossary": {{"term": "translation", ...}}
+}}
+"""
+
+    result = await ctx.session.create_message(
+        messages=[
+            SamplingMessage(
+                role="user",
+                content=TextContent(type="text", text=prompt),
+            )
+        ],
+        max_tokens=1000,
+    )
+
+    if result.content.type == "text":
+        return _parse_json_safe(result.content.text)
+    return {}
 
 
 @mcp.tool()

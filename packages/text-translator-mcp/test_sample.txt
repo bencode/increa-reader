@@ -1,0 +1,11 @@
+Introduction to Machine Learning
+
+Machine learning is a subset of artificial intelligence that enables systems to learn and improve from experience without being explicitly programmed.
+
+Neural Networks
+
+Neural networks are computing systems inspired by biological neural networks. They consist of interconnected nodes that process information.
+
+Applications
+
+Machine learning has numerous applications including image recognition, natural language processing, and predictive analytics.

@@ -6,6 +6,18 @@
         "shadcn@latest",
         "mcp"
       ]
+    },
+    "text-translator": {
+      "type": "stdio",
+      "command": "/Users/bencode/work/increa-reader/packages/text-translator-mcp/.venv/bin/python",
+      "args": [
+        "/Users/bencode/work/increa-reader/packages/text-translator-mcp/translator_server.py"
+      ],
+      "env": {
+        "CLAUDE_COMMAND": "claude",
+        "ANTHROPIC_BASE_URL": "https://hk1.pincc.ai/api",
+        "ANTHROPIC_AUTH_TOKEN": "cr_5f517f7310b05c879b6b65dbd486634a4baf786e17e3b035c0f12b32f75ea4d6"
+      }
     }
   }
 }

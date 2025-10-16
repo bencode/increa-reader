@@ -236,7 +236,7 @@ async def test_analyze_document(sample_text_file):
     mock_session.create_message = AsyncMock(return_value=mock_result)
 
     # Test the function
-    result_json = await analyze_document(sample_text_file, "zh-CN", mock_ctx)
+    result_json = await analyze_document(sample_text_file, "zh-CN", ctx=mock_ctx)
     result = json.loads(result_json)
 
     assert "path" in result
