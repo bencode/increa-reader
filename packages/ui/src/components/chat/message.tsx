@@ -8,7 +8,42 @@ import { oneLight, oneDark } from 'react-syntax-highlighter/dist/esm/styles/pris
 import type { Message as MessageType } from '@/types/chat'
 import { cn } from '@/lib/utils'
 
-export const Message = ({ role, content, isStreaming }: MessageType) => {
+const getToolIcon = (toolName: string) => {
+  switch (toolName) {
+    case 'Read':
+      return '📖'
+    case 'Grep':
+      return '🔍'
+    case 'Glob':
+      return '📁'
+    case 'TodoWrite':
+      return '✏️'
+    case 'Bash':
+      return '⚡'
+    default:
+      return '🔧'
+  }
+}
+
+const formatToolParams = (toolName: string, params?: Record<string, any>) => {
+  if (!params) return ''
+  switch (toolName) {
+    case 'Read':
+      return params.file_path?.split('/').pop() || ''
+    case 'TodoWrite':
+      return `${params.todos?.length || 0} items`
+    case 'Grep':
+      return params.pattern || ''
+    case 'Glob':
+      return params.pattern || ''
+    case 'Bash':
+      return params.command?.slice(0, 30) || ''
+    default:
+      return ''
+  }
+}
+
+export const Message = ({ role, content, isStreaming, toolCalls }: MessageType) => {
   const prefix = role === 'user' ? '$' : role === 'system' ? '>' : role === 'error' ? '!' : '<'
   const textColor = role === 'user' ? 'text-blue-600 dark:text-blue-400' : role === 'error' ? 'text-red-500' : ''
   const syntaxTheme = oneDark
@@ -18,6 +53,30 @@ export const Message = ({ role, content, isStreaming }: MessageType) => {
       <div className="flex gap-2">
         <span className="opacity-70">{prefix}</span>
         <div className="flex-1">
+          {/* Tool calls display */}
+          {toolCalls && toolCalls.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {toolCalls.map((tool, i) => (
+                <span
+                  key={i}
+                  className={cn(
+                    'inline-flex items-center gap-1 px-2 py-1 rounded text-xs',
+                    tool.status === 'running'
+                      ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                      : 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                  )}
+                >
+                  <span>{getToolIcon(tool.name)}</span>
+                  <span className="font-medium">{tool.name}</span>
+                  {formatToolParams(tool.name, tool.params) && (
+                    <span className="opacity-70">· {formatToolParams(tool.name, tool.params)}</span>
+                  )}
+                  {tool.status === 'running' && <span className="animate-pulse">●</span>}
+                </span>
+              ))}
+            </div>
+          )}
+
           {role === 'user' || role === 'system' || role === 'error' ? (
             <span>{content}</span>
           ) : (

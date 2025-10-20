@@ -1,8 +1,15 @@
+export type ToolCall = {
+  name: string
+  status: 'running' | 'done'
+  params?: Record<string, any>
+}
+
 export type Message = {
   role: 'user' | 'assistant' | 'system' | 'error'
   content: string
   timestamp: number
   isStreaming?: boolean
+  toolCalls?: ToolCall[]
   sessionId?: string
   duration?: number
   usage?: {

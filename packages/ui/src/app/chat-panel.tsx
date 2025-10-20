@@ -48,6 +48,15 @@ const extractTextContent = (msg: any): string => {
   return ''
 }
 
+const detectToolFromParams = (params: Record<string, any>): string => {
+  if ('file_path' in params) return 'Read'
+  if ('todos' in params) return 'TodoWrite'
+  if ('pattern' in params && 'path' in params) return 'Grep'
+  if ('pattern' in params) return 'Glob'
+  if ('command' in params) return 'Bash'
+  return 'Tool'
+}
+
 export const ChatPanel = () => {
   const [messages, setMessages] = useState<MessageType[]>([])
   const [input, setInput] = useState('')
@@ -166,11 +175,13 @@ export const ChatPanel = () => {
     setIsStreaming(true)
 
     let assistantContent = ''
+    let toolCalls: MessageType['toolCalls'] = []
     const assistantMsg: MessageType = {
       role: 'assistant',
       content: '',
       timestamp: Date.now(),
       isStreaming: true,
+      toolCalls: [],
     }
     setMessages(prev => [...prev, assistantMsg])
 
@@ -214,21 +225,57 @@ export const ChatPanel = () => {
               // Step 1: Only use stream_event for incremental updates
               // Ignore assistant messages during streaming (they are just snapshots)
               if (msg.type === 'stream_event') {
+                const delta = msg.event?.delta
+
+                // Handle text delta
                 const deltaText = extractTextContent(msg)
                 if (deltaText) {
                   assistantContent += deltaText
                   setMessages(prev => [
                     ...prev.slice(0, -1),
-                    { ...assistantMsg, content: assistantContent, isStreaming: true },
+                    { ...assistantMsg, content: assistantContent, toolCalls, isStreaming: true },
                   ])
+                }
+
+                // Step 2: Handle tool calls (input_json_delta)
+                if (delta?.type === 'input_json_delta') {
+                  try {
+                    const params = JSON.parse(delta.partial_json)
+                    const toolName = detectToolFromParams(params)
+
+                    // Add or update tool call
+                    const existingIndex = toolCalls?.findIndex(t => t.name === toolName && t.status === 'running')
+                    if (existingIndex !== undefined && existingIndex >= 0) {
+                      // Update existing tool call
+                      toolCalls![existingIndex].params = params
+                    } else {
+                      // Add new tool call
+                      toolCalls = [...(toolCalls || []), { name: toolName, status: 'running', params }]
+                    }
+
+                    setMessages(prev => [
+                      ...prev.slice(0, -1),
+                      { ...assistantMsg, content: assistantContent, toolCalls, isStreaming: true },
+                    ])
+                  } catch (e) {
+                    // Partial JSON may not be parseable yet, ignore
+                  }
                 }
               }
 
               if (msg.type === 'result') {
+                // Mark all tools as done
+                const completedTools = toolCalls?.map(t => ({ ...t, status: 'done' as const }))
+
                 // Mark streaming complete
                 setMessages(prev => [
                   ...prev.slice(0, -1),
-                  { ...assistantMsg, content: assistantContent, isStreaming: false },
+                  {
+                    ...assistantMsg,
+                    content: assistantContent,
+                    toolCalls: completedTools,
+                    isStreaming: false,
+                  },
                 ])
                 // Update statistics
                 setStats({
