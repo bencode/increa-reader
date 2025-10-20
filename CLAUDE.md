@@ -156,3 +156,4 @@ UI 和 Server 各自定义了相似但独立的类型（`TreeNode`, `RepoResourc
 - `PORT`: Server 端口（默认 3000）
 - `ANTHROPIC_API_KEY`: Claude API 密钥
 - `ANTHROPIC_BASE_URL`: Claude API 基础URL（可选）
+- 用英文commit

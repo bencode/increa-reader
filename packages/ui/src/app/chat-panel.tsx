@@ -211,14 +211,8 @@ export const ChatPanel = () => {
                 setSessionId(msg.session_id)
               }
 
-              if (msg.type === 'assistant') {
-                const content = extractTextContent(msg)
-                setMessages(prev => [
-                  ...prev.slice(0, -1),
-                  { ...assistantMsg, content, isStreaming: true },
-                ])
-              }
-
+              // Step 1: Only use stream_event for incremental updates
+              // Ignore assistant messages during streaming (they are just snapshots)
               if (msg.type === 'stream_event') {
                 const deltaText = extractTextContent(msg)
                 if (deltaText) {
@@ -231,7 +225,12 @@ export const ChatPanel = () => {
               }
 
               if (msg.type === 'result') {
-                // 更新统计信息
+                // Mark streaming complete
+                setMessages(prev => [
+                  ...prev.slice(0, -1),
+                  { ...assistantMsg, content: assistantContent, isStreaming: false },
+                ])
+                // Update statistics
                 setStats({
                   sessionId: msg.session_id,
                   duration: msg.duration_ms,
