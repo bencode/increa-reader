@@ -4,6 +4,7 @@ File viewing and preview API endpoints
 """
 
 import json
+import mimetypes
 from pathlib import Path
 from typing import Dict, Any
 
@@ -154,7 +155,14 @@ def create_view_routes(app, workspace_config: WorkspaceConfig):
                 content = await f.read()
             return {"type": "code", "lang": lang, "body": content}
 
-        # Unknown extension: try to detect if it's a text file
+        # Unknown extension: check MIME type first
+        mime, _ = mimetypes.guess_type(str(file_path))
+
+        # If MIME type is known and not text/*, treat as unsupported
+        if mime is not None and not mime.startswith("text"):
+            return {"type": "unsupported", "path": path}
+
+        # MIME is text/* or unknown, verify with content detection
         async with aiofiles.open(file_path, 'rb') as f:
             content_bytes = await f.read()
 
