@@ -2,7 +2,7 @@ import { Outlet } from 'react-router-dom'
 
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 
-import { ChatPanel } from './chat-panel'
+import { ChatPanel } from './chat'
 import { LeftPanel } from './left-panel'
 
 export function Layout() {

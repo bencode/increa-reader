@@ -1,61 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Message } from '@/components/chat/message'
 import type { Message as MessageType, Repo } from '@/types/chat'
 import { useGetContext } from '@/stores/view-context'
-
-const HELP_TEXT = `Available commands:
-  /cd <repo>   Switch to repo context
-  /pwd         Show current context
-  /clear       Clear messages
-  /help        Show this help
-
-Examples:
-  $ /cd pages
-  $ where is FileTree?
-  $ /cd book
-`
-
-const parseCommand = (input: string) => {
-  const match = input.match(/^\/(\w+)(?:\s+(.*))?$/)
-  if (!match) return null
-  return {
-    name: match[1],
-    args: match[2]?.trim() || '',
-  }
-}
-
-const extractTextContent = (msg: any): string => {
-  // Handle Python SDK assistant message format
-  if (msg.type === 'assistant' && msg.content) {
-    return msg.content
-  }
-
-  // Handle TypeScript SDK message format (backward compatibility)
-  if (msg.type === 'assistant' && msg.message?.content) {
-    return msg.message.content
-      .filter((block: any) => block.type === 'text')
-      .map((block: any) => block.text)
-      .join('\n')
-  }
-
-  // Handle stream events
-  if (msg.type === 'stream_event' && msg.event?.type === 'content_block_delta') {
-    return msg.event.delta?.text || ''
-  }
-
-  return ''
-}
-
-const detectToolFromParams = (params: Record<string, any>): string => {
-  if ('file_path' in params) return 'Read'
-  if ('todos' in params) return 'TodoWrite'
-  if ('pattern' in params && 'path' in params) return 'Grep'
-  if ('pattern' in params) return 'Glob'
-  if ('command' in params) return 'Bash'
-  return 'Tool'
-}
+import { HELP_TEXT, parseCommand, extractTextContent, detectToolFromParams } from './utils'
+import { MessageList } from './message-list'
+import { ChatInput } from './chat-input'
+import { ChatStats } from './chat-stats'
 
 export const ChatPanel = () => {
   const [messages, setMessages] = useState<MessageType[]>([])
@@ -306,115 +256,14 @@ export const ChatPanel = () => {
 
   return (
     <div className="flex flex-col h-full font-mono bg-gray-50 dark:bg-gray-900">
-      <ScrollArea className="flex-1 min-h-0 px-2 py-2">
-        <div className="">
-          {messages.map((msg, i) => (
-            <Message key={i} {...msg} />
-          ))}
-          <div ref={scrollRef} />
-        </div>
-      </ScrollArea>
-
-      <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex items-center gap-2">
-        <span className="text-blue-700 dark:text-blue-500">&gt;</span>
-        <input
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          className="flex-1 bg-transparent outline-none caret-blue-500 text-blue-700 dark:text-blue-300 placeholder:text-gray-500 dark:placeholder:text-gray-400"
-          placeholder="type /help for commands"
-          spellCheck={false}
-          disabled={isStreaming}
-        />
-      </div>
-
-      {/* 统计信息底部 */}
-      {stats && (stats.sessionId || stats.duration || stats.usage) && (
-        <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
-              <div className="flex items-center gap-1">
-                <span className="text-blue-600 dark:text-blue-400">
-                  user@{currentRepo || 'loading...'}
-                </span>
-              </div>
-
-              {stats.sessionId && (
-                <div className="flex items-center gap-1">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"
-                    />
-                  </svg>
-                  <span className="font-mono">{stats.sessionId.slice(0, 8)}</span>
-                </div>
-              )}
-
-              {stats.duration && (
-                <div className="flex items-center gap-1">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  <span>{(stats.duration / 1000).toFixed(1)}s</span>
-                </div>
-              )}
-
-              {stats.usage && (
-                <div className="flex items-center gap-2">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                    />
-                  </svg>
-                  <div className="flex items-center gap-1">
-                    <span className="text-gray-500">In:</span>
-                    <span className="font-medium">{stats.usage.input_tokens.toLocaleString()}</span>
-                  </div>
-                  <span className="text-gray-400">→</span>
-                  <div className="flex items-center gap-1">
-                    <span className="text-gray-500">Out:</span>
-                    <span className="font-medium">
-                      {stats.usage.output_tokens.toLocaleString()}
-                    </span>
-                  </div>
-                  {stats.usage.cache_creation_input_tokens && (
-                    <div className="flex items-center gap-1">
-                      <span className="text-blue-600 dark:text-blue-400">
-                        +{stats.usage.cache_creation_input_tokens.toLocaleString()} cache
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {sessionId && (
-              <div className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <span>Active</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      <MessageList messages={messages} scrollRef={scrollRef} />
+      <ChatInput
+        input={input}
+        isStreaming={isStreaming}
+        onInputChange={setInput}
+        onKeyDown={handleKeyDown}
+      />
+      <ChatStats currentRepo={currentRepo} sessionId={sessionId} stats={stats} />
     </div>
   )
 }
