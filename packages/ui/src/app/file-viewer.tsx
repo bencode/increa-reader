@@ -10,6 +10,7 @@ import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
 import { fetchPreview } from './api'
 import { PDFViewer } from './pdf-viewer'
+import { useSetContext } from '@/stores/view-context'
 
 type PreviewData =
   | { type: 'markdown'; body: string }
@@ -35,12 +36,16 @@ export function FileViewer() {
   const [preview, setPreview] = useState<PreviewData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const setContext = useSetContext()
 
   useEffect(() => {
     if (!repoName || !filePath) return
 
     setLoading(true)
     setError(null)
+
+    // Update view context
+    setContext({ repo: repoName, path: filePath })
 
     fetchPreview(repoName, filePath)
       .then(data => {
@@ -51,7 +56,7 @@ export function FileViewer() {
         setError(err.message || 'Failed to load file')
         setLoading(false)
       })
-  }, [repoName, filePath])
+  }, [repoName, filePath, setContext])
 
   if (loading) {
     return (

@@ -36,8 +36,14 @@ class ViewResponse(BaseModel):
     filename: str
 
 
+class ChatContext(BaseModel):
+    repo: Optional[str] = None
+    path: Optional[str] = None
+
+
 class ChatRequest(BaseModel):
     prompt: str
     sessionId: Optional[str] = None
     repo: Optional[str] = None
+    context: Optional[ChatContext] = None
     options: Optional[dict] = None

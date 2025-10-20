@@ -28,6 +28,8 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
             print("\n" + "="*80)
             print(f"📥 [CHAT REQUEST] {request.prompt[:100]}...")
             print(f"  Repo: {request.repo} | SessionId: {request.sessionId}")
+            if request.context:
+                print(f"  Context: repo={request.context.repo}, path={request.context.path}")
             print("="*80 + "\n")
 
         # Determine working directory and accessible directories
@@ -93,8 +95,42 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
         async def generate_response():
             """Generate streaming response using ClaudeSDKClient"""
             try:
+                # Build workspace info
+                repos_info = "\n".join([
+                    f"  - {repo.name}: {repo.root}"
+                    for repo in workspace_config.repos
+                ])
+
+                # Enhance prompt with context
+                enhanced_prompt = request.prompt
+                if request.context and (request.context.repo or request.context.path):
+                    context_info = []
+                    if request.context.repo:
+                        context_info.append(f"Repository: {request.context.repo}")
+                    if request.context.path:
+                        context_info.append(f"Current File: {request.context.path}")
+
+                    context_str = "\n".join(context_info)
+                    enhanced_prompt = f"""[Workspace Configuration]
+Available Repositories:
+{repos_info}
+
+[Current Context]
+{context_str}
+
+User Question:
+{request.prompt}"""
+                else:
+                    # No specific context, just provide workspace info
+                    enhanced_prompt = f"""[Workspace Configuration]
+Available Repositories:
+{repos_info}
+
+User Question:
+{request.prompt}"""
+
                 async with ClaudeSDKClient(options=query_options) as client:
-                    await client.query(request.prompt)
+                    await client.query(enhanced_prompt)
 
                     async for msg in client.receive_response():
                         msg_type = type(msg).__name__

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Message } from '@/components/chat/message'
 import type { Message as MessageType, Repo } from '@/types/chat'
+import { useGetContext } from '@/stores/view-context'
 
 const HELP_TEXT = `Available commands:
   /cd <repo>   Switch to repo context
@@ -66,6 +67,7 @@ export const ChatPanel = () => {
   }>()
   const scrollRef = useRef<HTMLDivElement>(null)
   const eventSourceRef = useRef<EventSource>()
+  const getContext = useGetContext()
 
   useEffect(() => {
     fetch('/api/workspace/tree')
@@ -173,6 +175,8 @@ export const ChatPanel = () => {
     setMessages(prev => [...prev, assistantMsg])
 
     try {
+      const context = getContext()
+
       const response = await fetch('/api/chat/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -180,6 +184,7 @@ export const ChatPanel = () => {
           prompt: input,
           sessionId,
           repo: currentRepo,
+          context,
         }),
       })
 
