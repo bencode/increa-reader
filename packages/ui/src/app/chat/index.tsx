@@ -25,7 +25,6 @@ export const ChatPanel = () => {
     }
   }>()
   const scrollRef = useRef<HTMLDivElement>(null)
-  const eventSourceRef = useRef<EventSource>()
   const getContext = useGetContext()
 
   useEffect(() => {
@@ -40,7 +39,7 @@ export const ChatPanel = () => {
         }
       })
       .catch(console.error)
-  }, [])
+  }, [currentRepo])
 
   useEffect(() => {
     const lastSessionId = localStorage.getItem('chat_session_id')
@@ -76,7 +75,7 @@ export const ChatPanel = () => {
 
   const handleCommand = (name: string, args: string) => {
     switch (name) {
-      case 'cd':
+      case 'cd': {
         if (!args) {
           addMessage('error', 'Usage: /cd <repo>')
           return
@@ -89,6 +88,7 @@ export const ChatPanel = () => {
           addMessage('error', `Repo not found: ${args}`)
         }
         break
+      }
 
       case 'pwd':
         addMessage('system', currentRepo || 'No repo selected')
@@ -207,7 +207,7 @@ export const ChatPanel = () => {
                       ...prev.slice(0, -1),
                       { ...assistantMsg, content: assistantContent, toolCalls, isStreaming: true },
                     ])
-                  } catch (e) {
+                  } catch {
                     // Partial JSON may not be parseable yet, ignore
                   }
                 }

@@ -141,7 +141,7 @@ export function PDFViewer({ repo, filePath, metadata }: PDFViewerProps) {
                 repo={repo}
                 filePath={filePath}
                 pageNum={virtualItem.index + 1}
-                onHeightChange={(pageNum, height) => {
+                onHeightChange={pageNum => {
                   rowVirtualizer.measureElement(
                     parentRef.current?.querySelector(`[data-index="${pageNum - 1}"]`) || undefined
                   )

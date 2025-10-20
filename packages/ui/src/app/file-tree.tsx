@@ -75,14 +75,10 @@ function TreeItem({ node, onFileClick, repoName, selectedPath }: TreeItemProps) 
   const storageKey = `filetree-${repoName}-${node.path}`
   const isSelected = selectedPath === `${repoName}/${node.path}`
 
-  const shouldAutoOpen = () => {
-    if (!selectedPath) return false
-    return selectedPath.startsWith(`${repoName}/${node.path}/`) || isSelected
-  }
-
+  const shouldAutoOpen = isSelected || selectedPath?.startsWith(`${repoName}/${node.path}/`)
   const [isOpen, setIsOpen] = useState(() => {
     const stored = localStorage.getItem(storageKey)
-    return stored ? JSON.parse(stored) : shouldAutoOpen()
+    return stored ? JSON.parse(stored) : shouldAutoOpen
   })
 
   useEffect(() => {
@@ -91,16 +87,19 @@ function TreeItem({ node, onFileClick, repoName, selectedPath }: TreeItemProps) 
 
   // Auto-expand if this path contains the selected path
   useEffect(() => {
-    if (shouldAutoOpen() && !isOpen) {
+    if (shouldAutoOpen && !isOpen) {
+      // eslint-disable-next-line
       setIsOpen(true)
     }
-  }, [selectedPath])
+  }, [shouldAutoOpen, isOpen])
 
   if (node.type === 'file') {
     return (
       <div
         className={`py-1 px-2 hover:bg-accent cursor-pointer text-sm flex items-center gap-2 ${
-          isSelected ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium' : ''
+          isSelected
+            ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium'
+            : ''
         }`}
         onClick={() => onFileClick?.(node.path)}
       >

@@ -33,30 +33,36 @@ type PDFMetadata = {
 
 export function FileViewer() {
   const { repoName, '*': filePath } = useParams<{ repoName: string; '*': string }>()
-  const [preview, setPreview] = useState<PreviewData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [state, setState] = useState<{
+    preview: PreviewData | null
+    loading: boolean
+    error: string | null
+  }>({
+    preview: null,
+    loading: true,
+    error: null,
+  })
   const setContext = useSetContext()
 
   useEffect(() => {
     if (!repoName || !filePath) return
 
-    setLoading(true)
-    setError(null)
-
     // Update view context
     setContext({ repo: repoName, path: filePath })
 
+    // eslint-disable-next-line
+    setState({ preview: null, loading: true, error: null })
+
     fetchPreview(repoName, filePath)
       .then(data => {
-        setPreview(data)
-        setLoading(false)
+        setState({ preview: data, loading: false, error: null })
       })
       .catch(err => {
-        setError(err.message || 'Failed to load file')
-        setLoading(false)
+        setState({ preview: null, loading: false, error: err.message || 'Failed to load file' })
       })
   }, [repoName, filePath, setContext])
+
+  const { loading, error, preview } = state
 
   if (loading) {
     return (

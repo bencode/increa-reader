@@ -3,10 +3,12 @@ import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { oneLight, oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
 import type { Message as MessageType } from '@/types/chat'
 import { cn } from '@/lib/utils'
+
+type ToolParams = Record<string, unknown>
 
 const getToolIcon = (toolName: string) => {
   switch (toolName) {
@@ -25,7 +27,7 @@ const getToolIcon = (toolName: string) => {
   }
 }
 
-const formatToolParams = (toolName: string, params?: Record<string, any>) => {
+const formatToolParams = (toolName: string, params?: ToolParams) => {
   if (!params) return ''
   switch (toolName) {
     case 'Read':

@@ -1,3 +1,22 @@
+type MessageBlock = {
+  type: string
+  text?: string
+}
+
+type StreamMessage = {
+  type: string
+  content?: string
+  message?: {
+    content: MessageBlock[]
+  }
+  event?: {
+    type: string
+    delta?: {
+      text?: string
+    }
+  }
+}
+
 export const HELP_TEXT = `Available commands:
   /cd <repo>   Switch to repo context
   /pwd         Show current context
@@ -19,7 +38,7 @@ export const parseCommand = (input: string) => {
   }
 }
 
-export const extractTextContent = (msg: any): string => {
+export const extractTextContent = (msg: StreamMessage): string => {
   // Handle Python SDK assistant message format
   if (msg.type === 'assistant' && msg.content) {
     return msg.content
@@ -28,8 +47,8 @@ export const extractTextContent = (msg: any): string => {
   // Handle TypeScript SDK message format (backward compatibility)
   if (msg.type === 'assistant' && msg.message?.content) {
     return msg.message.content
-      .filter((block: any) => block.type === 'text')
-      .map((block: any) => block.text)
+      .filter((block: MessageBlock) => block.type === 'text')
+      .map((block: MessageBlock) => block.text || '')
       .join('\n')
   }
 
@@ -41,7 +60,7 @@ export const extractTextContent = (msg: any): string => {
   return ''
 }
 
-export const detectToolFromParams = (params: Record<string, any>): string => {
+export const detectToolFromParams = (params: Record<string, unknown>): string => {
   if ('file_path' in params) return 'Read'
   if ('todos' in params) return 'TodoWrite'
   if ('pattern' in params && 'path' in params) return 'Grep'

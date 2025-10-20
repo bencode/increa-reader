@@ -1,7 +1,7 @@
 export type ToolCall = {
   name: string
   status: 'running' | 'done'
-  params?: Record<string, any>
+  params?: Record<string, unknown>
 }
 
 export type Message = {
