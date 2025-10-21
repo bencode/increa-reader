@@ -7,6 +7,7 @@ from pathlib import Path
 
 import aiofiles
 from fastapi import HTTPException
+from fastapi.responses import FileResponse
 
 from .models import ViewResponse, WorkspaceConfig
 from .workspace import is_text_file
@@ -104,6 +105,30 @@ FILENAME_TO_LANG = {
 
 def create_file_routes(app, workspace_config: WorkspaceConfig):
     """Create file viewing and preview API routes"""
+
+    @app.get("/api/raw/{repo}/{path:path}")
+    async def get_raw_file(repo: str, path: str):
+        """Get raw file content (returns file bytes directly)"""
+        # Find repository
+        repo_config = next((r for r in workspace_config.repos if r.name == repo), None)
+        if not repo_config:
+            raise HTTPException(
+                status_code=404, detail=f"Repository '{repo}' not found"
+            )
+
+        file_path = Path(repo_config.root) / path
+
+        if not file_path.exists() or not file_path.is_file():
+            raise HTTPException(status_code=404, detail="File not found")
+
+        # Detect MIME type
+        mime_type, _ = mimetypes.guess_type(str(file_path))
+
+        return FileResponse(
+            file_path,
+            media_type=mime_type or "application/octet-stream",
+            filename=file_path.name,
+        )
 
     @app.get("/api/views/{repo}/{path:path}")
     async def get_file_content(repo: str, path: str):

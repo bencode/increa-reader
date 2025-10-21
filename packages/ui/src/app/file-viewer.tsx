@@ -132,7 +132,7 @@ export function FileViewer() {
       {preview.type === 'image' && (
         <div className="h-full flex items-center justify-center p-8">
           <img
-            src={`/api/views/${repoName}/${preview.path}`}
+            src={`/api/raw/${repoName}/${preview.path}`}
             alt={preview.path}
             className="max-w-full max-h-full object-contain"
           />
