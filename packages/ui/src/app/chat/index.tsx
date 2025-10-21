@@ -45,9 +45,18 @@ export const ChatPanel = () => {
     const lastSessionId = localStorage.getItem('chat_session_id')
     if (lastSessionId) {
       const history = localStorage.getItem(`chat_history_${lastSessionId}`)
+      const savedStats = localStorage.getItem(`chat_stats_${lastSessionId}`)
+
       if (history) {
         setMessages(JSON.parse(history))
         setSessionId(lastSessionId)
+
+        // Restore full stats if available, otherwise just sessionId
+        if (savedStats) {
+          setStats(JSON.parse(savedStats))
+        } else {
+          setStats({ sessionId: lastSessionId })
+        }
       }
     }
   }, [])
@@ -70,7 +79,12 @@ export const ChatPanel = () => {
   const handleClear = () => {
     setMessages([])
     setSessionId(undefined)
+    setStats(undefined)
     localStorage.removeItem('chat_session_id')
+    // Clean up stats for the current session
+    if (sessionId) {
+      localStorage.removeItem(`chat_stats_${sessionId}`)
+    }
   }
 
   const handleCommand = (name: string, args: string) => {
@@ -227,12 +241,14 @@ export const ChatPanel = () => {
                     isStreaming: false,
                   },
                 ])
-                // Update statistics
-                setStats({
+                // Update and persist statistics
+                const newStats = {
                   sessionId: msg.session_id,
                   duration: msg.duration_ms,
                   usage: msg.usage,
-                })
+                }
+                setStats(newStats)
+                localStorage.setItem(`chat_stats_${msg.session_id}`, JSON.stringify(newStats))
                 setIsStreaming(false)
               }
             } catch (e) {

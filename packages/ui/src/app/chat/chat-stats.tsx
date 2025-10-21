@@ -14,7 +14,7 @@ type ChatStatsProps = {
 }
 
 export const ChatStats = ({ currentRepo, sessionId, stats }: ChatStatsProps) => {
-  if (!stats || !(stats.sessionId || stats.duration || stats.usage)) {
+  if (!stats?.sessionId) {
     return null
   }
 
