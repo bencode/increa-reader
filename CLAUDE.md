@@ -123,6 +123,15 @@ pnpm --filter @increa/pdf-reader-mcp test:cov   # 运行测试（含覆盖率）
 - MCP 包依赖管理：`cd packages/pdf-reader-mcp && pip install -e ".[dev]"`
 - 服务器启动：`python server.py`
 
+### Python 代码规范
+- **格式化**：使用 black（line-length: 88）和 isort（black profile）
+- **文件长度**：建议 <200 行，但优先考虑内聚性而非机械限制
+  - 内聚的类（如 PDFPageProcessor）可以更长
+  - 信息量过载的文件（多种不相关功能）应拆分
+- **函数长度**：建议 <40 行，复杂但单一职责的函数可适当放宽
+- **Shebang**：只在入口脚本（server.py）使用，模块文件不使用
+- **核心原则**：模块规模的本质是信息量，而非行数
+
 ## 关键实现细节
 
 ### 图片处理机制
