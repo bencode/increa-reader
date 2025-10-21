@@ -21,9 +21,11 @@ from fastapi import FastAPI
 from .chat import create_chat_routes
 
 # Import local modules
+from .file_routes import create_file_routes
 from .models import WorkspaceConfig
-from .views import create_view_routes, create_workspace_routes
+from .pdf_routes import create_pdf_routes
 from .workspace import load_workspace_config
+from .workspace_routes import create_workspace_routes
 
 
 def create_app() -> FastAPI:
@@ -50,7 +52,8 @@ def create_app() -> FastAPI:
 
     # Register all route modules
     create_workspace_routes(app, workspace_config)
-    create_view_routes(app, workspace_config)
+    create_file_routes(app, workspace_config)
+    create_pdf_routes(app, workspace_config)
     create_chat_routes(app, workspace_config)
 
     @app.get("/api")
