@@ -21,6 +21,7 @@ export const HELP_TEXT = `Available commands:
   /cd <repo>   Switch to repo context
   /pwd         Show current context
   /clear       Clear messages
+  /abort       Abort current generation
   /help        Show this help
 
 Examples:

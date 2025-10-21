@@ -87,6 +87,31 @@ export const ChatPanel = () => {
     }
   }
 
+  const handleAbort = async () => {
+    if (!sessionId) {
+      addMessage('error', 'No active session to abort')
+      return
+    }
+
+    try {
+      const response = await fetch('/api/chat/abort', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      })
+
+      if (response.ok) {
+        addMessage('system', 'Aborted current generation')
+        setIsStreaming(false)
+      } else {
+        const error = await response.json()
+        addMessage('error', error.detail || 'Failed to abort')
+      }
+    } catch (error) {
+      addMessage('error', error instanceof Error ? error.message : 'Failed to abort')
+    }
+  }
+
   const handleCommand = (name: string, args: string) => {
     switch (name) {
       case 'cd': {
@@ -116,20 +141,38 @@ export const ChatPanel = () => {
         handleClear()
         break
 
+      case 'abort':
+        handleAbort()
+        break
+
       default:
         addMessage('error', `Unknown command: /${name}. Type /help for available commands.`)
     }
   }
 
   const sendMessage = async () => {
-    if (!input.trim() || isStreaming) return
+    if (!input.trim()) return
 
     const normalized = input.replace(/^／/, '/')
     const cmd = parseCommand(normalized)
 
+    // Allow commands even during streaming
     if (cmd) {
+      // Add command as user message to history
+      setMessages(prev => [...prev, {
+        role: 'user',
+        content: normalized,
+        timestamp: Date.now()
+      }])
+
       handleCommand(cmd.name, cmd.args)
       setInput('')
+      return
+    }
+
+    // Block non-command messages during streaming
+    if (isStreaming) {
+      addMessage('error', 'Cannot send message while streaming. Use /abort to stop generation.')
       return
     }
 

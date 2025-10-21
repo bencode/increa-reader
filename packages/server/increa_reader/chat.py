@@ -2,6 +2,7 @@
 Chat API endpoints with streaming support
 """
 
+import asyncio
 import json
 import os
 from pathlib import Path
@@ -23,9 +24,38 @@ from .pdf_tools import (
 # Debug logging flag
 DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 
+# Global session pool for abort support
+active_sessions: dict[str, ClaudeSDKClient] = {}
+session_lock = asyncio.Lock()
+
 
 def create_chat_routes(app, workspace_config: WorkspaceConfig):
     """Create chat-related API routes"""
+
+    @app.post("/api/chat/abort")
+    async def chat_abort(request: dict):
+        """Abort an active chat session"""
+        session_id = request.get("sessionId")
+
+        if not session_id:
+            raise HTTPException(status_code=400, detail="sessionId is required")
+
+        async with session_lock:
+            client = active_sessions.get(session_id)
+            if client:
+                try:
+                    await client.interrupt()
+                    if DEBUG:
+                        print(f"✓ Interrupted session: {session_id}")
+                    return {"status": "interrupted", "sessionId": session_id}
+                except Exception as e:
+                    if DEBUG:
+                        print(f"✗ Failed to interrupt session {session_id}: {e}")
+                    raise HTTPException(
+                        status_code=500, detail=f"Failed to interrupt: {str(e)}"
+                    )
+
+        raise HTTPException(status_code=404, detail="Session not found or not active")
 
     @app.post("/api/chat/query")
     async def chat_query(request: ChatRequest):
@@ -125,8 +155,16 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
             print(f"  allowed_tools: {len(query_options.allowed_tools)} tools")
             print(f"  resume: {query_options.resume}\n")
 
+        # Create client outside generator for abort support
+        client = ClaudeSDKClient(options=query_options)
+        await client.connect()
+
+        # Track session ID for cleanup
+        current_session_id = request.sessionId
+
         async def generate_response():
             """Generate streaming response using ClaudeSDKClient"""
+            nonlocal current_session_id
             try:
                 # Build workspace info
                 repos_info = "\n".join(
@@ -169,34 +207,42 @@ Available Repositories:
 User Question:
 {request.prompt}"""
 
-                async with ClaudeSDKClient(options=query_options) as client:
-                    await client.query(enhanced_prompt)
+                await client.query(enhanced_prompt)
 
-                    async for msg in client.receive_response():
-                        msg_type = type(msg).__name__
+                async for msg in client.receive_response():
+                    msg_type = type(msg).__name__
 
-                        if DEBUG:
-                            print(f"📨 [{msg_type}]", flush=True)
+                    if DEBUG:
+                        print(f"📨 [{msg_type}]", flush=True)
 
-                        if msg_type == "SystemMessage" and msg.subtype == "init":
-                            yield f"data: {json.dumps({'type': 'system', 'subtype': 'init', 'session_id': msg.data.get('session_id')}, ensure_ascii=False)}\n\n"
+                    if msg_type == "SystemMessage" and msg.subtype == "init":
+                        session_id = msg.data.get("session_id")
+                        if session_id:
+                            current_session_id = session_id
+                            # Register session for abort support
+                            async with session_lock:
+                                active_sessions[session_id] = client
+                            if DEBUG:
+                                print(f"✓ Registered session: {session_id}")
 
-                        elif (
-                            msg_type == "StreamEvent"
-                            and msg.event.get("type") == "content_block_delta"
-                        ):
-                            yield f"data: {json.dumps({'type': 'stream_event', 'event': msg.event}, ensure_ascii=False)}\n\n"
+                        yield f"data: {json.dumps({'type': 'system', 'subtype': 'init', 'session_id': session_id}, ensure_ascii=False)}\n\n"
 
-                        elif msg_type == "AssistantMessage":
-                            content_text = "".join(
-                                block.text
-                                for block in msg.content
-                                if hasattr(block, "text")
-                            )
-                            yield f"data: {json.dumps({'type': 'assistant', 'content': content_text}, ensure_ascii=False)}\n\n"
+                    elif (
+                        msg_type == "StreamEvent"
+                        and msg.event.get("type") == "content_block_delta"
+                    ):
+                        yield f"data: {json.dumps({'type': 'stream_event', 'event': msg.event}, ensure_ascii=False)}\n\n"
 
-                        elif msg_type == "ResultMessage":
-                            yield f"data: {json.dumps({'type': 'result', 'session_id': msg.session_id, 'duration_ms': msg.duration_ms, 'usage': msg.usage.__dict__ if hasattr(msg.usage, '__dict__') else msg.usage}, ensure_ascii=False)}\n\n"
+                    elif msg_type == "AssistantMessage":
+                        content_text = "".join(
+                            block.text
+                            for block in msg.content
+                            if hasattr(block, "text")
+                        )
+                        yield f"data: {json.dumps({'type': 'assistant', 'content': content_text}, ensure_ascii=False)}\n\n"
+
+                    elif msg_type == "ResultMessage":
+                        yield f"data: {json.dumps({'type': 'result', 'session_id': msg.session_id, 'duration_ms': msg.duration_ms, 'usage': msg.usage.__dict__ if hasattr(msg.usage, '__dict__') else msg.usage}, ensure_ascii=False)}\n\n"
 
             except Exception as e:
                 print(f"❌ Error in chat response: {e}")
@@ -204,6 +250,13 @@ User Question:
 
                 traceback.print_exc()
                 yield f"data: {json.dumps({'type': 'error', 'message': str(e)}, ensure_ascii=False)}\n\n"
+            finally:
+                # Cleanup: remove from active sessions (SDK will auto-cleanup on GC)
+                if current_session_id:
+                    async with session_lock:
+                        active_sessions.pop(current_session_id, None)
+                    if DEBUG:
+                        print(f"✓ Removed session from pool: {current_session_id}")
 
         return StreamingResponse(
             generate_response(),
