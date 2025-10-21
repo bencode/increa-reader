@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 PDF Reader MCP Server - An MCP server for reading and searching PDF files using FastMCP
 """
@@ -39,7 +38,8 @@ def _is_allowed_path(path: str) -> bool:
     """Check if path is allowed for security"""
     allowed_paths = ["/Users", "/tmp", Path.cwd(), tempfile.gettempdir()]
     return any(
-        Path(path).resolve().is_relative_to(Path(allowed_path).resolve()) for allowed_path in allowed_paths
+        Path(path).resolve().is_relative_to(Path(allowed_path).resolve())
+        for allowed_path in allowed_paths
     )
 
 
@@ -104,7 +104,9 @@ def render_page_png(doc_id: str, page: int, dpi: int = 144) -> str:
     page_obj = doc[page - 1]
     pix = page_obj.get_pixmap(dpi=dpi)
 
-    temp_file = Path(tempfile.gettempdir()) / f"pdf_page_{page}_{uuid.uuid4().hex[:8]}.png"
+    temp_file = (
+        Path(tempfile.gettempdir()) / f"pdf_page_{page}_{uuid.uuid4().hex[:8]}.png"
+    )
     pix.save(temp_file)
     return str(temp_file)
 

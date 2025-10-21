@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Workspace management and file tree functionality
 """
@@ -7,7 +6,7 @@ import os
 from pathlib import Path
 from typing import List
 
-from .models import WorkspaceConfig, RepoItem, TreeNode
+from .models import RepoItem, TreeNode, WorkspaceConfig
 
 
 def load_workspace_config() -> WorkspaceConfig:
@@ -22,66 +21,59 @@ def load_workspace_config() -> WorkspaceConfig:
         for i, repo_path in enumerate(repo_paths):
             path_obj = Path(repo_path).resolve()
             if path_obj.exists():
-                repos.append(RepoItem(
-                    name=path_obj.name,
-                    root=str(path_obj)
-                ))
+                repos.append(RepoItem(name=path_obj.name, root=str(path_obj)))
 
         return WorkspaceConfig(
-            title="Increa Reader",
-            repos=repos,
-            excludes=["node_modules", ".*", "*.log"]
+            title="Increa Reader", repos=repos, excludes=["node_modules", ".*", "*.log"]
         )
 
     return WorkspaceConfig(
-        title="Increa Reader",
-        repos=[],
-        excludes=["node_modules", ".*", "*.log"]
+        title="Increa Reader", repos=[], excludes=["node_modules", ".*", "*.log"]
     )
 
 
 def is_text_file(content: bytes) -> bool:
     """Check if file content is text-based"""
     try:
-        content.decode('utf-8')
+        content.decode("utf-8")
         return True
     except UnicodeDecodeError:
         # Check for common binary file signatures
         binary_signatures = [
-            b'\x89PNG',  # PNG
-            b'\xff\xd8\xff',  # JPEG
-            b'%PDF',  # PDF
-            b'GIF8',  # GIF
+            b"\x89PNG",  # PNG
+            b"\xff\xd8\xff",  # JPEG
+            b"%PDF",  # PDF
+            b"GIF8",  # GIF
         ]
         return not any(content.startswith(sig) for sig in binary_signatures)
 
 
-def build_file_tree(dir_path: Path, relative_to: Path, excludes: List[str]) -> List[TreeNode]:
+def build_file_tree(
+    dir_path: Path, relative_to: Path, excludes: List[str]
+) -> List[TreeNode]:
     """Recursively build file tree"""
     nodes = []
 
     try:
         for item in dir_path.iterdir():
             # Skip excluded files/directories
-            if any(item.name.startswith(exclude.rstrip('*')) for exclude in excludes):
+            if any(item.name.startswith(exclude.rstrip("*")) for exclude in excludes):
                 continue
 
             relative_path = str(item.relative_to(relative_to))
 
             if item.is_dir():
                 children = build_file_tree(item, relative_to, excludes)
-                nodes.append(TreeNode(
-                    type="dir",
-                    name=item.name,
-                    path=relative_path,
-                    children=children
-                ))
+                nodes.append(
+                    TreeNode(
+                        type="dir",
+                        name=item.name,
+                        path=relative_path,
+                        children=children,
+                    )
+                )
             else:
-                nodes.append(TreeNode(
-                    type="file",
-                    name=item.name,
-                    path=relative_path
-                ))
+                nodes.append(TreeNode(type="file", name=item.name, path=relative_path))
     except PermissionError:
         pass
 

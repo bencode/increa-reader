@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 PDF Tools using Claude Agent SDK @tool decorator
 """
@@ -55,7 +54,7 @@ async def open_pdf(args: dict[str, Any]) -> dict[str, Any]:
     if not _is_allowed_path(path):
         return {
             "content": [{"type": "text", "text": f"Access denied: {path}"}],
-            "is_error": True
+            "is_error": True,
         }
 
     try:
@@ -66,7 +65,7 @@ async def open_pdf(args: dict[str, Any]) -> dict[str, Any]:
     except Exception as e:
         return {
             "content": [{"type": "text", "text": f"Failed to open PDF: {e}"}],
-            "is_error": True
+            "is_error": True,
         }
 
 
@@ -93,15 +92,19 @@ async def extract_text(args: dict[str, Any]) -> dict[str, Any]:
         return {"content": [{"type": "text", "text": str(e)}], "is_error": True}
 
 
-@tool("render_page_png", "Render a page as PNG image", {
-    "type": "object",
-    "properties": {
-        "doc_id": {"type": "string"},
-        "page": {"type": "integer"},
-        "dpi": {"type": "integer", "default": 144}
+@tool(
+    "render_page_png",
+    "Render a page as PNG image",
+    {
+        "type": "object",
+        "properties": {
+            "doc_id": {"type": "string"},
+            "page": {"type": "integer"},
+            "dpi": {"type": "integer", "default": 144},
+        },
+        "required": ["doc_id", "page"],
     },
-    "required": ["doc_id", "page"]
-})
+)
 async def render_page_png(args: dict[str, Any]) -> dict[str, Any]:
     """Render a page as PNG image and return markdown image link"""
     try:
@@ -122,20 +125,27 @@ async def render_page_png(args: dict[str, Any]) -> dict[str, Any]:
         return {"content": [{"type": "text", "text": str(e)}], "is_error": True}
 
 
-@tool("search_text", "Search for text in the PDF document", {
-    "type": "object",
-    "properties": {
-        "doc_id": {"type": "string"},
-        "query": {"type": "string"},
-        "max_hits": {"type": "integer", "default": 20}
+@tool(
+    "search_text",
+    "Search for text in the PDF document",
+    {
+        "type": "object",
+        "properties": {
+            "doc_id": {"type": "string"},
+            "query": {"type": "string"},
+            "max_hits": {"type": "integer", "default": 20},
+        },
+        "required": ["doc_id", "query"],
     },
-    "required": ["doc_id", "query"]
-})
+)
 async def search_text(args: dict[str, Any]) -> dict[str, Any]:
     """Search for text in the PDF document"""
     query_text = args.get("query")
     if not query_text:
-        return {"content": [{"type": "text", "text": "Missing parameter: query"}], "is_error": True}
+        return {
+            "content": [{"type": "text", "text": "Missing parameter: query"}],
+            "is_error": True,
+        }
 
     try:
         doc = _validate_doc_id(args["doc_id"])
@@ -145,19 +155,30 @@ async def search_text(args: dict[str, Any]) -> dict[str, Any]:
         for page_num in range(doc.page_count):
             page = doc[page_num]
             for inst in page.search_for(query_text):
-                surrounding_rect = fitz.Rect(inst.x0 - 50, inst.y0 - 20, inst.x1 + 50, inst.y1 + 20)
+                surrounding_rect = fitz.Rect(
+                    inst.x0 - 50, inst.y0 - 20, inst.x1 + 50, inst.y1 + 20
+                )
                 surrounding_text = page.get_text("text", clip=surrounding_rect)
-                results.append({
-                    "page": page_num + 1,
-                    "text": surrounding_text.strip(),
-                    "bbox": [inst.x0, inst.y0, inst.x1, inst.y1],
-                })
+                results.append(
+                    {
+                        "page": page_num + 1,
+                        "text": surrounding_text.strip(),
+                        "bbox": [inst.x0, inst.y0, inst.x1, inst.y1],
+                    }
+                )
                 if len(results) >= max_hits:
                     break
             if len(results) >= max_hits:
                 break
 
-        return {"content": [{"type": "text", "text": json.dumps(results, indent=2, ensure_ascii=False)}]}
+        return {
+            "content": [
+                {
+                    "type": "text",
+                    "text": json.dumps(results, indent=2, ensure_ascii=False),
+                }
+            ]
+        }
     except (ValueError, KeyError) as e:
         return {"content": [{"type": "text", "text": str(e)}], "is_error": True}
 

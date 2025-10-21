@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Main application entry point for Increa Reader Server
 """
@@ -9,18 +8,22 @@ from pathlib import Path
 # Load environment variables from .env file
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
-    print("Warning: python-dotenv not installed. Environment variables from .env file won't be loaded.")
+    print(
+        "Warning: python-dotenv not installed. Environment variables from .env file won't be loaded."
+    )
 
 import uvicorn
 from fastapi import FastAPI
 
+from .chat import create_chat_routes
+
 # Import local modules
 from .models import WorkspaceConfig
+from .views import create_view_routes, create_workspace_routes
 from .workspace import load_workspace_config
-from .views import create_workspace_routes, create_view_routes
-from .chat import create_chat_routes
 
 
 def create_app() -> FastAPI:
@@ -28,11 +31,12 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="Increa Reader API",
         description="A FastAPI server for increa-reader with PDF and chat capabilities",
-        version="1.0.0"
+        version="1.0.0",
     )
 
     # CORS middleware
     from fastapi.middleware.cors import CORSMiddleware
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:5173"],  # Vite dev server
@@ -76,10 +80,4 @@ app = create_app()
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 3000))
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=port,
-        reload=True,
-        log_level="info"
-    )
+    uvicorn.run(app, host="0.0.0.0", port=port, reload=True, log_level="info")

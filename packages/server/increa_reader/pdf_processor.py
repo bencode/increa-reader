@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 PDF页面处理：提取文本、图片、表格和数学公式，转换为Markdown
 """
@@ -6,7 +5,8 @@ PDF页面处理：提取文本、图片、表格和数学公式，转换为Markd
 import re
 import tempfile
 from pathlib import Path
-from typing import Dict, List, Tuple, Any
+from typing import Any, Dict, List, Tuple
+
 import fitz  # PyMuPDF
 import pymupdf4llm
 
@@ -65,7 +65,8 @@ class PDFPageProcessor:
             "markdown": markdown_content,
             "has_tables": len(tables) > 0,
             "has_images": len(images) > 0,
-            "estimated_reading_time": len(markdown_content.split()) // 200  # 假设每分钟200词
+            "estimated_reading_time": len(markdown_content.split())
+            // 200,  # 假设每分钟200词
         }
 
     def _extract_tables(self, page) -> List[Dict[str, Any]]:
@@ -82,13 +83,15 @@ class PDFPageProcessor:
                 # 转换为Markdown表格
                 markdown_table = self._convert_table_to_markdown(table_data)
 
-                tables.append({
-                    "id": f"table_{table_idx + 1}",
-                    "bbox": table.bbox,
-                    "markdown": markdown_table,
-                    "rows": len(table_data),
-                    "cols": len(table_data[0]) if table_data else 0
-                })
+                tables.append(
+                    {
+                        "id": f"table_{table_idx + 1}",
+                        "bbox": table.bbox,
+                        "markdown": markdown_table,
+                        "rows": len(table_data),
+                        "cols": len(table_data[0]) if table_data else 0,
+                    }
+                )
 
         except Exception as e:
             # 如果表格检测失败，尝试简单的网格检测
@@ -152,15 +155,19 @@ class PDFPageProcessor:
                     # 获取图片位置
                     img_rect = page.get_image_bbox(img)
 
-                    images.append({
-                        "id": f"image_{img_idx + 1}",
-                        "path": str(img_path),
-                        "bbox": img_rect,
-                        "width": pix.width,
-                        "height": pix.height,
-                        "markdown": f"![图片{img_idx + 1}](/api/temp-image/{img_filename})"
-                    })
-                    print(f"  Image {img_idx + 1} extracted: {img_filename}")  # 调试日志
+                    images.append(
+                        {
+                            "id": f"image_{img_idx + 1}",
+                            "path": str(img_path),
+                            "bbox": img_rect,
+                            "width": pix.width,
+                            "height": pix.height,
+                            "markdown": f"![图片{img_idx + 1}](/api/temp-image/{img_filename})",
+                        }
+                    )
+                    print(
+                        f"  Image {img_idx + 1} extracted: {img_filename}"
+                    )  # 调试日志
                 else:
                     print(f"  Image {img_idx + 1} skipped (CMYK)")  # 调试日志
 
@@ -172,7 +179,9 @@ class PDFPageProcessor:
         print(f"Page {page_num}: Total {len(images)} images extracted")  # 调试日志
         return images
 
-    def _process_text_blocks(self, text_blocks: Dict, table_regions: List, page_rect) -> List[Dict[str, Any]]:
+    def _process_text_blocks(
+        self, text_blocks: Dict, table_regions: List, page_rect
+    ) -> List[Dict[str, Any]]:
         """处理文本块，识别段落、标题、公式"""
         content = []
 
@@ -188,7 +197,9 @@ class PDFPageProcessor:
 
             # 检查是否在表格区域内
             block_rect = fitz.Rect(block["bbox"])
-            in_table = any(block_rect.intersects(table_region) for table_region in table_regions)
+            in_table = any(
+                block_rect.intersects(table_region) for table_region in table_regions
+            )
 
             if in_table:
                 continue
@@ -210,12 +221,14 @@ class PDFPageProcessor:
             # 分析文本类型
             text_type = self._classify_text(block_text, block)
 
-            content.append({
-                "type": text_type,
-                "text": block_text,
-                "bbox": block["bbox"],
-                "font_info": self._get_font_info(block)
-            })
+            content.append(
+                {
+                    "type": text_type,
+                    "text": block_text,
+                    "bbox": block["bbox"],
+                    "font_info": self._get_font_info(block),
+                }
+            )
 
         return content
 
@@ -232,7 +245,7 @@ class PDFPageProcessor:
                 return "heading"
 
         # 检测列表项
-        if re.match(r'^\s*[-•*]\s+', text) or re.match(r'^\s*\d+\.\s+', text):
+        if re.match(r"^\s*[-•*]\s+", text) or re.match(r"^\s*\d+\.\s+", text):
             return "list"
 
         # 默认为段落
@@ -242,12 +255,29 @@ class PDFPageProcessor:
         """检测是否为数学公式"""
         # 简单的数学公式检测
         math_indicators = [
-            r'\\frac\{', r'\\sqrt\{', r'\\sum\{', r'\\int\{',
-            r'\{.*\}_\{.*\}',  # 下标
-            r'\{.*\}\^\{.*\}',  # 上标
-            r'\\alpha', r'\\beta', r'\\gamma', r'\\delta', r'\\theta', r'\\lambda', r'\\mu', r'\\pi', r'\\sigma', r'\\phi', r'\\omega',
-            r'\\leq', r'\\geq', r'\\neq', r'\\approx', r'\\infty',
-            r'\$.*\$'  # LaTeX数学模式
+            r"\\frac\{",
+            r"\\sqrt\{",
+            r"\\sum\{",
+            r"\\int\{",
+            r"\{.*\}_\{.*\}",  # 下标
+            r"\{.*\}\^\{.*\}",  # 上标
+            r"\\alpha",
+            r"\\beta",
+            r"\\gamma",
+            r"\\delta",
+            r"\\theta",
+            r"\\lambda",
+            r"\\mu",
+            r"\\pi",
+            r"\\sigma",
+            r"\\phi",
+            r"\\omega",
+            r"\\leq",
+            r"\\geq",
+            r"\\neq",
+            r"\\approx",
+            r"\\infty",
+            r"\$.*\$",  # LaTeX数学模式
         ]
 
         for pattern in math_indicators:
@@ -255,7 +285,7 @@ class PDFPageProcessor:
                 return True
 
         # 如果文本包含大量数学符号且较短，可能是公式
-        math_chars = set('∑∏∫√±≤≥≠∞∂∇∆αβγδεζηθικλμνξοπρστυφχψω')
+        math_chars = set("∑∏∫√±≤≥≠∞∂∇∆αβγδεζηθικλμνξοπρστυφχψω")
         ratio = sum(1 for c in text if c in math_chars) / len(text) if text else 0
 
         return ratio > 0.2 and len(text.strip()) < 200
@@ -273,12 +303,20 @@ class PDFPageProcessor:
         return {
             "size": first_span.get("size", 12),
             "flags": first_span.get("flags", 0),
-            "font": first_span.get("font", "")
+            "font": first_span.get("font", ""),
         }
 
-    def _assemble_markdown(self, text_content: List[Dict], tables: List[Dict], images: List[Dict], page_num: int) -> str:
+    def _assemble_markdown(
+        self,
+        text_content: List[Dict],
+        tables: List[Dict],
+        images: List[Dict],
+        page_num: int,
+    ) -> str:
         """组装最终的Markdown内容"""
-        print(f"Assembling markdown for page {page_num}: {len(text_content)} texts, {len(tables)} tables, {len(images)} images")  # 调试
+        print(
+            f"Assembling markdown for page {page_num}: {len(text_content)} texts, {len(tables)} tables, {len(images)} images"
+        )  # 调试
         markdown_parts = []
 
         # 按位置排序所有内容
@@ -286,32 +324,28 @@ class PDFPageProcessor:
 
         # 添加文本内容
         for idx, item in enumerate(text_content):
-            all_content.append({
-                "type": "text",
-                "subtype": item["type"],
-                "content": item,
-                "bbox": item["bbox"],
-                "order": idx
-            })
+            all_content.append(
+                {
+                    "type": "text",
+                    "subtype": item["type"],
+                    "content": item,
+                    "bbox": item["bbox"],
+                    "order": idx,
+                }
+            )
 
         # 添加表格
         for idx, table in enumerate(tables):
-            all_content.append({
-                "type": "table",
-                "content": table,
-                "bbox": table["bbox"],
-                "order": idx
-            })
+            all_content.append(
+                {"type": "table", "content": table, "bbox": table["bbox"], "order": idx}
+            )
 
         # 添加图片
         for idx, image in enumerate(images):
             print(f"  Adding image to content: {image['markdown']}")  # 调试
-            all_content.append({
-                "type": "image",
-                "content": image,
-                "bbox": image["bbox"],
-                "order": idx
-            })
+            all_content.append(
+                {"type": "image", "content": image, "bbox": image["bbox"], "order": idx}
+            )
 
         # 按y坐标排序
         all_content.sort(key=lambda x: x["bbox"][1])
@@ -323,7 +357,9 @@ class PDFPageProcessor:
             elif item["type"] == "table":
                 markdown_parts.append(f"\n{item['content']['markdown']}\n")
             elif item["type"] == "image":
-                print(f"  Appending image markdown: {item['content']['markdown']}")  # 调试
+                print(
+                    f"  Appending image markdown: {item['content']['markdown']}"
+                )  # 调试
                 markdown_parts.append(f"\n{item['content']['markdown']}\n")
 
         # 添加页面分隔符
@@ -394,6 +430,7 @@ def extract_page_markdown(doc_path: str, page_num: int) -> Dict[str, Any]:
         # 注意: pymupdf4llm 使用 0-based 页码
         # write_images=True 会将图片写入磁盘
         import tempfile
+
         img_dir = Path(tempfile.gettempdir()) / "pymupdf4llm_images"
         img_dir.mkdir(exist_ok=True)
 
@@ -402,20 +439,23 @@ def extract_page_markdown(doc_path: str, page_num: int) -> Dict[str, Any]:
             pages=[page_num - 1],
             write_images=True,
             image_path=str(img_dir),
-            image_format="png"
+            image_format="png",
         )
 
         # 替换绝对路径为 API 路径
         # 从 /var/.../pymupdf4llm_images/xxx.png 替换为 /api/temp-image/pymupdf4llm_images/xxx.png
         import re
+
         img_dir_str = str(img_dir)
         md_text = re.sub(
-            r'!\[(.*?)\]\(' + re.escape(img_dir_str) + r'/([^)]+)\)',
-            r'![\1](/api/temp-image/pymupdf4llm_images/\2)',
-            md_text
+            r"!\[(.*?)\]\(" + re.escape(img_dir_str) + r"/([^)]+)\)",
+            r"![\1](/api/temp-image/pymupdf4llm_images/\2)",
+            md_text,
         )
 
-        print(f"Page {page_num} markdown preview (after path replacement):\n{md_text[:500]}")  # 调试
+        print(
+            f"Page {page_num} markdown preview (after path replacement):\n{md_text[:500]}"
+        )  # 调试
 
         # 检测是否有表格和图片（简单启发式）
         has_tables = "|" in md_text and "---" in md_text  # Markdown 表格特征
@@ -428,7 +468,7 @@ def extract_page_markdown(doc_path: str, page_num: int) -> Dict[str, Any]:
             "markdown": md_text,
             "has_tables": has_tables,
             "has_images": has_images,
-            "estimated_reading_time": len(md_text.split()) // 200
+            "estimated_reading_time": len(md_text.split()) // 200,
         }
     except Exception as e:
         print(f"Error extracting markdown for page {page_num}: {e}")

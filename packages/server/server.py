@@ -3,8 +3,9 @@
 Quick startup script for Increa Reader Server
 """
 
-import uvicorn
 import os
+
+import uvicorn
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 3010))
@@ -13,5 +14,5 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=port,
         reload=True,
-        log_level="info"
+        log_level="info",
     )

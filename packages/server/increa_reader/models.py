@@ -1,9 +1,9 @@
-#!/usr/bin/env python3
 """
 Data models for Increa Reader Server
 """
 
 from typing import List, Optional
+
 from pydantic import BaseModel
 
 
@@ -22,7 +22,7 @@ class TreeNode(BaseModel):
     type: str  # 'dir' | 'file'
     name: str
     path: str
-    children: Optional[List['TreeNode']] = None
+    children: Optional[List["TreeNode"]] = None
 
 
 class RepoResource(BaseModel):
