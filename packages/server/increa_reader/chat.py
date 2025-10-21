@@ -35,9 +35,14 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
             print(f"📥 [CHAT REQUEST] {request.prompt[:100]}...")
             print(f"  Repo: {request.repo} | SessionId: {request.sessionId}")
             if request.context:
-                print(
-                    f"  Context: repo={request.context.repo}, path={request.context.path}"
-                )
+                context_parts = []
+                if request.context.repo:
+                    context_parts.append(f"repo={request.context.repo}")
+                if request.context.path:
+                    context_parts.append(f"path={request.context.path}")
+                if request.context.pageNumber:
+                    context_parts.append(f"page={request.context.pageNumber}")
+                print(f"  Context: {', '.join(context_parts)}")
             print("=" * 80 + "\n")
 
         # Determine working directory and accessible directories
@@ -130,12 +135,20 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
 
                 # Enhance prompt with context
                 enhanced_prompt = request.prompt
-                if request.context and (request.context.repo or request.context.path):
+                if request.context and (
+                    request.context.repo
+                    or request.context.path
+                    or request.context.pageNumber
+                ):
                     context_info = []
                     if request.context.repo:
                         context_info.append(f"Repository: {request.context.repo}")
                     if request.context.path:
                         context_info.append(f"Current File: {request.context.path}")
+                    if request.context.pageNumber:
+                        context_info.append(
+                            f"Current Page: {request.context.pageNumber}"
+                        )
 
                     context_str = "\n".join(context_info)
                     enhanced_prompt = f"""[Workspace Configuration]

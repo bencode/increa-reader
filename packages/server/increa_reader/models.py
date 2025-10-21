@@ -39,6 +39,7 @@ class ViewResponse(BaseModel):
 class ChatContext(BaseModel):
     repo: Optional[str] = None
     path: Optional[str] = None
+    pageNumber: Optional[int] = None
 
 
 class ChatRequest(BaseModel):

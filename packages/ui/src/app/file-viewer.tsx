@@ -47,8 +47,8 @@ export function FileViewer() {
   useEffect(() => {
     if (!repoName || !filePath) return
 
-    // Update view context
-    setContext({ repo: repoName, path: filePath })
+    // Update view context (clear pageNumber for non-PDF files)
+    setContext({ repo: repoName, path: filePath, pageNumber: null })
 
     // eslint-disable-next-line
     setState({ preview: null, loading: true, error: null })

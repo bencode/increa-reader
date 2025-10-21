@@ -4,6 +4,7 @@ import { BookOpen, ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { PDFPage } from './pdf-page'
 import type { PDFViewerProps } from './types'
+import { useSetContext } from '@/stores/view-context'
 
 type PDFHeaderProps = {
   title: string
@@ -86,6 +87,7 @@ function PDFPagination({ currentPage, totalPages, onPageChange }: PDFPaginationP
 export function PDFViewer({ repo, filePath, metadata }: PDFViewerProps) {
   const parentRef = useRef<HTMLDivElement>(null)
   const [currentPage, setCurrentPage] = useState(1)
+  const setContext = useSetContext()
 
   const rowVirtualizer = useVirtualizer({
     count: metadata.page_count,
@@ -103,6 +105,11 @@ export function PDFViewer({ repo, filePath, metadata }: PDFViewerProps) {
       setCurrentPage(middleIndex + 1)
     }
   }, [items])
+
+  // 更新 context 中的页码
+  useEffect(() => {
+    setContext({ pageNumber: currentPage })
+  }, [currentPage, setContext])
 
   // 跳转到指定页面
   const scrollToPage = (page: number) => {

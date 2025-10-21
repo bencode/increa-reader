@@ -9,17 +9,19 @@ type ViewContextState = ContextData & {
 type ContextData = {
   repo: string | null
   path: string | null
+  pageNumber: number | null
 }
 
 export const useViewContext = create<ViewContextState>((set, get) => ({
   repo: null,
   path: null,
+  pageNumber: null,
   getContext: () => {
-    const { repo, path } = get()
-    return { repo, path }
+    const { repo, path, pageNumber } = get()
+    return { repo, path, pageNumber }
   },
   setContext: data => set(data),
-  clearContext: () => set({ repo: null, path: null }),
+  clearContext: () => set({ repo: null, path: null, pageNumber: null }),
 }))
 
 export function useGetContext() {
