@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { RefreshCw } from 'lucide-react'
 
@@ -16,7 +16,7 @@ export function RepoPanel({ repoName }: RepoPanelProps) {
   const { repoName: currentRepo, '*': filePath } = useParams<{ repoName?: string; '*': string }>()
   const currentPath = currentRepo && filePath ? `${currentRepo}/${filePath}` : null
 
-  const loadTree = async () => {
+  const loadTree = useCallback(async () => {
     setLoading(true)
     try {
       const data = await fetchRepoTree(repoName)
@@ -26,11 +26,11 @@ export function RepoPanel({ repoName }: RepoPanelProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [repoName])
 
   useEffect(() => {
     loadTree()
-  }, [repoName])
+  }, [loadTree])
 
   return (
     <div className="mb-4">
@@ -53,8 +53,8 @@ export function RepoPanel({ repoName }: RepoPanelProps) {
           repoName={repoName}
           selectedPath={currentPath}
           onFileClick={(path) => {
-            const filePath = path.startsWith('/') ? path.slice(1) : path
-            navigate(`/views/${repoName}/${filePath}`)
+            const cleanPath = path.startsWith('/') ? path.slice(1) : path
+            navigate(`/views/${repoName}/${cleanPath}`)
           }}
         />
       )}

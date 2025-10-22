@@ -10,12 +10,6 @@ type RepoInfo = {
   root: string
 }
 
-type RepoResource = {
-  name: string
-  root: string
-  files: TreeNode[]
-}
-
 type RepoTreeData = {
   name: string
   files: TreeNode[]
@@ -35,12 +29,6 @@ export async function fetchRepos(): Promise<RepoInfo[]> {
 
 export async function fetchRepoTree(repoName: string): Promise<RepoTreeData> {
   const response = await fetch(`/api/workspace/repos/${encodeURIComponent(repoName)}/tree`)
-  const data = await response.json()
-  return data.data
-}
-
-export async function fetchWorkspaceTree(): Promise<RepoResource[]> {
-  const response = await fetch('/api/workspace/tree')
   const data = await response.json()
   return data.data
 }
