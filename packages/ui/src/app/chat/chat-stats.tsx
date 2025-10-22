@@ -1,6 +1,12 @@
 type ChatStatsProps = {
-  currentRepo: string
+  context: {
+    repo: string | null
+    path: string | null
+    pageNumber: number | null
+  }
+  repos: Array<{ name: string }>
   sessionId?: string
+  isStreaming?: boolean
   stats?: {
     sessionId?: string
     duration?: number
@@ -13,7 +19,8 @@ type ChatStatsProps = {
   }
 }
 
-export const ChatStats = ({ currentRepo, sessionId, stats }: ChatStatsProps) => {
+export const ChatStats = ({ context, repos, sessionId, isStreaming, stats }: ChatStatsProps) => {
+  const displayRepo = context.repo || (repos.length > 0 ? repos[0].name : 'loading...')
   if (!stats?.sessionId) {
     return null
   }
@@ -24,7 +31,7 @@ export const ChatStats = ({ currentRepo, sessionId, stats }: ChatStatsProps) => 
         <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
           <div className="flex items-center gap-1">
             <span className="text-blue-600 dark:text-blue-400">
-              user@{currentRepo || 'loading...'}
+              user@{displayRepo}
             </span>
           </div>
 
@@ -87,7 +94,7 @@ export const ChatStats = ({ currentRepo, sessionId, stats }: ChatStatsProps) => 
         </div>
 
         {sessionId && (
-          <div className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+          <div className={`text-xs flex items-center gap-1 ${isStreaming ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -96,7 +103,7 @@ export const ChatStats = ({ currentRepo, sessionId, stats }: ChatStatsProps) => 
                 d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <span>Active</span>
+            <span>{isStreaming ? 'Active' : 'Idle'}</span>
           </div>
         )}
       </div>

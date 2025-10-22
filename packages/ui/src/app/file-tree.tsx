@@ -85,14 +85,6 @@ function TreeItem({ node, onFileClick, repoName, selectedPath }: TreeItemProps) 
     localStorage.setItem(storageKey, JSON.stringify(isOpen))
   }, [isOpen, storageKey])
 
-  // Auto-expand if this path contains the selected path
-  useEffect(() => {
-    if (shouldAutoOpen && !isOpen) {
-      // eslint-disable-next-line
-      setIsOpen(true)
-    }
-  }, [shouldAutoOpen, isOpen])
-
   if (node.type === 'file') {
     return (
       <div

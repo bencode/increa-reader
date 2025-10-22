@@ -18,16 +18,11 @@ type StreamMessage = {
 }
 
 export const HELP_TEXT = `Available commands:
-  /cd <repo>   Switch to repo context
-  /pwd         Show current context
   /clear       Clear messages
   /abort       Abort current generation
   /help        Show this help
 
-Examples:
-  $ /cd pages
-  $ where is FileTree?
-  $ /cd book
+Tip: Context follows the file you select in the left panel.
 `
 
 export const parseCommand = (input: string) => {

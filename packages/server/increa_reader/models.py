@@ -45,6 +45,5 @@ class ChatContext(BaseModel):
 class ChatRequest(BaseModel):
     prompt: str
     sessionId: Optional[str] = None
-    repo: Optional[str] = None
     context: Optional[ChatContext] = None
     options: Optional[dict] = None

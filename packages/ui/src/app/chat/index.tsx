@@ -10,7 +10,6 @@ import { ChatStats } from './chat-stats'
 export const ChatPanel = () => {
   const [messages, setMessages] = useState<MessageType[]>([])
   const [input, setInput] = useState('')
-  const [currentRepo, setCurrentRepo] = useState<string>('')
   const [sessionId, setSessionId] = useState<string>()
   const [isStreaming, setIsStreaming] = useState(false)
   const [repos, setRepos] = useState<Repo[]>([])
@@ -33,13 +32,9 @@ export const ChatPanel = () => {
       .then(data => {
         const repoList = data.data || []
         setRepos(repoList)
-        // Set first repo as default
-        if (repoList.length > 0 && !currentRepo) {
-          setCurrentRepo(repoList[0].name)
-        }
       })
       .catch(console.error)
-  }, [currentRepo])
+  }, [])
 
   useEffect(() => {
     const lastSessionId = localStorage.getItem('chat_session_id')
@@ -69,7 +64,7 @@ export const ChatPanel = () => {
   }, [messages, sessionId])
 
   useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: 'smooth' })
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }, [messages])
 
   const addMessage = (role: MessageType['role'], content: string) => {
@@ -114,25 +109,6 @@ export const ChatPanel = () => {
 
   const handleCommand = (name: string, args: string) => {
     switch (name) {
-      case 'cd': {
-        if (!args) {
-          addMessage('error', 'Usage: /cd <repo>')
-          return
-        }
-        const found = repos.find(r => r.name === args)
-        if (found) {
-          setCurrentRepo(args)
-          addMessage('system', `Context → ${args}`)
-        } else {
-          addMessage('error', `Repo not found: ${args}`)
-        }
-        break
-      }
-
-      case 'pwd':
-        addMessage('system', currentRepo || 'No repo selected')
-        break
-
       case 'help':
         addMessage('system', HELP_TEXT)
         break
@@ -201,7 +177,6 @@ export const ChatPanel = () => {
         body: JSON.stringify({
           prompt: input,
           sessionId,
-          repo: currentRepo,
           context,
         }),
       })
@@ -221,7 +196,6 @@ export const ChatPanel = () => {
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const data = line.slice(6)
-            console.log('message', { data })
             try {
               const msg = JSON.parse(data)
 
@@ -322,7 +296,7 @@ export const ChatPanel = () => {
         onInputChange={setInput}
         onKeyDown={handleKeyDown}
       />
-      <ChatStats currentRepo={currentRepo} sessionId={sessionId} stats={stats} />
+      <ChatStats context={getContext()} repos={repos} sessionId={sessionId} isStreaming={isStreaming} stats={stats} />
     </div>
   )
 }

@@ -63,7 +63,7 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
         if DEBUG:
             print("\n" + "=" * 80)
             print(f"📥 [CHAT REQUEST] {request.prompt[:100]}...")
-            print(f"  Repo: {request.repo} | SessionId: {request.sessionId}")
+            print(f"  SessionId: {request.sessionId}")
             if request.context:
                 context_parts = []
                 if request.context.repo:
@@ -79,20 +79,21 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
         cwd = None
         add_dirs = [r.root for r in workspace_config.repos]
 
-        if request.repo:
-            # Set specific repo as cwd
+        # Use context.repo if available, otherwise use first repo as default
+        target_repo = request.context.repo if request.context else None
+        if target_repo:
             repo_config = next(
-                (r for r in workspace_config.repos if r.name == request.repo), None
+                (r for r in workspace_config.repos if r.name == target_repo), None
             )
             if repo_config:
                 cwd = repo_config.root
             else:
                 return JSONResponse(
-                    content={"error": f"Repository '{request.repo}' not found"},
+                    content={"error": f"Repository '{target_repo}' not found"},
                     status_code=404,
                 )
         else:
-            # No specific repo, use first repo as default cwd
+            # No context repo, use first repo as default cwd
             if workspace_config.repos:
                 cwd = workspace_config.repos[0].root
 
