@@ -165,4 +165,5 @@ UI 和 Server 各自定义了相似但独立的类型（`TreeNode`, `RepoResourc
 - `PORT`: Server 端口（默认 3000）
 - `ANTHROPIC_API_KEY`: Claude API 密钥
 - `ANTHROPIC_BASE_URL`: Claude API 基础URL（可选）
+- `CHAT_LOGS_DIR`: 聊天记录保存目录（默认：`chat-logs`，支持 `~` 展开）
 - 用英文commit

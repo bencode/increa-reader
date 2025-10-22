@@ -11,7 +11,7 @@ from claude_agent_sdk import ClaudeAgentOptions, ClaudeSDKClient, create_sdk_mcp
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from .models import ChatRequest, WorkspaceConfig
+from .models import ChatRequest, ChatSaveRequest, WorkspaceConfig
 from .pdf_tools import (
     close_pdf,
     extract_text,
@@ -31,6 +31,70 @@ session_lock = asyncio.Lock()
 
 def create_chat_routes(app, workspace_config: WorkspaceConfig):
     """Create chat-related API routes"""
+
+    @app.post("/api/chat/save")
+    async def chat_save(request: ChatSaveRequest):
+        """Save chat history to markdown file"""
+        from datetime import datetime
+
+        # Get logs directory from env or use default
+        logs_path = os.getenv("CHAT_LOGS_DIR", "chat-logs")
+        logs_dir = Path(logs_path).expanduser()
+        logs_dir.mkdir(parents=True, exist_ok=True)
+
+        # Generate filename with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        session_short = request.sessionId[:8] if request.sessionId else "unknown"
+        filename = f"{timestamp}_{session_short}.md"
+        filepath = logs_dir / filename
+
+        # Format as markdown
+        lines = [f"# Chat Session: {request.sessionId}\n"]
+        lines.append(f"**Date**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+
+        if request.stats:
+            lines.append("\n## Statistics\n")
+            if request.stats.get("duration"):
+                duration_s = request.stats["duration"] / 1000
+                lines.append(f"- **Duration**: {duration_s:.1f}s\n")
+            if request.stats.get("usage"):
+                usage = request.stats["usage"]
+                lines.append(f"- **Input Tokens**: {usage.get('input_tokens', 0)}\n")
+                lines.append(f"- **Output Tokens**: {usage.get('output_tokens', 0)}\n")
+                if usage.get("cache_creation_input_tokens"):
+                    lines.append(
+                        f"- **Cache Creation**: {usage['cache_creation_input_tokens']}\n"
+                    )
+
+        lines.append("\n## Messages\n")
+        for msg in request.messages:
+            role = msg.get("role", "unknown")
+            content = msg.get("content", "")
+            timestamp_ms = msg.get("timestamp", 0)
+            dt = datetime.fromtimestamp(timestamp_ms / 1000)
+            time_str = dt.strftime("%H:%M:%S")
+
+            lines.append(f"\n### [{time_str}] {role.upper()}\n")
+            lines.append(f"{content}\n")
+
+            # Add tool calls if present
+            tool_calls = msg.get("toolCalls", [])
+            if tool_calls:
+                lines.append("\n**Tool Calls:**\n")
+                for tool in tool_calls:
+                    tool_name = tool.get("name", "unknown")
+                    tool_status = tool.get("status", "unknown")
+                    lines.append(f"- `{tool_name}` ({tool_status})\n")
+
+        # Write to file
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.writelines(lines)
+
+        return {
+            "success": True,
+            "filepath": str(filepath),
+            "filename": filename,
+        }
 
     @app.post("/api/chat/abort")
     async def chat_abort(request: dict):

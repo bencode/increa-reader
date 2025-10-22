@@ -18,7 +18,8 @@ type StreamMessage = {
 }
 
 export const HELP_TEXT = `Available commands:
-  /clear       Clear messages
+  /save        Save chat history to file
+  /clear       Save and clear messages
   /abort       Abort current generation
   /help        Show this help
 

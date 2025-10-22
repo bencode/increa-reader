@@ -19,6 +19,13 @@ type ChatStatsProps = {
   }
 }
 
+const formatTokens = (tokens: number): string => {
+  if (tokens < 1000) {
+    return tokens.toString()
+  }
+  return (tokens / 1000).toFixed(1) + 'K'
+}
+
 export const ChatStats = ({ context, repos, sessionId, isStreaming, stats }: ChatStatsProps) => {
   const displayRepo = context.repo || (repos.length > 0 ? repos[0].name : 'loading...')
   if (!stats?.sessionId) {
@@ -75,17 +82,17 @@ export const ChatStats = ({ context, repos, sessionId, isStreaming, stats }: Cha
               </svg>
               <div className="flex items-center gap-1">
                 <span className="text-gray-500">In:</span>
-                <span className="font-medium">{stats.usage.input_tokens.toLocaleString()}</span>
+                <span className="font-medium">{formatTokens(stats.usage.input_tokens)}</span>
               </div>
               <span className="text-gray-400">→</span>
               <div className="flex items-center gap-1">
                 <span className="text-gray-500">Out:</span>
-                <span className="font-medium">{stats.usage.output_tokens.toLocaleString()}</span>
+                <span className="font-medium">{formatTokens(stats.usage.output_tokens)}</span>
               </div>
               {stats.usage.cache_creation_input_tokens && (
                 <div className="flex items-center gap-1">
                   <span className="text-blue-600 dark:text-blue-400">
-                    +{stats.usage.cache_creation_input_tokens.toLocaleString()} cache
+                    +{formatTokens(stats.usage.cache_creation_input_tokens)} cache
                   </span>
                 </div>
               )}

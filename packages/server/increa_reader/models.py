@@ -47,3 +47,9 @@ class ChatRequest(BaseModel):
     sessionId: Optional[str] = None
     context: Optional[ChatContext] = None
     options: Optional[dict] = None
+
+
+class ChatSaveRequest(BaseModel):
+    sessionId: str
+    messages: List[dict]
+    stats: Optional[dict] = None

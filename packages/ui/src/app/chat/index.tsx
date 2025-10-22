@@ -71,7 +71,41 @@ export const ChatPanel = () => {
     setMessages(prev => [...prev, { role, content, timestamp: Date.now() }])
   }
 
-  const handleClear = () => {
+  const handleSave = async () => {
+    if (!sessionId || messages.length === 0) {
+      addMessage('error', 'No chat history to save')
+      return
+    }
+
+    try {
+      const response = await fetch('/api/chat/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          messages,
+          stats,
+        }),
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        addMessage('system', `Chat saved to ${result.filename}`)
+      } else {
+        const error = await response.json()
+        addMessage('error', error.detail || 'Failed to save chat')
+      }
+    } catch (error) {
+      addMessage('error', error instanceof Error ? error.message : 'Failed to save chat')
+    }
+  }
+
+  const handleClear = async () => {
+    // Save before clearing if there's content
+    if (sessionId && messages.length > 0) {
+      await handleSave()
+    }
+
     setMessages([])
     setSessionId(undefined)
     setStats(undefined)
@@ -111,6 +145,10 @@ export const ChatPanel = () => {
     switch (name) {
       case 'help':
         addMessage('system', HELP_TEXT)
+        break
+
+      case 'save':
+        handleSave()
         break
 
       case 'clear':
