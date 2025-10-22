@@ -20,6 +20,11 @@ from .pdf_tools import (
     render_page_png,
     search_text,
 )
+from .frontend_tools import (
+    FRONTEND_TOOLS,
+    complete_tool_call,
+    frontend_tool_queue,
+)
 
 # Debug logging flag
 DEBUG = os.getenv("DEBUG", "false").lower() == "true"
@@ -121,6 +126,70 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
 
         raise HTTPException(status_code=404, detail="Session not found or not active")
 
+    @app.get("/api/chat/frontend-events")
+    async def frontend_events():
+        """
+        SSE endpoint for frontend tool calls
+        Frontend connects to this endpoint and listens for tool call requests
+        """
+        async def event_stream():
+            """Stream tool call requests to frontend"""
+            try:
+                if DEBUG:
+                    print("✓ Frontend connected to SSE")
+
+                while True:
+                    # Wait for tool call request from queue
+                    tool_call_msg = await frontend_tool_queue.get()
+
+                    if DEBUG:
+                        print(f"🔧 Pushing tool call to frontend: {tool_call_msg['name']}")
+
+                    # Send to frontend via SSE
+                    yield f"data: {json.dumps(tool_call_msg, ensure_ascii=False)}\n\n"
+
+            except asyncio.CancelledError:
+                if DEBUG:
+                    print("✓ Frontend SSE disconnected")
+                raise
+
+        return StreamingResponse(
+            event_stream(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Access-Control-Allow-Origin": "*",
+            },
+        )
+
+    @app.post("/api/chat/tool-result")
+    async def chat_tool_result(request: dict):
+        """
+        Receive tool execution result from frontend
+
+        Request body:
+        {
+            "call_id": str,
+            "result": Any,  # optional, tool execution result
+            "error": str    # optional, error message if tool failed
+        }
+        """
+        call_id = request.get("call_id")
+        if not call_id:
+            raise HTTPException(status_code=400, detail="call_id is required")
+
+        result = request.get("result")
+        error = request.get("error")
+
+        complete_tool_call(call_id, result=result, error=error)
+
+        if DEBUG:
+            status = "error" if error else "success"
+            print(f"✓ Tool result received: {call_id} ({status})")
+
+        return {"status": "ok"}
+
     @app.post("/api/chat/query")
     async def chat_query(request: ChatRequest):
         """Handle chat queries with streaming response"""
@@ -175,6 +244,13 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
             ],
         )
 
+        # Frontend tools MCP server
+        frontend_server = create_sdk_mcp_server(
+            name="frontend",
+            version="1.0.0",
+            tools=[tool["function"] for tool in FRONTEND_TOOLS],
+        )
+
         default_tools = [
             "Read",
             "Grep",
@@ -185,11 +261,14 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
             "mcp__pdf-reader__render_page_png",
             "mcp__pdf-reader__search_text",
             "mcp__pdf-reader__close_pdf",
+            "mcp__frontend__get_visible_content",
+            "mcp__frontend__get_selection",
+            "mcp__frontend__get_page_context",
         ]
 
         query_options = ClaudeAgentOptions(
             cwd=cwd,
-            mcp_servers={"pdf-reader": pdf_server},
+            mcp_servers={"pdf-reader": pdf_server, "frontend": frontend_server},
             allowed_tools=(
                 request.options.get("allowedTools", default_tools)
                 if request.options
@@ -236,22 +315,14 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
                     [f"  - {repo.name}: {repo.root}" for repo in workspace_config.repos]
                 )
 
-                # Enhance prompt with context
+                # Enhance prompt with lightweight context
                 enhanced_prompt = request.prompt
-                if request.context and (
-                    request.context.repo
-                    or request.context.path
-                    or request.context.pageNumber
-                ):
+                if request.context and (request.context.repo or request.context.path):
                     context_info = []
                     if request.context.repo:
                         context_info.append(f"Repository: {request.context.repo}")
                     if request.context.path:
                         context_info.append(f"Current File: {request.context.path}")
-                    if request.context.pageNumber:
-                        context_info.append(
-                            f"Current Page: {request.context.pageNumber}"
-                        )
 
                     context_str = "\n".join(context_info)
                     enhanced_prompt = f"""[Workspace Configuration]
@@ -260,6 +331,8 @@ Available Repositories:
 
 [Current Context]
 {context_str}
+
+Note: If you need detailed information about what the user is currently viewing (visible content, selected text, or PDF page details), use the frontend tools: get_visible_content, get_selection, or get_page_context. Only use these tools when the user's question specifically references what they're currently seeing.
 
 User Question:
 {request.prompt}"""

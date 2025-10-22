@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 
-import type { Message as MessageType, Repo } from '@/types/chat'
+import type { Message as MessageType, Repo, SSEMessage } from '@/types/chat'
 import { useGetContext } from '@/stores/view-context'
 import { HELP_TEXT, parseCommand, extractTextContent, detectToolFromParams } from './utils'
 import { MessageList } from './message-list'
 import { ChatInput } from './chat-input'
 import { ChatStats } from './chat-stats'
+import { executeFrontendTool } from './frontend-tools'
 
 export const ChatPanel = () => {
   const [messages, setMessages] = useState<MessageType[]>([])
@@ -34,6 +35,63 @@ export const ChatPanel = () => {
         setRepos(repoList)
       })
       .catch(console.error)
+  }, [])
+
+  // Establish persistent SSE connection for frontend tool calls
+  useEffect(() => {
+    let eventSource: EventSource | null = null
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+
+    const connect = () => {
+      console.log('[Frontend Tools] Connecting to SSE...')
+      eventSource = new EventSource('/api/chat/frontend-events')
+
+      eventSource.onopen = () => {
+        console.log('[Frontend Tools] SSE connected')
+      }
+
+      eventSource.onmessage = async (event) => {
+        try {
+          const msg = JSON.parse(event.data) as SSEMessage
+
+          if (msg.type === 'tool_call') {
+            const { call_id, name, arguments: args } = msg
+            console.log(`[Frontend Tool] Executing ${name}`, args)
+
+            // Execute tool
+            const toolResult = await executeFrontendTool(name, args)
+
+            // Send result back to backend
+            await fetch('/api/chat/tool-result', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                call_id,
+                ...toolResult,
+              }),
+            })
+          }
+        } catch (error) {
+          console.error('[Frontend Tool] Error:', error)
+        }
+      }
+
+      eventSource.onerror = () => {
+        console.log('[Frontend Tools] SSE disconnected, reconnecting in 2s...')
+        eventSource?.close()
+
+        // Reconnect after 2 seconds
+        reconnectTimer = setTimeout(connect, 2000)
+      }
+    }
+
+    connect()
+
+    return () => {
+      console.log('[Frontend Tools] Cleaning up SSE connection')
+      eventSource?.close()
+      if (reconnectTimer) clearTimeout(reconnectTimer)
+    }
   }, [])
 
   useEffect(() => {
