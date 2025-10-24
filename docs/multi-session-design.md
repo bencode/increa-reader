@@ -104,11 +104,7 @@ When tab count exceeds visible area:
    - Hover tab to preview last few messages
    - Show session creation time and message count
 
-5. **Context Association** (Optional)
-   - Tab can be associated with current file/PDF page
-   - Auto-jump to associated reading position when switching tabs
-
-6. **Session Grouping** (Optional, Future Enhancement)
+5. **Session Grouping** (Optional, Future Enhancement)
    - Support tagging sessions (e.g., "OCR Research", "Architecture")
    - Support "pinning" important sessions to always show in tab bar
 
@@ -124,66 +120,20 @@ type Session = {
   sdkSessionId: string          // SDK session ID
   createdAt: number             // Creation timestamp
   updatedAt: number             // Last update timestamp
-  isActive: boolean             // Whether currently active
-  context?: {                   // Optional: associated context
-    repoName: string
-    filePath: string
-    pageNumber?: number
-  }
-}
-
-type SessionStore = {
-  sessions: Session[]           // All sessions
-  activeSessionId: string       // Currently active session ID
-  archivedSessions: Session[]   // Archived sessions
 }
 ```
 
 ### State Management
 
-Use Zustand for session state management:
-
-```typescript
-const useSessionStore = create<SessionStore>((set) => ({
-  sessions: [],
-  activeSessionId: '',
-  archivedSessions: [],
-
-  // Create new session
-  createSession: () => { ... },
-
-  // Switch session
-  switchSession: (id: string) => { ... },
-
-  // Close session
-  closeSession: (id: string) => { ... },
-
-  // Update session title
-  updateSessionTitle: (id: string, title: string) => { ... },
-
-  // Restore archived session
-  restoreSession: (id: string) => { ... },
-}))
-```
+State will be managed locally within the chat component.
 
 ### SDK Session Management
 
-- Each UI session corresponds to an independent SDK session
-- When switching tabs:
-  1. Save current SDK session's chat history
-  2. Load target session's SDK session ID
-  3. Backend restores context based on session ID
+Each UI session corresponds to an independent SDK session.
 
 ### Persistence Strategy
 
-1. **localStorage Storage**
-   - Store all session metadata and message history
-   - Auto-save on every state update
-   - Restore from localStorage on startup
-
-2. **Backend Session Management**
-   - Backend maintains SDK session mapping
-   - Support cross-device sync (optional, future enhancement)
+Sessions are persisted to localStorage for recovery after page refresh.
 
 ## Implementation Priorities
 
@@ -208,7 +158,6 @@ const useSessionStore = create<SessionStore>((set) => ({
 ### P3 (Future Enhancements)
 - [ ] Session grouping/tagging
 - [ ] Pin sessions
-- [ ] Context association
 - [ ] Cross-device sync
 
 ## Reference Cases
