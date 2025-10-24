@@ -11,6 +11,7 @@ import 'katex/dist/katex.min.css'
 import { fetchPreview } from './api'
 import { PDFViewer } from './pdf-viewer'
 import { useSetContext } from '@/stores/view-context'
+import { useExternalLinks } from '@/hooks/use-external-links'
 
 type PreviewData =
   | { type: 'markdown'; body: string }
@@ -43,6 +44,7 @@ export function FileViewer() {
     error: null,
   })
   const setContext = useSetContext()
+  const markdownRef = useExternalLinks()
 
   useEffect(() => {
     if (!repoName || !filePath) return
@@ -87,7 +89,7 @@ export function FileViewer() {
   return (
     <div className="h-full overflow-auto scroll-body">
       {preview.type === 'markdown' && (
-        <div className="prose prose-slate dark:prose-invert max-w-none p-4 prose-headings:text-lg prose-headings:my-2 prose-h1:text-2xl prose-h1:my-3 prose-h2:text-xl prose-h2:my-2.5 prose-h3:text-lg prose-h3:my-2 prose-h4:text-base prose-h4:my-1.5 prose-h5:text-sm prose-h5:my-1 prose-h6:text-xs prose-h6:my-1 prose-p:my-1 prose-p:leading-relaxed">
+        <div ref={markdownRef} className="prose prose-slate dark:prose-invert max-w-none p-4 prose-headings:text-lg prose-headings:my-2 prose-h1:text-2xl prose-h1:my-3 prose-h2:text-xl prose-h2:my-2.5 prose-h3:text-lg prose-h3:my-2 prose-h4:text-base prose-h4:my-1.5 prose-h5:text-sm prose-h5:my-1 prose-h6:text-xs prose-h6:my-1 prose-p:my-1 prose-p:leading-relaxed">
           <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkMath]}
             rehypePlugins={[rehypeKatex]}

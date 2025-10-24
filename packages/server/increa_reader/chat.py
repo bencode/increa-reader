@@ -248,7 +248,7 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
         frontend_server = create_sdk_mcp_server(
             name="frontend",
             version="1.0.0",
-            tools=[tool["function"] for tool in FRONTEND_TOOLS],
+            tools=FRONTEND_TOOLS,
         )
 
         default_tools = [

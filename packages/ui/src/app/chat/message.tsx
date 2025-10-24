@@ -7,6 +7,7 @@ import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
 import type { Message as MessageType } from '@/types/chat'
 import { cn } from '@/lib/utils'
+import { useExternalLinks } from '@/hooks/use-external-links'
 
 type ToolParams = Record<string, unknown>
 
@@ -49,6 +50,7 @@ export const Message = ({ role, content, isStreaming, toolCalls }: MessageType) 
   const prefix = role === 'user' ? '$' : role === 'system' ? '>' : role === 'error' ? '!' : '<'
   const textColor = role === 'user' ? 'text-blue-600 dark:text-blue-400' : role === 'error' ? 'text-red-500' : ''
   const syntaxTheme = oneDark
+  const markdownRef = useExternalLinks()
 
   return (
     <div className={cn('py-2 px-4 font-mono text-sm', textColor)}>
@@ -82,7 +84,7 @@ export const Message = ({ role, content, isStreaming, toolCalls }: MessageType) 
           {role === 'user' || role === 'system' || role === 'error' ? (
             <span>{content}</span>
           ) : (
-            <div className="prose prose-sm prose-slate dark:prose-invert max-w-none prose-headings:text-base prose-headings:my-1 prose-h1:text-lg prose-h1:my-1.5 prose-h2:text-base prose-h2:my-1 prose-h3:text-sm prose-h3:my-1 prose-h4:text-sm prose-h4:my-0.5 prose-h5:text-xs prose-h5:my-0.5 prose-h6:text-xs prose-h6:my-0.5 prose-p:leading-relaxed prose-pre:p-0 prose-pre:bg-transparent">
+            <div ref={markdownRef} className="prose prose-sm prose-slate dark:prose-invert max-w-none prose-headings:text-base prose-headings:my-1 prose-h1:text-lg prose-h1:my-1.5 prose-h2:text-base prose-h2:my-1 prose-h3:text-sm prose-h3:my-1 prose-h4:text-sm prose-h4:my-0.5 prose-h5:text-xs prose-h5:my-0.5 prose-h6:text-xs prose-h6:my-0.5 prose-p:leading-relaxed prose-pre:p-0 prose-pre:bg-transparent">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm, remarkMath]}
                 rehypePlugins={[rehypeKatex]}

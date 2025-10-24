@@ -154,16 +154,20 @@ pnpm --filter @increa/pdf-reader-mcp test:cov   # 运行测试（含覆盖率）
 - **流式响应**：SSE (Server-Sent Events) 实时返回 LLM 输出
 - **权限控制**：`permissionMode: "bypassPermissions"` 允许工具自动执行
 - **上下文切换**：用户通过 `/cd <repo>` 命令切换工作目录
+- **Frontend Tools**：必须使用 `@tool` 装饰器定义，与 PDF tools 保持一致
+  - 函数签名统一为 `async def func(args: dict[str, Any])`
+  - 通过 `create_sdk_mcp_server(tools=FRONTEND_TOOLS)` 注册
 
-### 类型系统关键点
+### UI 工具函数
 
-#### 共享类型
-UI 和 Server 各自定义了相似但独立的类型（`TreeNode`, `RepoResource`），未来可考虑提取到共享包。
+#### Markdown 链接处理
+- 使用 `useExternalLinks` Hook 统一处理外部链接（`hooks/use-external-links.ts`）
+- 通过事件冒泡拦截链接点击，外部链接自动在新窗口打开
+- 已应用于：聊天消息（message.tsx）、文件查看器（file-viewer.tsx）
 
-#### 环境变量
+## 环境变量
 - `INCREA_REPO`: 仓库路径，多个路径用 `:` 分隔（例如：`/path/to/repo1:/path/to/repo2`）
 - `PORT`: Server 端口（默认 3000）
 - `ANTHROPIC_API_KEY`: Claude API 密钥
 - `ANTHROPIC_BASE_URL`: Claude API 基础URL（可选）
 - `CHAT_LOGS_DIR`: 聊天记录保存目录（默认：`chat-logs`，支持 `~` 展开）
-- 用英文commit

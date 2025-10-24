@@ -78,7 +78,12 @@ function TreeItem({ node, onFileClick, repoName, selectedPath }: TreeItemProps) 
   const shouldAutoOpen = isSelected || selectedPath?.startsWith(`${repoName}/${node.path}/`)
   const [isOpen, setIsOpen] = useState(() => {
     const stored = localStorage.getItem(storageKey)
-    return stored ? JSON.parse(stored) : shouldAutoOpen
+    if (stored === null) return shouldAutoOpen
+    try {
+      return JSON.parse(stored)
+    } catch {
+      return shouldAutoOpen
+    }
   })
 
   useEffect(() => {

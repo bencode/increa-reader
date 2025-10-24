@@ -6,6 +6,8 @@ import asyncio
 import uuid
 from typing import Any, Dict, Optional
 
+from claude_agent_sdk import tool
+
 # Global queue for frontend tool call requests
 # SSE endpoint will consume from this queue
 frontend_tool_queue: asyncio.Queue = asyncio.Queue()
@@ -49,46 +51,39 @@ async def frontend_tool_wrapper(name: str, **kwargs) -> Any:
         pending_tool_calls.pop(call_id, None)
 
 
-async def get_visible_content() -> str:
-    """
-    Get the content currently visible in the user's viewport.
-
-    Use this when:
-    - User asks about "this section", "what I'm seeing", "current page"
-    - Need to reference specific visible content
-    - Analyzing PDF pages, markdown sections, or code blocks
-
-    Do NOT use when:
-    - General questions about the file (use Read tool instead)
-    - User is just chatting without referencing current view
-    """
+@tool(
+    "get_visible_content",
+    "Get the content currently visible in the user's viewport. "
+    "Use when user asks about 'this section', 'what I'm seeing', or 'current page'. "
+    "Do NOT use for general file questions (use Read tool instead).",
+    {}
+)
+async def get_visible_content(args: dict[str, Any]) -> str:
+    """Get the content currently visible in the user's viewport"""
     return await frontend_tool_wrapper("get_visible_content")
 
 
-async def get_selection() -> str:
-    """
-    Get the text currently selected by the user.
-
-    Use when user says "this", "selected text", "highlighted part".
-    Returns empty string if nothing is selected.
-    """
+@tool(
+    "get_selection",
+    "Get the text currently selected by the user. "
+    "Use when user says 'this', 'selected text', or 'highlighted part'. "
+    "Returns empty string if nothing is selected.",
+    {}
+)
+async def get_selection(args: dict[str, Any]) -> str:
+    """Get the text currently selected by the user"""
     return await frontend_tool_wrapper("get_selection")
 
 
-async def get_page_context() -> dict:
-    """
-    Get detailed context about the current page (for PDF files).
-
-    Returns:
-        {
-            "pageNumber": int,
-            "totalPages": int,
-            "content": str  # Current page content
-        }
-
-    Only works when user is viewing a PDF file.
-    Raises error if not viewing a PDF.
-    """
+@tool(
+    "get_page_context",
+    "Get detailed context about the current page (for PDF files). "
+    "Returns page number, total pages, and current page content. "
+    "Only works when viewing a PDF file.",
+    {}
+)
+async def get_page_context(args: dict[str, Any]) -> dict:
+    """Get detailed context about the current page (for PDF files)"""
     return await frontend_tool_wrapper("get_page_context")
 
 
@@ -106,21 +101,9 @@ def complete_tool_call(call_id: str, result: Any = None, error: Optional[str] = 
             future.set_result(result)
 
 
-# Tool definitions for Claude Agent SDK
+# Export tools for MCP server creation
 FRONTEND_TOOLS = [
-    {
-        "name": "get_visible_content",
-        "description": get_visible_content.__doc__.strip(),
-        "function": get_visible_content,
-    },
-    {
-        "name": "get_selection",
-        "description": get_selection.__doc__.strip(),
-        "function": get_selection,
-    },
-    {
-        "name": "get_page_context",
-        "description": get_page_context.__doc__.strip(),
-        "function": get_page_context,
-    },
+    get_visible_content,
+    get_selection,
+    get_page_context,
 ]
