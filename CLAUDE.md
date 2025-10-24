@@ -9,6 +9,12 @@ pnpm workspace monorepo，包含三个包：
 - `packages/server` - FastAPI 后端服务 (Python)
 - `packages/pdf-reader-mcp` - MCP PDF 阅读器服务 (Python)
 
+### 依赖项目
+- **claude-agent-sdk-python**: `/Users/bencode/work/claude-agent-sdk-python`
+  - 项目核心依赖，提供 Claude SDK 和 MCP 工具注册能力
+  - 需要时常参考源码以了解 API 使用方式和最新特性
+  - 关键模块：`@tool` 装饰器、`create_sdk_mcp_server`、Session 管理
+
 ## 常用命令
 
 ### 开发
