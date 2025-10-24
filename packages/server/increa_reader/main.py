@@ -3,6 +3,7 @@ Main application entry point for Increa Reader Server
 """
 
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 # Load environment variables from .env file
@@ -18,7 +19,7 @@ except ImportError:
 import uvicorn
 from fastapi import FastAPI
 
-from .chat import create_chat_routes
+from .chat import cleanup_active_sessions, create_chat_routes
 
 # Import local modules
 from .file_routes import create_file_routes
@@ -28,12 +29,31 @@ from .workspace import load_workspace_config
 from .workspace_routes import create_workspace_routes
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifespan (startup/shutdown)"""
+    # Startup
+    workspace_config = app.state.workspace_config
+    print(f"🚀 Increa Reader Server started")
+    print(f"   Repositories: {len(workspace_config.repos)}")
+    for repo in workspace_config.repos:
+        print(f"   - {repo.name}: {repo.root}")
+
+    yield
+
+    # Shutdown
+    print("\n🛑 Shutting down Increa Reader Server...")
+    await cleanup_active_sessions()
+    print("✓ Cleanup completed\n")
+
+
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application"""
     app = FastAPI(
         title="Increa Reader API",
         description="A FastAPI server for increa-reader with PDF and chat capabilities",
         version="1.0.0",
+        lifespan=lifespan,
     )
 
     # CORS middleware
@@ -49,6 +69,7 @@ def create_app() -> FastAPI:
 
     # Global workspace configuration
     workspace_config = load_workspace_config()
+    app.state.workspace_config = workspace_config
 
     # Register all route modules
     create_workspace_routes(app, workspace_config)
@@ -66,14 +87,6 @@ def create_app() -> FastAPI:
         """Health check endpoint"""
         return {"status": "healthy", "repos": len(workspace_config.repos)}
 
-    @app.on_event("startup")
-    async def startup_event():
-        """Load configuration on startup"""
-        print(f"🚀 Increa Reader Server started")
-        print(f"   Repositories: {len(workspace_config.repos)}")
-        for repo in workspace_config.repos:
-            print(f"   - {repo.name}: {repo.root}")
-
     return app
 
 
@@ -83,4 +96,11 @@ app = create_app()
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 3000))
-    uvicorn.run(app, host="0.0.0.0", port=port, reload=True, log_level="info")
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=port,
+        reload=True,
+        log_level="info",
+        timeout_graceful_shutdown=5,
+    )

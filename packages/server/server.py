@@ -15,4 +15,5 @@ if __name__ == "__main__":
         port=port,
         reload=True,
         log_level="info",
+        timeout_graceful_shutdown=5,
     )

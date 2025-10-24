@@ -34,6 +34,20 @@ active_sessions: dict[str, ClaudeSDKClient] = {}
 session_lock = asyncio.Lock()
 
 
+async def cleanup_active_sessions():
+    """Cleanup all active sessions on shutdown"""
+    async with session_lock:
+        for session_id, client in list(active_sessions.items()):
+            try:
+                await client.interrupt()
+                if DEBUG:
+                    print(f"✓ Interrupted session: {session_id}")
+            except Exception as e:
+                if DEBUG:
+                    print(f"✗ Failed to interrupt session {session_id}: {e}")
+        active_sessions.clear()
+
+
 def create_chat_routes(app, workspace_config: WorkspaceConfig):
     """Create chat-related API routes"""
 
