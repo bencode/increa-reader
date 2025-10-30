@@ -48,12 +48,13 @@ const formatToolParams = (toolName: string, params?: ToolParams) => {
 
 export const Message = ({ role, content, isStreaming, toolCalls }: MessageType) => {
   const prefix = role === 'user' ? '$' : role === 'system' ? '>' : role === 'error' ? '!' : '<'
-  const textColor = role === 'user' ? 'text-blue-600 dark:text-blue-400' : role === 'error' ? 'text-red-500' : ''
+  const textColor = role === 'user' ? 'text-blue-600 dark:text-blue-400' : role === 'error' ? 'text-red-700 dark:text-red-300' : ''
+  const bgColor = role === 'error' ? 'bg-red-50 dark:bg-red-950/30 border-l-4 border-red-500' : ''
   const syntaxTheme = oneDark
   const markdownRef = useExternalLinks()
 
   return (
-    <div className={cn('py-2 px-4 font-mono text-sm', textColor)}>
+    <div className={cn('py-2 px-4 font-mono text-sm', textColor, bgColor)}>
       <div className="flex gap-2">
         <span className="opacity-70">{prefix}</span>
         <div className="flex-1">

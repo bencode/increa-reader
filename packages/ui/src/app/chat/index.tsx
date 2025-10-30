@@ -277,6 +277,12 @@ export const ChatPanel = () => {
         }),
       })
 
+      // Check for HTTP errors
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`)
+      }
+
       const reader = response.body?.getReader()
       const decoder = new TextDecoder()
 
@@ -362,6 +368,16 @@ export const ChatPanel = () => {
                 }
                 setStats(newStats)
                 localStorage.setItem(`chat_stats_${msg.session_id}`, JSON.stringify(newStats))
+                setIsStreaming(false)
+              }
+
+              // Handle error messages from backend
+              if (msg.type === 'error') {
+                // Remove streaming assistant message
+                setMessages(prev => prev.slice(0, -1))
+                // Add error message
+                addMessage('error', msg.message || 'Unknown error occurred')
+                // Reset streaming state
                 setIsStreaming(false)
               }
             } catch (e) {
