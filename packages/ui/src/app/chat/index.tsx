@@ -3,10 +3,11 @@ import { useEffect, useRef, useState } from 'react'
 import type { Message as MessageType, Repo, SSEMessage } from '@/types/chat'
 import { useGetContext } from '@/stores/view-context'
 import { HELP_TEXT, parseCommand, extractTextContent, detectToolFromParams } from './utils'
-import { MessageList } from './message-list'
-import { ChatInput } from './chat-input'
-import { ChatStats } from './chat-stats'
 import { executeFrontendTool } from './frontend-tools'
+import { ChatHeader } from './chat-header'
+import { HistoryPanel } from './history-panel'
+import { ActiveChatPanel } from './active-chat-panel'
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 
 export const ChatPanel = () => {
   const [messages, setMessages] = useState<MessageType[]>([])
@@ -24,6 +25,7 @@ export const ChatPanel = () => {
       cache_read_input_tokens?: number
     }
   }>()
+  const [isSplitView, setIsSplitView] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const getContext = useGetContext()
 
@@ -400,15 +402,44 @@ export const ChatPanel = () => {
   }
 
   return (
-    <div className="flex flex-col h-full font-mono bg-gray-50 dark:bg-gray-900">
-      <MessageList messages={messages} scrollRef={scrollRef} />
-      <ChatInput
-        input={input}
-        isStreaming={isStreaming}
-        onInputChange={setInput}
-        onKeyDown={handleKeyDown}
-      />
-      <ChatStats context={getContext()} repos={repos} sessionId={sessionId} isStreaming={isStreaming} stats={stats} />
+    <div className="flex flex-col h-full font-mono">
+      <ChatHeader isSplitView={isSplitView} onToggleSplit={() => setIsSplitView(!isSplitView)} />
+
+      {isSplitView ? (
+        <ResizablePanelGroup direction="vertical" className="flex-1">
+          <ResizablePanel defaultSize={70} minSize={30}>
+            <HistoryPanel messages={messages} />
+          </ResizablePanel>
+          <ResizableHandle />
+          <ResizablePanel defaultSize={30} minSize={20}>
+            <ActiveChatPanel
+              messages={messages}
+              scrollRef={scrollRef}
+              input={input}
+              isStreaming={isStreaming}
+              onInputChange={setInput}
+              onKeyDown={handleKeyDown}
+              context={getContext()}
+              repos={repos}
+              sessionId={sessionId}
+              stats={stats}
+            />
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      ) : (
+        <ActiveChatPanel
+          messages={messages}
+          scrollRef={scrollRef}
+          input={input}
+          isStreaming={isStreaming}
+          onInputChange={setInput}
+          onKeyDown={handleKeyDown}
+          context={getContext()}
+          repos={repos}
+          sessionId={sessionId}
+          stats={stats}
+        />
+      )}
     </div>
   )
 }
