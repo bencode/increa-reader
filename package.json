@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm --filter \"./packages/*\" dev",
+    "dev": "pnpm --filter \"./packages/ui\" --filter \"./packages/server\" dev",
     "build": "pnpm --filter \"./packages/*\" build",
     "test": "pnpm --filter \"./packages/*\" test"
   },

@@ -4,10 +4,10 @@
   "description": "MCP server for PDF reading (Python package)",
   "private": true,
   "scripts": {
-    "dev": "python pdf_reader_server.py",
-    "test": "pytest tests/ -v",
-    "test:cov": "pytest tests/ --cov=pdf_reader_server",
-    "lint": "ruff check .",
-    "format": "ruff format ."
+    "dev": "../server/.venv/bin/python pdf_reader_server.py",
+    "test": "../server/.venv/bin/pytest tests/ -v",
+    "test:cov": "../server/.venv/bin/pytest tests/ --cov=pdf_reader_server",
+    "lint": "../server/.venv/bin/ruff check .",
+    "format": "../server/.venv/bin/ruff format ."
   }
 }

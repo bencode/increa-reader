@@ -3,11 +3,11 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "python server.py",
-    "start": "python server.py",
-    "install:python": "pip install -r requirements.txt",
-    "install:dev": "pip install -e '.[dev]'",
-    "test": "pytest",
-    "test:cov": "pytest --cov=increa_reader --cov-report=term-missing"
+    "dev": ".venv/bin/python server.py",
+    "start": ".venv/bin/python server.py",
+    "install:python": ".venv/bin/pip install -r requirements.txt",
+    "install:dev": ".venv/bin/pip install -e '.[dev]'",
+    "test": ".venv/bin/pytest",
+    "test:cov": ".venv/bin/pytest --cov=increa_reader --cov-report=term-missing"
   }
 }
