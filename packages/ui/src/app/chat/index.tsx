@@ -78,18 +78,20 @@ export const ChatPanel = () => {
           </ResizablePanel>
         </ResizablePanelGroup>
       ) : (
-        <ActiveChatPanel
-          messages={messages}
-          scrollRef={scrollRef}
-          input={input}
-          isStreaming={isStreaming}
-          onInputChange={setInput}
-          onKeyDown={handleKeyDown}
-          context={getContext()}
-          repos={repos}
-          sessionId={sessionId}
-          stats={stats}
-        />
+        <div className="flex-1 min-h-0">
+          <ActiveChatPanel
+            messages={messages}
+            scrollRef={scrollRef}
+            input={input}
+            isStreaming={isStreaming}
+            onInputChange={setInput}
+            onKeyDown={handleKeyDown}
+            context={getContext()}
+            repos={repos}
+            sessionId={sessionId}
+            stats={stats}
+          />
+        </div>
       )}
     </div>
   )
