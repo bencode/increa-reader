@@ -10,6 +10,7 @@ import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
 import { fetchPreview } from './api'
 import { PDFViewer } from './pdf-viewer'
+import { ImageViewer } from './image-viewer'
 import { useSetContext } from '@/stores/view-context'
 import { useExternalLinks } from '@/hooks/use-external-links'
 
@@ -132,13 +133,10 @@ export function FileViewer() {
       )}
 
       {preview.type === 'image' && (
-        <div className="h-full flex items-center justify-center p-8">
-          <img
-            src={`/api/raw/${repoName}/${preview.path}`}
-            alt={preview.path}
-            className="max-w-full max-h-full object-contain"
-          />
-        </div>
+        <ImageViewer
+          src={`/api/raw/${repoName}/${preview.path}`}
+          alt={preview.path}
+        />
       )}
 
       {preview.type === 'pdf' && (
