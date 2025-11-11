@@ -289,7 +289,7 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
             "mcp__pdf-reader__close_pdf",
             "mcp__frontend__get_visible_content",
             "mcp__frontend__get_selection",
-            "mcp__frontend__get_page_context",
+            "mcp__frontend__get_current_page",
         ]
 
         query_options = ClaudeAgentOptions(

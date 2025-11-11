@@ -107,15 +107,14 @@ async def get_selection(args: dict[str, Any]) -> dict[str, Any]:
 
 
 @tool(
-    "get_page_context",
-    "Get detailed context about the current page (for PDF files). "
-    "Returns page number, total pages, and current page content. "
+    "get_current_page",
+    "Get the current PDF page number the user is viewing. "
     "Only works when viewing a PDF file.",
     {},
 )
-async def get_page_context(args: dict[str, Any]) -> dict[str, Any]:
-    """Get detailed context about the current page (for PDF files)"""
-    return await frontend_tool_wrapper("get_page_context")
+async def get_current_page(args: dict[str, Any]) -> dict[str, Any]:
+    """Get the current PDF page number"""
+    return await frontend_tool_wrapper("get_current_page")
 
 
 def complete_tool_call(call_id: str, result: Any = None, error: Optional[str] = None):
@@ -147,5 +146,5 @@ def complete_tool_call(call_id: str, result: Any = None, error: Optional[str] = 
 FRONTEND_TOOLS = [
     get_visible_content,
     get_selection,
-    get_page_context,
+    get_current_page,
 ]

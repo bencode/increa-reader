@@ -2,6 +2,8 @@
  * Frontend tool handlers - execute tools requested by LLM
  */
 
+import { useViewContext } from '@/stores/view-context'
+
 type ToolResult = { result?: unknown; error?: string }
 
 /**
@@ -26,29 +28,17 @@ const getSelection = async (): Promise<string> => {
 }
 
 /**
- * Get PDF page context (page number, total pages, content)
+ * Get current PDF page number
  */
-const getPageContext = async (): Promise<{
-  pageNumber: number
-  totalPages: number
-  content: string
-}> => {
-  // TODO: Get from PDF viewer state via global store or data attributes
-  const params = new URLSearchParams(window.location.search)
-  const page = params.get('page')
+const getCurrentPage = async (): Promise<number> => {
+  // Get page number from Zustand store
+  const context = useViewContext.getState()
 
-  if (!page) {
-    throw new Error('Not viewing a PDF file')
+  if (!context.pageNumber) {
+    throw new Error('Not viewing a PDF file or page number not available')
   }
 
-  const pageElement = document.querySelector(`[data-page="${page}"]`)
-  const content = pageElement?.textContent || ''
-
-  return {
-    pageNumber: Number.parseInt(page, 10),
-    totalPages: 0, // TODO: Get from PDF viewer state
-    content,
-  }
+  return context.pageNumber
 }
 
 /**
@@ -59,9 +49,12 @@ export const executeFrontendTool = async (
   args: Record<string, unknown>,
 ): Promise<ToolResult> => {
   try {
+    // Strip MCP prefix if present (e.g., "mcp__frontend__get_visible_content" -> "get_visible_content")
+    const toolName = name.replace(/^mcp__frontend__/, '')
+
     let result: unknown
 
-    switch (name) {
+    switch (toolName) {
       case 'get_visible_content':
         result = await getVisibleContent()
         break
@@ -70,8 +63,8 @@ export const executeFrontendTool = async (
         result = await getSelection()
         break
 
-      case 'get_page_context':
-        result = await getPageContext()
+      case 'get_current_page':
+        result = await getCurrentPage()
         break
 
       default:

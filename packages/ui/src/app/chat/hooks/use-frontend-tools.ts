@@ -15,15 +15,15 @@ export const useFrontendTools = () => {
         console.log('[Frontend Tools] SSE connected')
       }
 
-      eventSource.onmessage = async (event) => {
+      eventSource.onmessage = async event => {
         try {
           const msg = JSON.parse(event.data) as SSEMessage
 
           if (msg.type === 'tool_call') {
             const { call_id, name, arguments: args } = msg
-            console.log(`[Frontend Tool] Executing ${name}`, args)
 
             const toolResult = await executeFrontendTool(name, args)
+            console.log(`[Frontend Tool] Executing ${name}, args: %o, result: %o`, args, toolResult)
 
             await fetch('/api/chat/tool-result', {
               method: 'POST',
