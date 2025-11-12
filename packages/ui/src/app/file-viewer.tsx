@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
@@ -13,6 +13,7 @@ import { PDFViewer } from './pdf-viewer'
 import { ImageViewer } from './image-viewer'
 import { useSetContext } from '@/stores/view-context'
 import { useExternalLinks } from '@/hooks/use-external-links'
+import { useVisibleContent } from '../contexts/visible-content-context'
 
 type PreviewData =
   | { type: 'markdown'; body: string }
@@ -46,6 +47,8 @@ export function FileViewer() {
   })
   const setContext = useSetContext()
   const markdownRef = useExternalLinks()
+  const scrollBodyRef = useRef<HTMLDivElement>(null)
+  const elementsRef = useVisibleContent()
 
   useEffect(() => {
     if (!repoName || !filePath) return
@@ -64,6 +67,41 @@ export function FileViewer() {
         setState({ preview: null, loading: false, error: err.message || 'Failed to load file' })
       })
   }, [repoName, filePath, setContext])
+
+  // Setup IntersectionObserver to track visible elements
+  useEffect(() => {
+    const scrollBody = scrollBodyRef.current
+    if (!scrollBody) return
+
+    // Clear previous elements
+    elementsRef.current.clear()
+
+    const observer = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            elementsRef.current.add(entry.target as HTMLElement)
+          } else {
+            elementsRef.current.delete(entry.target as HTMLElement)
+          }
+        })
+      },
+      {
+        root: scrollBody,
+        rootMargin: '100px',
+        threshold: 0.1,
+      }
+    )
+
+    // Observe target elements (prose content, code blocks, PDF pages)
+    const targets = scrollBody.querySelectorAll('.prose > *, pre, code, [data-index]')
+    targets.forEach(el => observer.observe(el))
+
+    return () => {
+      observer.disconnect()
+      elementsRef.current.clear()
+    }
+  }, [state.preview, elementsRef])
 
   const { loading, error, preview } = state
 
@@ -88,7 +126,7 @@ export function FileViewer() {
   }
 
   return (
-    <div className="h-full overflow-auto scroll-body">
+    <div ref={scrollBodyRef} className="h-full overflow-auto scroll-body">
       {preview.type === 'markdown' && (
         <div ref={markdownRef} className="prose prose-slate dark:prose-invert max-w-none p-4 prose-headings:text-lg prose-headings:my-2 prose-h1:text-2xl prose-h1:my-3 prose-h2:text-xl prose-h2:my-2.5 prose-h3:text-lg prose-h3:my-2 prose-h4:text-base prose-h4:my-1.5 prose-h5:text-sm prose-h5:my-1 prose-h6:text-xs prose-h6:my-1 prose-p:my-1 prose-p:leading-relaxed">
           <ReactMarkdown

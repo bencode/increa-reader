@@ -1,8 +1,10 @@
 import { useEffect } from 'react'
 import type { SSEMessage } from '@/types/chat'
-import { executeFrontendTool } from '../frontend-tools'
+import { executeFrontendTool, type ToolContext } from '../frontend-tools'
+import { useVisibleContent } from '../../../contexts/visible-content-context'
 
 export const useFrontendTools = () => {
+  const elementsRef = useVisibleContent()
   useEffect(() => {
     let eventSource: EventSource | null = null
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null
@@ -22,7 +24,12 @@ export const useFrontendTools = () => {
           if (msg.type === 'tool_call') {
             const { call_id, name, arguments: args } = msg
 
-            const toolResult = await executeFrontendTool(name, args)
+            // Build tool context
+            const ctx: ToolContext = {
+              visibleElements: elementsRef.current,
+            }
+
+            const toolResult = await executeFrontendTool(ctx, name, args)
             console.log(`[Frontend Tool] Executing ${name}, args: %o, result: %o`, args, toolResult)
 
             await fetch('/api/chat/tool-result', {
@@ -53,5 +60,5 @@ export const useFrontendTools = () => {
       eventSource?.close()
       if (reconnectTimer) clearTimeout(reconnectTimer)
     }
-  }, [])
+  }, [elementsRef])
 }

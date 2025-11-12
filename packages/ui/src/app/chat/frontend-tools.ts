@@ -4,25 +4,32 @@
 
 import { useViewContext } from '@/stores/view-context'
 
+export type ToolContext = {
+  visibleElements: Set<HTMLElement>
+}
+
 type ToolResult = { result?: unknown; error?: string }
 
 /**
  * Get the content currently visible in user's viewport
  */
-const getVisibleContent = async (): Promise<string> => {
-  // Get main content area
-  const contentElement = document.querySelector('[data-content-viewer]')
-  if (contentElement) {
-    return contentElement.textContent || ''
+const getVisibleContent = async (ctx: ToolContext): Promise<string> => {
+  const { visibleElements } = ctx
+
+  if (visibleElements.size === 0) {
+    return 'No visible content'
   }
 
-  return 'No visible content available'
+  return Array.from(visibleElements)
+    .map(el => el.textContent?.trim())
+    .filter(Boolean)
+    .join('\n\n')
 }
 
 /**
  * Get user's current text selection
  */
-const getSelection = async (): Promise<string> => {
+const getSelection = async (ctx: ToolContext): Promise<string> => {
   const selection = window.getSelection()
   return selection?.toString() || ''
 }
@@ -30,7 +37,7 @@ const getSelection = async (): Promise<string> => {
 /**
  * Get current PDF page number
  */
-const getCurrentPage = async (): Promise<number> => {
+const getCurrentPage = async (ctx: ToolContext): Promise<number> => {
   // Get page number from Zustand store
   const context = useViewContext.getState()
 
@@ -45,6 +52,7 @@ const getCurrentPage = async (): Promise<number> => {
  * Execute a frontend tool requested by the LLM
  */
 export const executeFrontendTool = async (
+  ctx: ToolContext,
   name: string,
   args: Record<string, unknown>,
 ): Promise<ToolResult> => {
@@ -56,15 +64,15 @@ export const executeFrontendTool = async (
 
     switch (toolName) {
       case 'get_visible_content':
-        result = await getVisibleContent()
+        result = await getVisibleContent(ctx)
         break
 
       case 'get_selection':
-        result = await getSelection()
+        result = await getSelection(ctx)
         break
 
       case 'get_current_page':
-        result = await getCurrentPage()
+        result = await getCurrentPage(ctx)
         break
 
       default:
