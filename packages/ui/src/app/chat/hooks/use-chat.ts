@@ -1,112 +1,43 @@
-import { useState, useCallback } from 'react'
-import type { Message, Repo } from '@/types/chat'
+import { useState, useCallback, useEffect, useRef } from 'react'
+import type { Message, Repo, Session, ChatStats } from '@/types/chat'
 import type { ViewContext } from '@/stores/view-context'
-import { HELP_TEXT, parseCommand, extractTextContent, detectToolFromParams } from '../utils'
-
-type Stats = {
-  sessionId?: string
-  duration?: number
-  usage?: {
-    input_tokens: number
-    output_tokens: number
-    cache_creation_input_tokens?: number
-    cache_read_input_tokens?: number
-  }
-}
+import { parseCommand, extractTextContent, detectToolFromParams } from '../utils'
+import { useSessionManager } from './use-session-manager'
+import { useCommands } from './use-commands'
+import { useEventCallback } from '@/hooks/use-event-callback'
 
 export const useChat = (getContext: () => ViewContext) => {
-  const [messages, setMessages] = useState<Message[]>([])
+  const [currentSession, setCurrentSession] = useState<Session | null>(null)
   const [input, setInput] = useState('')
-  const [sessionId, setSessionId] = useState<string>()
   const [isStreaming, setIsStreaming] = useState(false)
   const [repos, setRepos] = useState<Repo[]>([])
-  const [stats, setStats] = useState<Stats>()
 
-  const addMessage = useCallback((role: Message['role'], content: string) => {
-    setMessages(prev => [...prev, { role, content, timestamp: Date.now() }])
-  }, [])
+  const sessionManager = useSessionManager()
+  const saveTimeoutRef = useRef<NodeJS.Timeout>()
 
-  const handleSave = useCallback(async () => {
-    if (!sessionId || messages.length === 0) {
-      addMessage('error', 'No chat history to save')
-      return
-    }
+  // Commands handling
+  const { handleCommand } = useCommands({ currentSession, setCurrentSession, sessionManager })
 
-    try {
-      const response = await fetch('/api/chat/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, messages, stats }),
-      })
+  // Wrap functions with useEventCallback for stable references
+  const createSessionEvent = useEventCallback(() => sessionManager.createSession())
+  const saveSessionEvent = useEventCallback((session: Session) => sessionManager.saveSession(session))
+  const getContextEvent = useEventCallback(() => getContext())
 
-      if (response.ok) {
-        const result = await response.json()
-        addMessage('system', `Chat saved to ${result.filename}`)
-      } else {
-        const error = await response.json()
-        addMessage('error', error.detail || 'Failed to save chat')
+  // 便捷访问
+  const messages = currentSession?.messages ?? []
+  const sessionId = currentSession?.stats?.sessionId
+  const stats = currentSession?.stats
+
+  const addMessage = useEventCallback((role: Message['role'], content: string) => {
+    setCurrentSession(prev => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        messages: [...prev.messages, { role, content, timestamp: Date.now() }],
+        lastActiveAt: Date.now(),
       }
-    } catch (error) {
-      addMessage('error', error instanceof Error ? error.message : 'Failed to save chat')
-    }
-  }, [sessionId, messages, stats, addMessage])
-
-  const handleClear = useCallback(async () => {
-    if (sessionId && messages.length > 0) {
-      await handleSave()
-    }
-
-    setMessages([])
-    setSessionId(undefined)
-    setStats(undefined)
-  }, [sessionId, messages.length, handleSave])
-
-  const handleAbort = useCallback(async () => {
-    if (!sessionId) {
-      addMessage('error', 'No active session to abort')
-      return
-    }
-
-    try {
-      const response = await fetch('/api/chat/abort', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId }),
-      })
-
-      if (response.ok) {
-        addMessage('system', 'Aborted current generation')
-        setIsStreaming(false)
-      } else {
-        const error = await response.json()
-        addMessage('error', error.detail || 'Failed to abort')
-      }
-    } catch (error) {
-      addMessage('error', error instanceof Error ? error.message : 'Failed to abort')
-    }
-  }, [sessionId, addMessage])
-
-  const handleCommand = useCallback(
-    (name: string, args: string) => {
-      switch (name) {
-        case 'help':
-          addMessage('system', HELP_TEXT)
-          break
-        case 'save':
-          handleSave()
-          break
-        case 'clear':
-          handleClear()
-          break
-        case 'abort':
-          handleAbort()
-          break
-        default:
-          addMessage('error', `Unknown command: /${name}. Type /help for available commands.`)
-      }
-    },
-    [addMessage, handleSave, handleClear, handleAbort]
-  )
+    })
+  })
 
   const sendMessage = useCallback(async () => {
     if (!input.trim()) return
@@ -115,14 +46,21 @@ export const useChat = (getContext: () => ViewContext) => {
     const cmd = parseCommand(normalized)
 
     if (cmd) {
-      setMessages(prev => [
-        ...prev,
-        {
-          role: 'user',
-          content: normalized,
-          timestamp: Date.now(),
-        },
-      ])
+      setCurrentSession(prev => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          messages: [
+            ...prev.messages,
+            {
+              role: 'user',
+              content: normalized,
+              timestamp: Date.now(),
+            },
+          ],
+          lastActiveAt: Date.now(),
+        }
+      })
 
       handleCommand(cmd.name, cmd.args)
       setInput('')
@@ -134,8 +72,19 @@ export const useChat = (getContext: () => ViewContext) => {
       return
     }
 
+    // 确保有 session（用局部变量）
+    let workingSession = currentSession
+    if (!workingSession) {
+      workingSession = createSessionEvent()
+      setCurrentSession(workingSession)
+    }
+
     const userMsg: Message = { role: 'user', content: input, timestamp: Date.now() }
-    setMessages(prev => [...prev, userMsg])
+    setCurrentSession(prev => ({
+      ...prev!,
+      messages: [...prev!.messages, userMsg],
+      lastActiveAt: Date.now(),
+    }))
     setInput('')
     setIsStreaming(true)
 
@@ -148,17 +97,20 @@ export const useChat = (getContext: () => ViewContext) => {
       isStreaming: true,
       toolCalls: [],
     }
-    setMessages(prev => [...prev, assistantMsg])
+    setCurrentSession(prev => ({
+      ...prev!,
+      messages: [...prev!.messages, assistantMsg],
+    }))
 
     try {
-      const context = getContext()
+      const context = getContextEvent()
 
       const response = await fetch('/api/chat/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: input,
-          sessionId,
+          sessionId: workingSession.stats?.sessionId,
           context,
         }),
       })
@@ -187,7 +139,10 @@ export const useChat = (getContext: () => ViewContext) => {
               const msg = JSON.parse(data)
 
               if (msg.type === 'system' && msg.subtype === 'init') {
-                setSessionId(msg.session_id)
+                setCurrentSession(prev => ({
+                  ...prev!,
+                  stats: { ...prev!.stats, sessionId: msg.session_id },
+                }))
               }
 
               if (msg.type === 'stream_event') {
@@ -196,10 +151,13 @@ export const useChat = (getContext: () => ViewContext) => {
                 const deltaText = extractTextContent(msg)
                 if (deltaText) {
                   assistantContent += deltaText
-                  setMessages(prev => [
-                    ...prev.slice(0, -1),
-                    { ...assistantMsg, content: assistantContent, toolCalls, isStreaming: true },
-                  ])
+                  setCurrentSession(prev => ({
+                    ...prev!,
+                    messages: [
+                      ...prev!.messages.slice(0, -1),
+                      { ...assistantMsg, content: assistantContent, toolCalls, isStreaming: true },
+                    ],
+                  }))
                 }
 
                 if (delta?.type === 'input_json_delta') {
@@ -214,10 +172,13 @@ export const useChat = (getContext: () => ViewContext) => {
                       toolCalls = [...(toolCalls || []), { name: toolName, status: 'running', params }]
                     }
 
-                    setMessages(prev => [
-                      ...prev.slice(0, -1),
-                      { ...assistantMsg, content: assistantContent, toolCalls, isStreaming: true },
-                    ])
+                    setCurrentSession(prev => ({
+                      ...prev!,
+                      messages: [
+                        ...prev!.messages.slice(0, -1),
+                        { ...assistantMsg, content: assistantContent, toolCalls, isStreaming: true },
+                      ],
+                    }))
                   } catch {
                     // Partial JSON may not be parseable yet
                   }
@@ -227,28 +188,33 @@ export const useChat = (getContext: () => ViewContext) => {
               if (msg.type === 'result') {
                 const completedTools = toolCalls?.map(t => ({ ...t, status: 'done' as const }))
 
-                setMessages(prev => [
-                  ...prev.slice(0, -1),
-                  {
-                    ...assistantMsg,
-                    content: assistantContent,
-                    toolCalls: completedTools,
-                    isStreaming: false,
+                setCurrentSession(prev => ({
+                  ...prev!,
+                  messages: [
+                    ...prev!.messages.slice(0, -1),
+                    {
+                      ...assistantMsg,
+                      content: assistantContent,
+                      toolCalls: completedTools,
+                      isStreaming: false,
+                    },
+                  ],
+                  stats: {
+                    sessionId: msg.session_id,
+                    duration: msg.duration_ms,
+                    usage: msg.usage,
                   },
-                ])
+                  lastActiveAt: Date.now(),
+                }))
 
-                const newStats = {
-                  sessionId: msg.session_id,
-                  duration: msg.duration_ms,
-                  usage: msg.usage,
-                }
-                setStats(newStats)
-                localStorage.setItem(`chat_stats_${msg.session_id}`, JSON.stringify(newStats))
                 setIsStreaming(false)
               }
 
               if (msg.type === 'error') {
-                setMessages(prev => prev.slice(0, -1))
+                setCurrentSession(prev => ({
+                  ...prev!,
+                  messages: prev!.messages.slice(0, -1),
+                }))
                 addMessage('error', msg.message || 'Unknown error occurred')
                 setIsStreaming(false)
               }
@@ -262,28 +228,52 @@ export const useChat = (getContext: () => ViewContext) => {
       addMessage('error', error instanceof Error ? error.message : 'Unknown error')
       setIsStreaming(false)
     }
-  }, [input, sessionId, isStreaming, getContext, handleCommand, addMessage])
+  }, [input, currentSession, isStreaming, createSessionEvent, getContextEvent, handleCommand, addMessage])
 
-  const restoreSession = useCallback((data: { messages: Message[]; stats?: Stats }) => {
-    setMessages(data.messages)
-    setStats(data.stats)
-    if (data.stats?.sessionId) {
-      setSessionId(data.stats.sessionId)
+  // Auto-save session when messages change (debounced)
+  useEffect(() => {
+    if (!currentSession || currentSession.messages.length === 0) return
+
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current)
     }
-  }, [])
+
+    saveTimeoutRef.current = setTimeout(() => {
+      saveSessionEvent(currentSession)
+    }, 1000)
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
+      }
+    }
+  }, [currentSession, saveSessionEvent])
+
+  const loadSession = useEventCallback(async (id: string) => {
+    const session = await sessionManager.loadSession(id)
+    setCurrentSession(session)
+  })
+
+  const initializeFromStorage = useEventCallback(async () => {
+    const data = await sessionManager.loadSessions()
+    if (data.lastActiveSessionId) {
+      await loadSession(data.lastActiveSessionId)
+    }
+  })
 
   return {
     messages,
     input,
     setInput,
     sessionId,
-    setSessionId,
     isStreaming,
     repos,
     setRepos,
     stats,
-    setStats,
+    currentSession,
     sendMessage,
-    restoreSession,
+    loadSession,
+    initializeFromStorage,
+    sessionManager,
   }
 }

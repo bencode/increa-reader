@@ -17,13 +17,22 @@ type StreamMessage = {
   }
 }
 
-export const HELP_TEXT = `Available commands:
-  /save        Save chat history to file
-  /clear       Save and clear messages
-  /abort       Abort current generation
-  /help        Show this help
+export const HELP_TEXT = `## Available Commands
 
-Tip: Context follows the file you select in the left panel.
+**Basic**
+- \`/save\` - Save chat history to file
+- \`/clear\` - Clear messages and start new session
+- \`/abort\` - Abort current generation
+- \`/help\` - Show this help
+
+**Session Management**
+- \`/sessions\` - List all sessions
+- \`/new [title]\` - Create new session with optional title
+- \`/switch <id>\` - Switch to session by id or index
+- \`/rename <title>\` - Rename current session
+- \`/delete <id>\` - Delete session by id or index
+
+💡 Tip: Context follows the file you select in the left panel.
 `
 
 export const parseCommand = (input: string) => {

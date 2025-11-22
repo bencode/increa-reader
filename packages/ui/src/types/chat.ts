@@ -20,6 +20,33 @@ export type Message = {
   }
 }
 
+export type ChatStats = {
+  sessionId?: string
+  duration?: number
+  usage?: {
+    input_tokens: number
+    output_tokens: number
+    cache_creation_input_tokens?: number
+    cache_read_input_tokens?: number
+  }
+}
+
+export type Session = {
+  id: string
+  title: string
+  messages: Message[]
+  stats?: ChatStats
+  createdAt: number
+  lastActiveAt: number
+}
+
+export type SessionMetadata = {
+  id: string
+  title: string
+  createdAt: number
+  lastActiveAt: number
+}
+
 export type Repo = {
   name: string
   path: string

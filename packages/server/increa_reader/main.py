@@ -25,6 +25,7 @@ from .chat import cleanup_active_sessions, create_chat_routes
 from .file_routes import create_file_routes
 from .models import WorkspaceConfig
 from .pdf_routes import create_pdf_routes
+from .session_routes import create_session_routes
 from .workspace import load_workspace_config
 from .workspace_routes import create_workspace_routes
 
@@ -76,6 +77,7 @@ def create_app() -> FastAPI:
     create_file_routes(app, workspace_config)
     create_pdf_routes(app, workspace_config)
     create_chat_routes(app, workspace_config)
+    create_session_routes(app, workspace_config)
 
     @app.get("/api")
     async def root():

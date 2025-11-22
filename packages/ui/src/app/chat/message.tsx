@@ -82,7 +82,7 @@ export const Message = ({ role, content, isStreaming, toolCalls }: MessageType) 
             </div>
           )}
 
-          {role === 'user' || role === 'system' || role === 'error' ? (
+          {role === 'user' || role === 'error' ? (
             <span>{content}</span>
           ) : (
             <div ref={markdownRef} className="prose prose-sm prose-slate dark:prose-invert max-w-none prose-headings:text-base prose-headings:my-1 prose-h1:text-lg prose-h1:my-1.5 prose-h2:text-base prose-h2:my-1 prose-h3:text-sm prose-h3:my-1 prose-h4:text-sm prose-h4:my-0.5 prose-h5:text-xs prose-h5:my-0.5 prose-h6:text-xs prose-h6:my-0.5 prose-p:leading-relaxed prose-pre:p-0 prose-pre:bg-transparent">

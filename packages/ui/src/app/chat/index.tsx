@@ -6,7 +6,6 @@ import { HistoryPanel } from './history-panel'
 import { ActiveChatPanel } from './active-chat-panel'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import { useFrontendTools } from './hooks/use-frontend-tools'
-import { useSessionPersistence } from './hooks/use-session-persistence'
 import { useChat } from './hooks/use-chat'
 
 export const ChatPanel = () => {
@@ -24,12 +23,15 @@ export const ChatPanel = () => {
     setRepos,
     stats,
     sendMessage,
-    restoreSession,
+    initializeFromStorage,
   } = useChat(getContext)
 
   useFrontendTools()
 
-  const { clearSession } = useSessionPersistence(sessionId, messages, stats, restoreSession)
+  // Initialize session from storage on mount
+  useEffect(() => {
+    initializeFromStorage()
+  }, [])
 
   useEffect(() => {
     fetch('/api/workspace/tree')
