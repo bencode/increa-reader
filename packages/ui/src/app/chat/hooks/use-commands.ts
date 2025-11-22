@@ -53,10 +53,25 @@ export const useCommands = (ctx: CommandContext) => {
   }
 
   const handleClear = async () => {
-    if (currentSession && currentSession.messages.length > 0) {
-      await handleSave()
+    if (!currentSession) {
+      addMessage('error', 'No active session to clear')
+      return
     }
-    setCurrentSession(null)
+
+    // Clear messages and Claude SDK session, but keep the session itself
+    const clearedSession = {
+      ...currentSession,
+      messages: [],
+      stats: {}, // Clear Claude SDK sessionId to start fresh context
+      lastActiveAt: Date.now(),
+    }
+    setCurrentSession(clearedSession)
+
+    // Save cleared session to backend
+    await sessionManager.saveSession(clearedSession)
+
+    // Add system message to indicate clearing
+    addMessage('system', 'Messages cleared. Starting fresh conversation.')
   }
 
   const handleAbort = async () => {
