@@ -40,4 +40,15 @@ export async function fetchPreview(repo: string, path: string): Promise<PreviewR
   return data
 }
 
+export async function deleteFile(repo: string, path: string): Promise<{ success: boolean }> {
+  const response = await fetch(`/api/files/${encodeURIComponent(repo)}/${path}`, {
+    method: 'DELETE',
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to delete file')
+  }
+  return response.json()
+}
+
 export type { TreeNode, RepoInfo, RepoTreeData }

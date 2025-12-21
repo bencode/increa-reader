@@ -221,3 +221,40 @@ def create_file_routes(app, workspace_config: WorkspaceConfig):
             return {"type": "code", "lang": "text", "body": content}
 
         return {"type": "unsupported", "path": path}
+
+    @app.delete("/api/files/{repo}/{path:path}")
+    async def delete_file(repo: str, path: str):
+        """Delete a file"""
+        repo_config = next((r for r in workspace_config.repos if r.name == repo), None)
+        if not repo_config:
+            raise HTTPException(
+                status_code=404, detail=f"Repository '{repo}' not found"
+            )
+
+        file_path = Path(repo_config.root) / path
+
+        # Security check: prevent path traversal
+        try:
+            file_path = file_path.resolve()
+            repo_root = Path(repo_config.root).resolve()
+            if not str(file_path).startswith(str(repo_root)):
+                raise HTTPException(status_code=403, detail="Access denied")
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid path")
+
+        if not file_path.exists() or not file_path.is_file():
+            raise HTTPException(status_code=404, detail="File not found")
+
+        # Don't allow deleting directories
+        if file_path.is_dir():
+            raise HTTPException(
+                status_code=400, detail="Cannot delete directories"
+            )
+
+        try:
+            file_path.unlink()
+            return {"success": True, "path": path}
+        except PermissionError:
+            raise HTTPException(status_code=403, detail="Permission denied")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))

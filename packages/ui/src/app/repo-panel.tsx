@@ -56,6 +56,9 @@ export function RepoPanel({ repoName }: RepoPanelProps) {
             const cleanPath = path.startsWith('/') ? path.slice(1) : path
             navigate(`/views/${repoName}/${cleanPath}`)
           }}
+          onDelete={() => {
+            loadTree()
+          }}
         />
       )}
     </div>
