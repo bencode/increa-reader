@@ -9,8 +9,6 @@ import type { Message as MessageType } from '@/types/chat'
 import { cn } from '@/lib/utils'
 import { useExternalLinks } from '@/hooks/use-external-links'
 
-type ToolParams = Record<string, unknown>
-
 const getToolIcon = (toolName: string) => {
   switch (toolName) {
     case 'Read':
@@ -28,22 +26,18 @@ const getToolIcon = (toolName: string) => {
   }
 }
 
-const formatToolParams = (toolName: string, params?: ToolParams) => {
+const formatToolParams = (toolName: string, params?: Record<string, unknown>) => {
   if (!params) return ''
-  switch (toolName) {
-    case 'Read':
-      return params.file_path?.split('/').pop() || ''
-    case 'TodoWrite':
-      return `${params.todos?.length || 0} items`
-    case 'Grep':
-      return params.pattern || ''
-    case 'Glob':
-      return params.pattern || ''
-    case 'Bash':
-      return params.command?.slice(0, 30) || ''
-    default:
-      return ''
+
+  const formatters: Record<string, (p: Record<string, unknown>) => string> = {
+    Read: p => (p.file_path as string)?.split('/').pop() || '',
+    TodoWrite: p => `${((p.todos as unknown[]) || []).length} items`,
+    Grep: p => (p.pattern as string) || '',
+    Glob: p => (p.pattern as string) || '',
+    Bash: p => ((p.command as string) || '').slice(0, 30),
   }
+
+  return formatters[toolName]?.(params) || ''
 }
 
 export const Message = ({ role, content, isStreaming, toolCalls }: MessageType) => {
@@ -90,18 +84,28 @@ export const Message = ({ role, content, isStreaming, toolCalls }: MessageType) 
                 remarkPlugins={[remarkGfm, remarkMath]}
                 rehypePlugins={[rehypeKatex]}
                 components={{
-                code({ inline, className, children, ...props }) {
-                  const match = /language-(\w+)/.exec(className || '')
-                  return !inline && match ? (
-                    <SyntaxHighlighter style={syntaxTheme} language={match[1]} PreTag="div" {...props}>
-                      {String(children).replace(/\n$/, '')}
-                    </SyntaxHighlighter>
-                  ) : (
-                    <code className={cn('bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-gray-800 dark:text-gray-200', className)} {...props}>
-                      {children}
-                    </code>
-                  )
-                },
+                  code({ inline, className, children, ...props }: {
+                    inline?: boolean
+                    className?: string
+                    children?: React.ReactNode
+                  }) {
+                    const match = /language-(\w+)/.exec(className || '')
+                    return !inline && match ? (
+                      <SyntaxHighlighter
+                        /* @ts-ignore - SyntaxHighlighter style type mismatch */
+                        style={syntaxTheme}
+                        language={match[1]}
+                        PreTag="div"
+                        {...props}
+                      >
+                        {String(children).replace(/\n$/, '')}
+                      </SyntaxHighlighter>
+                    ) : (
+                      <code className={cn('bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-gray-800 dark:text-gray-200', className)} {...props}>
+                        {children}
+                      </code>
+                    )
+                  },
               }}
               >
                 {content}

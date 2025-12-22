@@ -1,19 +1,19 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import type { Message, Repo, Session, ChatStats } from '@/types/chat'
-import type { ViewContext } from '@/stores/view-context'
+import type { Message, Repo, Session } from '@/types/chat'
+import type { ContextData } from '@/stores/view-context'
 import { parseCommand, extractTextContent, detectToolFromParams } from '../utils'
 import { useSessionManager } from './use-session-manager'
 import { useCommands } from './use-commands'
 import { useEventCallback } from '@/hooks/use-event-callback'
 
-export const useChat = (getContext: () => ViewContext) => {
+export const useChat = (getContext: () => ContextData) => {
   const [currentSession, setCurrentSession] = useState<Session | null>(null)
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
   const [repos, setRepos] = useState<Repo[]>([])
 
   const sessionManager = useSessionManager()
-  const saveTimeoutRef = useRef<NodeJS.Timeout>()
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   // Commands handling
   const { handleCommand } = useCommands({ currentSession, setCurrentSession, sessionManager })

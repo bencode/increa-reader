@@ -109,6 +109,7 @@ function MarkdownContent({ pageData, loading, error }: MarkdownContentProps) {
             return match ? (
               <SyntaxHighlighter
                 language={match[1]}
+                /* @ts-ignore - SyntaxHighlighter style type mismatch */
                 style={vscDarkPlus}
                 PreTag="div"
                 customStyle={{ margin: 0, padding: 0, background: 'transparent' }}

@@ -2,16 +2,16 @@ import { ChatMessages } from './chat-messages'
 import { ChatInput } from './chat-input'
 import { ChatStats } from './chat-stats'
 import type { Message, Repo } from '@/types/chat'
-import type { ViewContext } from '@/stores/view-context'
+import type { ContextData } from '@/stores/view-context'
 
 type ActiveChatPanelProps = {
   messages: Message[]
-  scrollRef: React.RefObject<HTMLDivElement>
+  scrollRef: React.RefObject<HTMLDivElement | null>
   input: string
   isStreaming: boolean
   onInputChange: (value: string) => void
   onKeyDown: (e: React.KeyboardEvent) => void
-  context: ViewContext
+  context: ContextData
   repos: Repo[]
   sessionId?: string
   stats?: {

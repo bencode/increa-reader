@@ -1,15 +1,15 @@
 import { create } from 'zustand'
 
+export type ContextData = {
+  repo: string | null
+  path: string | null
+  pageNumber: number | null
+}
+
 type ViewContextState = ContextData & {
   getContext: () => ContextData
   setContext: (data: Partial<ContextData>) => void
   clearContext: () => void
-}
-
-type ContextData = {
-  repo: string | null
-  path: string | null
-  pageNumber: number | null
 }
 
 export const useViewContext = create<ViewContextState>((set, get) => ({

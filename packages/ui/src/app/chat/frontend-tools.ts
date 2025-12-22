@@ -29,7 +29,7 @@ const getVisibleContent = async (ctx: ToolContext): Promise<string> => {
 /**
  * Get user's current text selection
  */
-const getSelection = async (ctx: ToolContext): Promise<string> => {
+const getSelection = async (_ctx: ToolContext): Promise<string> => {
   const selection = window.getSelection()
   return selection?.toString() || ''
 }
@@ -37,7 +37,7 @@ const getSelection = async (ctx: ToolContext): Promise<string> => {
 /**
  * Get current PDF page number
  */
-const getCurrentPage = async (ctx: ToolContext): Promise<number> => {
+const getCurrentPage = async (_ctx: ToolContext): Promise<number> => {
   // Get page number from Zustand store
   const context = useViewContext.getState()
 
@@ -54,7 +54,7 @@ const getCurrentPage = async (ctx: ToolContext): Promise<number> => {
 export const executeFrontendTool = async (
   ctx: ToolContext,
   name: string,
-  args: Record<string, unknown>,
+  _args: Record<string, unknown>,
 ): Promise<ToolResult> => {
   try {
     // Strip MCP prefix if present (e.g., "mcp__frontend__get_visible_content" -> "get_visible_content")

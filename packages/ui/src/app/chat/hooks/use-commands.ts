@@ -1,3 +1,4 @@
+import { type Dispatch, type SetStateAction } from 'react'
 import type { Session } from '@/types/chat'
 import type { useSessionManager } from './use-session-manager'
 import { useEventCallback } from '@/hooks/use-event-callback'
@@ -5,7 +6,7 @@ import { HELP_TEXT } from '../utils'
 
 type CommandContext = {
   currentSession: Session | null
-  setCurrentSession: (session: Session | null) => void
+  setCurrentSession: Dispatch<SetStateAction<Session | null>>
   sessionManager: ReturnType<typeof useSessionManager>
 }
 
@@ -13,7 +14,7 @@ export const useCommands = (ctx: CommandContext) => {
   const { currentSession, setCurrentSession, sessionManager } = ctx
 
   const addMessage = (role: 'user' | 'assistant' | 'system' | 'error', content: string) => {
-    setCurrentSession(prev => {
+    setCurrentSession((prev: Session | null) => {
       if (!prev) return prev
       return {
         ...prev,

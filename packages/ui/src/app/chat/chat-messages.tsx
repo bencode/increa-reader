@@ -4,7 +4,7 @@ import type { Message as MessageType } from '@/types/chat'
 
 type ChatMessagesProps = {
   messages: MessageType[]
-  scrollRef?: React.RefObject<HTMLDivElement>
+  scrollRef?: React.RefObject<HTMLDivElement | null>
   autoScroll?: boolean
 }
 
