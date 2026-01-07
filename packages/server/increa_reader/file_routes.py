@@ -183,8 +183,8 @@ def create_file_routes(app, workspace_config: WorkspaceConfig):
         ext = Path(path).suffix.lower()
         filename = Path(path).name.lower()
 
-        # Image files (excluding SVG which is text/XML)
-        image_exts = [".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".ico"]
+        # Image files (including SVG which browsers render natively)
+        image_exts = [".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".ico", ".svg"]
         if ext in image_exts:
             return {"type": "image", "path": path}
 
