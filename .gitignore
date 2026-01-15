@@ -10,6 +10,7 @@ coverage
 
 # Claude Code local settings
 .claude/
+.docs/
 
 # Python
 __pycache__/
