@@ -34,6 +34,14 @@ type PDFMetadata = {
   encrypted: boolean
 }
 
+function resolveImageSrc(src: string | undefined, repo: string, currentPath: string): string | undefined {
+  if (!src) return src
+  if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('/')) return src
+  const dir = currentPath.substring(0, currentPath.lastIndexOf('/') + 1)
+  const resolved = new URL(src, `http://x/${dir}`).pathname.slice(1)
+  return `/api/raw/${repo}/${resolved}`
+}
+
 export function FileViewer() {
   const { repoName, '*': filePath } = useParams<{ repoName: string; '*': string }>()
   const [state, setState] = useState<{
@@ -133,6 +141,10 @@ export function FileViewer() {
             remarkPlugins={[remarkGfm, remarkMath]}
             rehypePlugins={[rehypeKatex]}
             components={{
+              img({ src, alt, ...props }) {
+                const resolvedSrc = resolveImageSrc(src, repoName!, filePath!)
+                return <img src={resolvedSrc} alt={alt} {...props} />
+              },
               code({ className, children, ...props }) {
                 const match = /language-(\w+)/.exec(className || '')
                 return match ? (
