@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { collectSelectionContext, useSelectionQueue } from '@/contexts/selection-context'
+import { useViewContext } from '@/stores/view-context'
 
 type SelectionToolbarProps = {
   containerRef: React.RefObject<HTMLElement | null>
@@ -75,7 +76,15 @@ export function SelectionToolbar({ containerRef }: SelectionToolbarProps) {
     if (!selection || selection.isCollapsed) return
 
     const context = collectSelectionContext(selection)
-    if (context) push(context)
+    if (context) {
+      const { repo, path, pageNumber } = useViewContext.getState()
+      push({
+        ...context,
+        repo: repo ?? undefined,
+        path: path ?? undefined,
+        pageNumber: pageNumber ?? undefined,
+      })
+    }
 
     window.getSelection()?.removeAllRanges()
   }

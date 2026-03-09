@@ -61,10 +61,13 @@ function toPDFCoords(
 type ResultPopupProps = {
   text: string
   rect: Rect
+  repo: string
+  filePath: string
+  pageNum: number
   onClose: () => void
 }
 
-function ResultPopup({ text, rect, onClose }: ResultPopupProps) {
+function ResultPopup({ text, rect, repo, filePath, pageNum, onClose }: ResultPopupProps) {
   const { push } = useSelectionQueue()
   const popupRef = useRef<HTMLDivElement>(null)
 
@@ -84,7 +87,7 @@ function ResultPopup({ text, rect, onClose }: ResultPopupProps) {
   }
 
   const handleAskAI = () => {
-    push({ text, before: '', after: '' })
+    push({ text, before: '', after: '', repo, path: filePath, pageNumber: pageNum })
     onClose()
   }
 
@@ -227,7 +230,7 @@ export function RegionSelect({ repo, filePath, pageNum, imgRef }: RegionSelectPr
         />
       )}
       {result && (
-        <ResultPopup text={result.text} rect={result.rect} onClose={handleClose} />
+        <ResultPopup text={result.text} rect={result.rect} repo={repo} filePath={filePath} pageNum={pageNum} onClose={handleClose} />
       )}
     </div>
   )

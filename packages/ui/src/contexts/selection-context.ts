@@ -12,6 +12,9 @@ export type SelectionContext = {
   text: string
   before: string
   after: string
+  repo?: string
+  path?: string
+  pageNumber?: number
 }
 
 const MAX_QUEUE_SIZE = 10

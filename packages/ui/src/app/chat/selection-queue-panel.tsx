@@ -37,9 +37,17 @@ export function QuoteBar() {
               key={index}
               className="flex items-start gap-2 px-4 py-2 border-b border-border last:border-b-0 group"
             >
-              <p className="flex-1 text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap break-words">
-                {item.text}
-              </p>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap break-words">
+                  {item.text}
+                </p>
+                {(item.repo || item.path) && (
+                  <p className="mt-0.5 text-[10px] text-muted-foreground/60 truncate">
+                    {[item.repo, item.path].filter(Boolean).join(':')}
+                    {item.pageNumber != null && ` p.${item.pageNumber}`}
+                  </p>
+                )}
+              </div>
               <button
                 onClick={() => remove(index)}
                 className="shrink-0 p-0.5 rounded hover:bg-accent text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
