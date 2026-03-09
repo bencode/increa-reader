@@ -31,6 +31,16 @@ from .workspace import load_workspace_config
 from .workspace_routes import create_workspace_routes
 
 
+def _print_startup_warnings(workspace_config: WorkspaceConfig) -> None:
+    """Print helpful warnings for missing configuration"""
+    if not workspace_config.repos:
+        print("   ⚠ No repositories configured.")
+        print("     Set INCREA_REPO in .env or configure via the UI settings panel.")
+
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        print("   ⚠ ANTHROPIC_API_KEY is not set. AI chat will not be available.")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application lifespan (startup/shutdown)"""
@@ -40,6 +50,7 @@ async def lifespan(app: FastAPI):
     print(f"   Repositories: {len(workspace_config.repos)}")
     for repo in workspace_config.repos:
         print(f"   - {repo.name}: {repo.root}")
+    _print_startup_warnings(workspace_config)
 
     yield
 

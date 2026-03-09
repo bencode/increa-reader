@@ -11,7 +11,7 @@ import requests
 def test_chat_query(prompt: str = "Hello, can you help me?", repo: str = None):
     """Test the chat query endpoint with SSE streaming"""
 
-    url = "http://localhost:3010/api/chat/query"
+    url = "http://localhost:3000/api/chat/query"
 
     payload = {
         "prompt": prompt,
@@ -93,7 +93,7 @@ def test_chat_query(prompt: str = "Hello, can you help me?", repo: str = None):
 
     except requests.exceptions.ConnectionError as e:
         print(f"❌ Connection error: {e}")
-        print("💡 Is the server running on port 3010?")
+        print("💡 Is the server running on port 3000?")
     except requests.exceptions.Timeout:
         print("❌ Request timeout")
     except Exception as e:

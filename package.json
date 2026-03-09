@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "setup": "bash setup.sh",
     "dev": "pnpm --filter \"./packages/ui\" --filter \"./packages/server\" dev",
     "build": "pnpm --filter \"./packages/*\" build",
     "test": "pnpm --filter \"./packages/*\" test"
