@@ -51,4 +51,26 @@ export async function deleteFile(repo: string, path: string): Promise<{ success:
   return response.json()
 }
 
-export type { TreeNode, RepoInfo, RepoTreeData }
+type RepoConfigInfo = {
+  name: string
+  root: string
+  exists: boolean
+}
+
+export async function fetchConfigRepos(): Promise<RepoConfigInfo[]> {
+  const response = await fetch('/api/config/repos')
+  const data = await response.json()
+  return data.data
+}
+
+export async function updateConfigRepos(paths: string[]): Promise<RepoConfigInfo[]> {
+  const response = await fetch('/api/config/repos', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ repos: paths.map((path) => ({ path })) }),
+  })
+  const data = await response.json()
+  return data.data
+}
+
+export type { TreeNode, RepoInfo, RepoTreeData, RepoConfigInfo }

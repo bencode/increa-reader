@@ -2,34 +2,66 @@
 Workspace management and file tree functionality
 """
 
+import json
 import os
 from pathlib import Path
 from typing import List
 
 from .models import RepoItem, TreeNode, WorkspaceConfig
 
+DEFAULT_EXCLUDES = ["node_modules", ".*", "*.log"]
+
+
+def get_config_path() -> Path:
+    return Path.home() / ".increa-reader" / "config.json"
+
+
+def save_workspace_config(repos: List[RepoItem]) -> None:
+    """Save repo paths to ~/.increa-reader/config.json"""
+    config_path = get_config_path()
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    data = {"repos": [{"path": repo.root} for repo in repos]}
+    config_path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
+
+
+def _load_repos_from_config() -> List[RepoItem] | None:
+    """Try loading repos from config.json, return None if not found"""
+    config_path = get_config_path()
+    if not config_path.exists():
+        return None
+    try:
+        data = json.loads(config_path.read_text())
+        repos = []
+        for entry in data.get("repos", []):
+            path_obj = Path(entry["path"]).resolve()
+            repos.append(RepoItem(name=path_obj.name, root=str(path_obj)))
+        return repos
+    except (json.JSONDecodeError, KeyError):
+        return None
+
+
+def _load_repos_from_env() -> List[RepoItem]:
+    """Load repos from INCREA_REPO environment variable"""
+    increa_repo = os.getenv("INCREA_REPO", "")
+    if not increa_repo:
+        return []
+    repos = []
+    for repo_path in increa_repo.split(":"):
+        repo_path = repo_path.strip()
+        if not repo_path:
+            continue
+        path_obj = Path(repo_path).resolve()
+        if path_obj.exists():
+            repos.append(RepoItem(name=path_obj.name, root=str(path_obj)))
+    return repos
+
 
 def load_workspace_config() -> WorkspaceConfig:
-    """Load workspace configuration from environment variables"""
-
-    # Parse INCREA_REPO environment variable (colon-separated paths)
-    increa_repo = os.getenv("INCREA_REPO", "")
-    if increa_repo:
-        repo_paths = [path.strip() for path in increa_repo.split(":") if path.strip()]
-        repos = []
-
-        for i, repo_path in enumerate(repo_paths):
-            path_obj = Path(repo_path).resolve()
-            if path_obj.exists():
-                repos.append(RepoItem(name=path_obj.name, root=str(path_obj)))
-
-        return WorkspaceConfig(
-            title="Increa Reader", repos=repos, excludes=["node_modules", ".*", "*.log"]
-        )
-
-    return WorkspaceConfig(
-        title="Increa Reader", repos=[], excludes=["node_modules", ".*", "*.log"]
-    )
+    """Load workspace config: prioritize config.json, fallback to env var"""
+    repos = _load_repos_from_config()
+    if repos is None:
+        repos = _load_repos_from_env()
+    return WorkspaceConfig(title="Increa Reader", repos=repos, excludes=DEFAULT_EXCLUDES)
 
 
 def is_text_file(content: bytes) -> bool:
