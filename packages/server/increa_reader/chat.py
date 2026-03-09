@@ -290,6 +290,7 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
             "mcp__frontend__get_visible_content",
             "mcp__frontend__get_selection",
             "mcp__frontend__get_current_page",
+            "mcp__frontend__refresh_view",
         ]
 
         query_options = ClaudeAgentOptions(
@@ -359,6 +360,7 @@ Frontend Interaction Tools:
 - get_visible_content: Get content in the user's current viewport. Use when user asks about "this section", "what I'm seeing", or "current page". Do NOT use for general file questions.
 - get_selection: Retrieve text quoted/selected by the user from a queue. Returns selected text with surrounding context (before/after) for precise document location.
 - get_current_page: Get the current PDF page number the user is viewing.
+- refresh_view: Refresh the file viewer to reload content. Use after modifying a file the user is currently viewing.
 
 PDF Tools (use in sequence: open → operate → close):
 1. open_pdf: Open a PDF file, returns a doc_id for subsequent operations

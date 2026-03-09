@@ -47,10 +47,16 @@ const getCurrentPage = async (): Promise<number> => {
   return context.pageNumber
 }
 
+const refreshView = async (): Promise<string> => {
+  useViewContext.getState().requestRefresh()
+  return 'View refreshed'
+}
+
 const toolHandlers: Record<string, ToolHandler> = {
   get_visible_content: ctx => getVisibleContent(ctx),
   get_selection: (ctx, args) => getSelection(ctx, args),
   get_current_page: () => getCurrentPage(),
+  refresh_view: () => refreshView(),
 }
 
 /**

@@ -11,7 +11,7 @@ import 'katex/dist/katex.min.css'
 import { fetchPreview } from './api'
 import { PDFViewer } from './pdf-viewer'
 import { ImageViewer } from './image-viewer'
-import { useSetContext } from '@/stores/view-context'
+import { useSetContext, useRefreshKey } from '@/stores/view-context'
 import { useExternalLinks } from '@/hooks/use-external-links'
 import { useVisibleContent } from '../contexts/visible-content-context'
 import { SelectionToolbar } from './selection/selection-toolbar'
@@ -55,27 +55,41 @@ export function FileViewer() {
     error: null,
   })
   const setContext = useSetContext()
+  const refreshKey = useRefreshKey()
   const markdownRef = useExternalLinks()
   const scrollBodyRef = useRef<HTMLDivElement>(null)
   const elementsRef = useVisibleContent()
+  const prevRouteRef = useRef({ repoName, filePath })
+  const fetchIdRef = useRef(0)
 
   useEffect(() => {
     if (!repoName || !filePath) return
 
+    const isRouteChange = prevRouteRef.current.repoName !== repoName || prevRouteRef.current.filePath !== filePath
+    prevRouteRef.current = { repoName, filePath }
+
     // Update view context (clear pageNumber for non-PDF files)
     setContext({ repo: repoName, path: filePath, pageNumber: null })
 
-    // eslint-disable-next-line
-    setState({ preview: null, loading: true, error: null })
+    // Only show loading state on route change, not on refresh
+    if (isRouteChange) {
+      // eslint-disable-next-line
+      setState({ preview: null, loading: true, error: null })
+    }
 
+    const id = ++fetchIdRef.current
     fetchPreview(repoName, filePath)
       .then(data => {
-        setState({ preview: data, loading: false, error: null })
+        if (id === fetchIdRef.current) {
+          setState({ preview: data, loading: false, error: null })
+        }
       })
       .catch(err => {
-        setState({ preview: null, loading: false, error: err.message || 'Failed to load file' })
+        if (id === fetchIdRef.current) {
+          setState({ preview: null, loading: false, error: err.message || 'Failed to load file' })
+        }
       })
-  }, [repoName, filePath, setContext])
+  }, [repoName, filePath, setContext, refreshKey])
 
   // Setup IntersectionObserver to track visible elements
   useEffect(() => {

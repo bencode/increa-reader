@@ -8,9 +8,11 @@ export type ContextData = {
 }
 
 type ViewContextState = ContextData & {
+  refreshKey: number
   getContext: () => ContextData
   setContext: (data: Partial<ContextData>) => void
   clearContext: () => void
+  requestRefresh: () => void
 }
 
 export const useViewContext = create<ViewContextState>((set, get) => ({
@@ -18,12 +20,14 @@ export const useViewContext = create<ViewContextState>((set, get) => ({
   path: null,
   pageNumber: null,
   quoteCount: 0,
+  refreshKey: 0,
   getContext: () => {
     const { repo, path, pageNumber, quoteCount } = get()
     return { repo, path, pageNumber, quoteCount }
   },
   setContext: data => set(data),
   clearContext: () => set({ repo: null, path: null, pageNumber: null, quoteCount: 0 }),
+  requestRefresh: () => set(state => ({ refreshKey: state.refreshKey + 1 })),
 }))
 
 export function useGetContext() {
@@ -32,4 +36,8 @@ export function useGetContext() {
 
 export function useSetContext() {
   return useViewContext(state => state.setContext)
+}
+
+export function useRefreshKey() {
+  return useViewContext(state => state.refreshKey)
 }

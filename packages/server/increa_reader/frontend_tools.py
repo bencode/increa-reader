@@ -125,6 +125,17 @@ async def get_current_page(args: dict[str, Any]) -> dict[str, Any]:
     return await frontend_tool_wrapper("get_current_page")
 
 
+@tool(
+    "refresh_view",
+    "Refresh the file viewer to reload content. "
+    "Use after modifying a file the user is viewing.",
+    {},
+)
+async def refresh_view(args: dict[str, Any]) -> dict[str, Any]:
+    """Refresh the file viewer to reload current file content"""
+    return await frontend_tool_wrapper("refresh_view")
+
+
 def complete_tool_call(call_id: str, result: Any = None, error: Optional[str] = None):
     """
     Complete a pending tool call with result or error
@@ -155,4 +166,5 @@ FRONTEND_TOOLS = [
     get_visible_content,
     get_selection,
     get_current_page,
+    refresh_view,
 ]
