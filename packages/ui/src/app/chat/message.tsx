@@ -2,12 +2,14 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
+import 'katex/dist/katex.min.css'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
 import type { Message as MessageType } from '@/types/chat'
 import { cn } from '@/lib/utils'
 import { useExternalLinks } from '@/hooks/use-external-links'
+import { MermaidBlock } from '@/components/mermaid-block'
 
 const getToolIcon = (toolName: string) => {
   switch (toolName) {
@@ -90,6 +92,9 @@ export const Message = ({ role, content, isStreaming, toolCalls }: MessageType) 
                     children?: React.ReactNode
                   }) {
                     const match = /language-(\w+)/.exec(className || '')
+                    if (!inline && match?.[1] === 'mermaid') {
+                      return <MermaidBlock code={String(children).replace(/\n$/, '')} />
+                    }
                     return !inline && match ? (
                       <SyntaxHighlighter
                         /* @ts-ignore - SyntaxHighlighter style type mismatch */

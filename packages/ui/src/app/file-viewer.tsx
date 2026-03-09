@@ -15,6 +15,7 @@ import { useSetContext, useRefreshKey } from '@/stores/view-context'
 import { useExternalLinks } from '@/hooks/use-external-links'
 import { useVisibleContent } from '../contexts/visible-content-context'
 import { SelectionToolbar } from './selection/selection-toolbar'
+import { MermaidBlock } from '@/components/mermaid-block'
 
 type PreviewData =
   | { type: 'markdown'; body: string }
@@ -163,6 +164,9 @@ export function FileViewer() {
               },
               code({ className, children, ...props }) {
                 const match = /language-(\w+)/.exec(className || '')
+                if (match?.[1] === 'mermaid') {
+                  return <MermaidBlock code={String(children).replace(/\n$/, '')} />
+                }
                 return match ? (
                   <SyntaxHighlighter
                     language={match[1]}

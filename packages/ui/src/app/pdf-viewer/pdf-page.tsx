@@ -10,6 +10,7 @@ import 'katex/dist/katex.min.css'
 
 import type { ViewMode, PDFPageData, PDFPageProps } from './types'
 import { RegionSelect } from './region-select'
+import { MermaidBlock } from '@/components/mermaid-block'
 
 type PageToolbarProps = {
   pageNum: number
@@ -118,6 +119,9 @@ function MarkdownContent({ pageData, loading, error }: MarkdownContentProps) {
         components={{
           code({ className, children, ...props }) {
             const match = /language-(\w+)/.exec(className || '')
+            if (match?.[1] === 'mermaid') {
+              return <MermaidBlock code={String(children).replace(/\n$/, '')} />
+            }
             return match ? (
               <SyntaxHighlighter
                 language={match[1]}
