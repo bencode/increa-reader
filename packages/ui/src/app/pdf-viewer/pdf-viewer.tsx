@@ -5,6 +5,7 @@ import { BookOpen, ChevronLeft, ChevronRight } from 'lucide-react'
 import { PDFPage } from './pdf-page'
 import type { PDFViewerProps } from './types'
 import { useSetContext } from '@/stores/view-context'
+import { SelectionToolbar } from '../selection/selection-toolbar'
 
 type PDFHeaderProps = {
   title: string
@@ -124,6 +125,7 @@ export function PDFViewer({ repo, filePath, metadata }: PDFViewerProps) {
     <div className="h-full flex flex-col">
       <PDFHeader title={displayTitle} />
 
+      <SelectionToolbar containerRef={parentRef} />
       <div ref={parentRef} className="flex-1 overflow-auto" style={{ contain: 'strict' }}>
         <div
           style={{

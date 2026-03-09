@@ -39,10 +39,11 @@ export const useChat = (getContext: () => ContextData) => {
     })
   })
 
-  const sendMessage = useCallback(async () => {
-    if (!input.trim()) return
+  const sendMessage = useCallback(async (directMessage?: string) => {
+    const text = directMessage ?? input
+    if (!text.trim()) return
 
-    const normalized = input.replace(/^／/, '/')
+    const normalized = text.replace(/^／/, '/')
     const cmd = parseCommand(normalized)
 
     if (cmd) {
@@ -63,7 +64,7 @@ export const useChat = (getContext: () => ContextData) => {
       })
 
       handleCommand(cmd.name, cmd.args)
-      setInput('')
+      if (!directMessage) setInput('')
       return
     }
 
@@ -79,13 +80,13 @@ export const useChat = (getContext: () => ContextData) => {
       setCurrentSession(workingSession)
     }
 
-    const userMsg: Message = { role: 'user', content: input, timestamp: Date.now() }
+    const userMsg: Message = { role: 'user', content: text, timestamp: Date.now() }
     setCurrentSession(prev => ({
       ...prev!,
       messages: [...prev!.messages, userMsg],
       lastActiveAt: Date.now(),
     }))
-    setInput('')
+    if (!directMessage) setInput('')
     setIsStreaming(true)
 
     let assistantContent = ''
@@ -109,7 +110,7 @@ export const useChat = (getContext: () => ContextData) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: input,
+          prompt: text,
           sessionId: workingSession.stats?.sessionId,
           context,
         }),
@@ -229,6 +230,19 @@ export const useChat = (getContext: () => ContextData) => {
       setIsStreaming(false)
     }
   }, [input, currentSession, isStreaming, createSessionEvent, getContextEvent, handleCommand, addMessage])
+
+  // Listen for selection-action events from SelectionToolbar
+  const handleSelectionAction = useEventCallback((e: Event) => {
+    const { quote, fillOnly } = (e as CustomEvent).detail
+    if (fillOnly && quote) {
+      setInput(`> ${quote}\n\n`)
+    }
+  })
+
+  useEffect(() => {
+    window.addEventListener('selection-action', handleSelectionAction)
+    return () => window.removeEventListener('selection-action', handleSelectionAction)
+  }, [handleSelectionAction])
 
   // Auto-save session when messages change (debounced)
   useEffect(() => {

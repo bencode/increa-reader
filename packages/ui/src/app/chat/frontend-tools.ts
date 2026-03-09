@@ -2,6 +2,8 @@
  * Frontend tool handlers - execute tools requested by LLM
  */
 
+import type { SelectionContext } from '@/contexts/selection-context'
+import { shiftContext } from '@/contexts/selection-context'
 import { useViewContext } from '@/stores/view-context'
 
 export type ToolContext = {
@@ -10,9 +12,8 @@ export type ToolContext = {
 
 type ToolResult = { result?: unknown; error?: string }
 
-/**
- * Get the content currently visible in user's viewport
- */
+type ToolHandler = (ctx: ToolContext, args: Record<string, unknown>) => Promise<unknown>
+
 const getVisibleContent = async (ctx: ToolContext): Promise<string> => {
   const { visibleElements } = ctx
 
@@ -26,19 +27,23 @@ const getVisibleContent = async (ctx: ToolContext): Promise<string> => {
     .join('\n\n')
 }
 
-/**
- * Get user's current text selection
- */
-const getSelection = async (_ctx: ToolContext): Promise<string> => {
-  const selection = window.getSelection()
-  return selection?.toString() || ''
+const getSelection = async (
+  args: Record<string, unknown>,
+): Promise<SelectionContext | SelectionContext[] | string> => {
+  const number = typeof args.number === 'number' ? args.number : 1
+  const results: SelectionContext[] = []
+
+  for (let i = 0; i < number; i++) {
+    const ctx = shiftContext()
+    if (!ctx) break
+    results.push(ctx)
+  }
+
+  if (results.length === 0) return 'No selection context available'
+  return number === 1 ? results[0] : results
 }
 
-/**
- * Get current PDF page number
- */
-const getCurrentPage = async (_ctx: ToolContext): Promise<number> => {
-  // Get page number from Zustand store
+const getCurrentPage = async (): Promise<number> => {
   const context = useViewContext.getState()
 
   if (!context.pageNumber) {
@@ -48,37 +53,25 @@ const getCurrentPage = async (_ctx: ToolContext): Promise<number> => {
   return context.pageNumber
 }
 
+const toolHandlers: Record<string, ToolHandler> = {
+  get_visible_content: ctx => getVisibleContent(ctx),
+  get_selection: (_ctx, args) => getSelection(args),
+  get_current_page: () => getCurrentPage(),
+}
+
 /**
  * Execute a frontend tool requested by the LLM
  */
 export const executeFrontendTool = async (
   ctx: ToolContext,
   name: string,
-  _args: Record<string, unknown>,
+  args: Record<string, unknown>,
 ): Promise<ToolResult> => {
   try {
-    // Strip MCP prefix if present (e.g., "mcp__frontend__get_visible_content" -> "get_visible_content")
     const toolName = name.replace(/^mcp__frontend__/, '')
-
-    let result: unknown
-
-    switch (toolName) {
-      case 'get_visible_content':
-        result = await getVisibleContent(ctx)
-        break
-
-      case 'get_selection':
-        result = await getSelection(ctx)
-        break
-
-      case 'get_current_page':
-        result = await getCurrentPage(ctx)
-        break
-
-      default:
-        return { error: `Unknown tool: ${name}` }
-    }
-
+    const handler = toolHandlers[toolName]
+    if (!handler) return { error: `Unknown tool: ${name}` }
+    const result = await handler(ctx, args)
     return { result }
   } catch (error) {
     return { error: error instanceof Error ? error.message : String(error) }

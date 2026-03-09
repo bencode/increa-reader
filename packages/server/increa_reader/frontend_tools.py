@@ -96,14 +96,22 @@ async def get_visible_content(args: dict[str, Any]) -> dict[str, Any]:
 
 @tool(
     "get_selection",
-    "Get the text currently selected by the user. "
-    "Use when user says 'this', 'selected text', or 'highlighted part'. "
-    "Returns empty string if nothing is selected.",
-    {},
+    "Get the text selected by the user along with surrounding context (before/after text). "
+    "Returns selected text and its before/after context for precise location in the document. "
+    "Use when user references 'this', 'selected text', or 'highlighted part'. "
+    "Returns 'No selection context available' if no selection is queued.",
+    {
+        "number": {
+            "type": "integer",
+            "description": "Number of selections to retrieve from the queue. Defaults to 1.",
+            "default": 1,
+        }
+    },
 )
 async def get_selection(args: dict[str, Any]) -> dict[str, Any]:
-    """Get the text currently selected by the user"""
-    return await frontend_tool_wrapper("get_selection")
+    """Get the text selected by the user with surrounding context"""
+    number = args.get("number", 1)
+    return await frontend_tool_wrapper("get_selection", number=number)
 
 
 @tool(
