@@ -1,6 +1,7 @@
 import { ChatMessages } from './chat-messages'
 import { ChatInput } from './chat-input'
 import { ChatStats } from './chat-stats'
+import { QuoteBar } from './selection-queue-panel'
 import type { Message, Repo } from '@/types/chat'
 import type { ContextData } from '@/stores/view-context'
 
@@ -41,6 +42,7 @@ export const ActiveChatPanel = ({
   return (
     <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900">
       <ChatMessages messages={messages} scrollRef={scrollRef} autoScroll={true} />
+      <QuoteBar />
       <ChatInput
         input={input}
         isStreaming={isStreaming}

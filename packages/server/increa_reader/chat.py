@@ -351,6 +351,27 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
                         context_info.append(f"Current File: {request.context.path}")
 
                     context_str = "\n".join(context_info)
+
+                    # Build tool guide with dynamic quote status
+                    tool_guide = """[Available Tools Guide]
+
+Frontend Interaction Tools:
+- get_visible_content: Get content in the user's current viewport. Use when user asks about "this section", "what I'm seeing", or "current page". Do NOT use for general file questions.
+- get_selection: Retrieve text quoted/selected by the user from a queue. Returns selected text with surrounding context (before/after) for precise document location.
+- get_current_page: Get the current PDF page number the user is viewing.
+
+PDF Tools (use in sequence: open → operate → close):
+1. open_pdf: Open a PDF file, returns a doc_id for subsequent operations
+2. page_count / extract_text / render_page_png / search_text: Operate on the opened document using doc_id
+3. close_pdf: Close the document when done to free resources
+"""
+
+                    quote_count = request.context.quoteCount
+                    if quote_count and quote_count > 0:
+                        tool_guide += f"""
+IMPORTANT: The user has {quote_count} quoted text selection(s) in the queue. You MUST call get_selection to retrieve them before answering. These quotes provide critical context for the user's question.
+"""
+
                     enhanced_prompt = f"""[Workspace Configuration]
 Available Repositories:
 {repos_info}
@@ -358,8 +379,7 @@ Available Repositories:
 [Current Context]
 {context_str}
 
-Note: If you need detailed information about what the user is currently viewing (visible content, selected text, or PDF page details), use the frontend tools: get_visible_content, get_selection, or get_page_context. Only use these tools when the user's question specifically references what they're currently seeing.
-
+{tool_guide}
 User Question:
 {request.prompt}"""
                 else:

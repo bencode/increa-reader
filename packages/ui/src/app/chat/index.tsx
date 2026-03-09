@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useGetContext } from '@/stores/view-context'
+import { useSelectionQueue } from '@/contexts/selection-context'
 import { ChatHeader } from './chat-header'
 import { HistoryPanel } from './history-panel'
 import { ActiveChatPanel } from './active-chat-panel'
@@ -12,6 +13,14 @@ export const ChatPanel = () => {
   const [isSplitView, setIsSplitView] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const getContext = useGetContext()
+  const { items } = useSelectionQueue()
+  const itemsRef = useRef(items)
+  useEffect(() => { itemsRef.current = items })
+
+  const getContextWithQuotes = useCallback(() => ({
+    ...getContext(),
+    quoteCount: itemsRef.current.length,
+  }), [getContext])
 
   const {
     messages,
@@ -24,7 +33,7 @@ export const ChatPanel = () => {
     stats,
     sendMessage,
     initializeFromStorage,
-  } = useChat(getContext)
+  } = useChat(getContextWithQuotes)
 
   useFrontendTools()
 

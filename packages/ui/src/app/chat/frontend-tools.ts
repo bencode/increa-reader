@@ -3,11 +3,11 @@
  */
 
 import type { SelectionContext } from '@/contexts/selection-context'
-import { shiftContext } from '@/contexts/selection-context'
 import { useViewContext } from '@/stores/view-context'
 
 export type ToolContext = {
   visibleElements: Set<HTMLElement>
+  getSelections: (max?: number) => SelectionContext[]
 }
 
 type ToolResult = { result?: unknown; error?: string }
@@ -28,19 +28,13 @@ const getVisibleContent = async (ctx: ToolContext): Promise<string> => {
 }
 
 const getSelection = async (
+  ctx: ToolContext,
   args: Record<string, unknown>,
 ): Promise<SelectionContext | SelectionContext[] | string> => {
-  const number = typeof args.number === 'number' ? args.number : 1
-  const results: SelectionContext[] = []
-
-  for (let i = 0; i < number; i++) {
-    const ctx = shiftContext()
-    if (!ctx) break
-    results.push(ctx)
-  }
-
+  const max = typeof args.number === 'number' ? args.number : undefined
+  const results = ctx.getSelections(max)
   if (results.length === 0) return 'No selection context available'
-  return number === 1 ? results[0] : results
+  return results.length === 1 ? results[0] : results
 }
 
 const getCurrentPage = async (): Promise<number> => {
@@ -55,7 +49,7 @@ const getCurrentPage = async (): Promise<number> => {
 
 const toolHandlers: Record<string, ToolHandler> = {
   get_visible_content: ctx => getVisibleContent(ctx),
-  get_selection: (_ctx, args) => getSelection(args),
+  get_selection: (ctx, args) => getSelection(ctx, args),
   get_current_page: () => getCurrentPage(),
 }
 

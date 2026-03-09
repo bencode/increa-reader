@@ -231,19 +231,6 @@ export const useChat = (getContext: () => ContextData) => {
     }
   }, [input, currentSession, isStreaming, createSessionEvent, getContextEvent, handleCommand, addMessage])
 
-  // Listen for selection-action events from SelectionToolbar
-  const handleSelectionAction = useEventCallback((e: Event) => {
-    const { quote, fillOnly } = (e as CustomEvent).detail
-    if (fillOnly && quote) {
-      setInput(`> ${quote}\n\n`)
-    }
-  })
-
-  useEffect(() => {
-    window.addEventListener('selection-action', handleSelectionAction)
-    return () => window.removeEventListener('selection-action', handleSelectionAction)
-  }, [handleSelectionAction])
-
   // Auto-save session when messages change (debounced)
   useEffect(() => {
     if (!currentSession || currentSession.messages.length === 0) return

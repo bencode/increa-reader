@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { collectSelectionContext, pushContext } from '@/contexts/selection-context'
+import { collectSelectionContext, useSelectionQueue } from '@/contexts/selection-context'
 
 type SelectionToolbarProps = {
   containerRef: React.RefObject<HTMLElement | null>
@@ -12,6 +12,7 @@ type ToolbarPosition = {
 }
 
 export function SelectionToolbar({ containerRef }: SelectionToolbarProps) {
+  const { push } = useSelectionQueue()
   const [position, setPosition] = useState<ToolbarPosition | null>(null)
 
   const updatePosition = useCallback(() => {
@@ -74,13 +75,7 @@ export function SelectionToolbar({ containerRef }: SelectionToolbarProps) {
     if (!selection || selection.isCollapsed) return
 
     const context = collectSelectionContext(selection)
-    if (context) pushContext(context)
-
-    window.dispatchEvent(
-      new CustomEvent('selection-action', {
-        detail: { quote: context?.text, fillOnly: true },
-      }),
-    )
+    if (context) push(context)
 
     window.getSelection()?.removeAllRanges()
   }
@@ -106,7 +101,7 @@ export function SelectionToolbar({ containerRef }: SelectionToolbarProps) {
         onClick={handleSelect}
         className="px-2.5 py-1 text-xs rounded-md hover:bg-accent hover:text-accent-foreground transition-colors whitespace-nowrap"
       >
-        选择
+        Quote
       </button>
     </div>,
     document.body,

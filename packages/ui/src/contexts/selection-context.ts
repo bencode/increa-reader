@@ -2,8 +2,11 @@
  * Selection context queue - stores user text selections for LLM consumption
  *
  * Toolbar pushes context when user clicks an action.
- * Frontend tool handler shifts context when LLM calls get_selection.
+ * Frontend tool handler reads context when LLM calls get_selection.
  */
+
+import { create } from 'zustand'
+import { useShallow } from 'zustand/react/shallow'
 
 export type SelectionContext = {
   text: string
@@ -11,19 +14,40 @@ export type SelectionContext = {
   after: string
 }
 
-const queue: SelectionContext[] = []
 const MAX_QUEUE_SIZE = 10
 
-export const pushContext = (ctx: SelectionContext) => {
-  if (queue.length >= MAX_QUEUE_SIZE) {
-    queue.shift()
-  }
-  queue.push(ctx)
+type SelectionQueueState = {
+  items: SelectionContext[]
+  push: (ctx: SelectionContext) => void
+  remove: (index: number) => void
+  clear: () => void
 }
 
-export const shiftContext = (): SelectionContext | null => {
-  return queue.shift() ?? null
-}
+const useSelectionQueueStore = create<SelectionQueueState>((set) => ({
+  items: [],
+  push: (ctx) => {
+    set((state) => {
+      const next = state.items.length >= MAX_QUEUE_SIZE
+        ? [...state.items.slice(1), ctx]
+        : [...state.items, ctx]
+      return { items: next }
+    })
+  },
+  remove: (index) => {
+    set((state) => ({
+      items: state.items.filter((_, i) => i !== index),
+    }))
+  },
+  clear: () => set({ items: [] }),
+}))
+
+export const useSelectionQueue = () =>
+  useSelectionQueueStore(useShallow((state) => ({
+    items: state.items,
+    push: state.push,
+    remove: state.remove,
+    clear: state.clear,
+  })))
 
 const collectSurroundingText = (range: Range, maxChars = 500): { before: string; after: string } => {
   try {

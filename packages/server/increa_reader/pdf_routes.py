@@ -124,6 +124,57 @@ def create_pdf_routes(app, workspace_config: WorkspaceConfig):
                 status_code=500, detail=f"Failed to render PDF page: {str(e)}"
             )
 
+    @app.get("/api/pdf/extract-region")
+    async def extract_pdf_region(
+        repo: str,
+        path: str,
+        page: int,
+        x0: float,
+        y0: float,
+        x1: float,
+        y1: float,
+    ):
+        """提取PDF页面指定矩形区域内的文字"""
+        repo_config = next((r for r in workspace_config.repos if r.name == repo), None)
+        if not repo_config:
+            raise HTTPException(
+                status_code=404, detail=f"Repository '{repo}' not found"
+            )
+
+        file_path = Path(repo_config.root) / path
+
+        if not file_path.exists() or not file_path.is_file():
+            raise HTTPException(status_code=404, detail="File not found")
+
+        if file_path.suffix.lower() != ".pdf":
+            raise HTTPException(status_code=400, detail="Not a PDF file")
+
+        if page < 1:
+            raise HTTPException(status_code=400, detail="Page number must be >= 1")
+
+        try:
+            doc = fitz.open(file_path)
+            if page > doc.page_count:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Page {page} exceeds total pages ({doc.page_count})",
+                )
+            pdf_page = doc[page - 1]
+            clip = fitz.Rect(x0, y0, x1, y1)
+            text = pdf_page.get_text("text", clip=clip).strip()
+            return {
+                "text": text,
+                "page_width": pdf_page.rect.width,
+                "page_height": pdf_page.rect.height,
+            }
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to extract region text: {str(e)}",
+            )
+
     @app.get("/api/temp-image/{filepath:path}")
     async def get_temp_image(filepath: str):
         """获取PDF提取的临时图片"""

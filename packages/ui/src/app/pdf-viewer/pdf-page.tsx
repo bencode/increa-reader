@@ -9,6 +9,7 @@ import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
 
 import type { ViewMode, PDFPageData, PDFPageProps } from './types'
+import { RegionSelect } from './region-select'
 
 type PageToolbarProps = {
   pageNum: number
@@ -62,13 +63,24 @@ function PageToolbar({ pageNum, viewMode, pageData, onViewModeChange }: PageTool
 }
 
 function SVGContent({ repo, filePath, pageNum }: Pick<PDFPageProps, 'repo' | 'filePath' | 'pageNum'>) {
+  const imgRef = useRef<HTMLImageElement>(null)
+
   return (
-    <img
-      src={`/api/pdf/page-render?repo=${encodeURIComponent(repo)}&path=${encodeURIComponent(filePath)}&page=${pageNum}`}
-      alt={`Page ${pageNum}`}
-      className="w-full h-auto shadow-lg rounded"
-      loading="lazy"
-    />
+    <div className="relative">
+      <img
+        ref={imgRef}
+        src={`/api/pdf/page-render?repo=${encodeURIComponent(repo)}&path=${encodeURIComponent(filePath)}&page=${pageNum}`}
+        alt={`Page ${pageNum}`}
+        className="w-full h-auto shadow-lg rounded"
+        loading="lazy"
+      />
+      <RegionSelect
+        repo={repo}
+        filePath={filePath}
+        pageNum={pageNum}
+        imgRef={imgRef}
+      />
+    </div>
   )
 }
 

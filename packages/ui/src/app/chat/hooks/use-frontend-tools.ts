@@ -1,10 +1,15 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import type { SSEMessage } from '@/types/chat'
+import { useSelectionQueue } from '@/contexts/selection-context'
 import { executeFrontendTool, type ToolContext } from '../frontend-tools'
 import { useVisibleContent } from '../../../contexts/visible-content-context'
 
 export const useFrontendTools = () => {
   const elementsRef = useVisibleContent()
+  const { items } = useSelectionQueue()
+  const itemsRef = useRef(items)
+  useEffect(() => { itemsRef.current = items })
+
   useEffect(() => {
     let eventSource: EventSource | null = null
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null
@@ -27,6 +32,10 @@ export const useFrontendTools = () => {
             // Build tool context
             const ctx: ToolContext = {
               visibleElements: elementsRef.current,
+              getSelections: (max) => {
+                const all = itemsRef.current
+                return max ? all.slice(0, max) : [...all]
+              },
             }
 
             const toolResult = await executeFrontendTool(ctx, name, args)
