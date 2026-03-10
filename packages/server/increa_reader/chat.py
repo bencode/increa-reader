@@ -29,6 +29,7 @@ from .frontend_tools import (
     complete_tool_call,
     frontend_tool_queue,
 )
+from .workspace import build_sdk_env, load_api_settings
 
 # Debug logging flag
 DEBUG = os.getenv("DEBUG", "false").lower() == "true"
@@ -347,10 +348,18 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
             "mcp__frontend__canvas_clear",
             "mcp__frontend__canvas_get_instructions",
             "mcp__frontend__canvas_snapshot",
+            "mcp__frontend__canvas_setup",
         ]
 
+        # Config-first resolution: config.json > env vars
+        api_settings = load_api_settings()
+        model = (
+            (request.options.get("model") if request.options else None)
+            or api_settings.get("default_model")
+        )
+
         query_options = ClaudeAgentOptions(
-            model=request.options.get("model") if request.options else None,
+            model=model,
             cwd=cwd,
             mcp_servers={"pdf-reader": pdf_server, "frontend": frontend_server},
             allowed_tools=(
@@ -367,11 +376,7 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
             resume=request.sessionId,
             system_prompt={"type": "preset", "preset": "claude_code"},
             max_turns=request.options.get("maxTurns") if request.options else None,
-            env={
-                "ANTHROPIC_BASE_URL": os.getenv("ANTHROPIC_BASE_URL"),
-                "ANTHROPIC_AUTH_TOKEN": os.getenv("ANTHROPIC_AUTH_TOKEN"),
-                "ANTHROPIC_API_KEY": os.getenv("ANTHROPIC_API_KEY", ""),
-            },
+            env=build_sdk_env(),
             add_dirs=add_dirs,
             stderr=lambda line: print(f"[CLI] {line}", flush=True) if DEBUG else None,
         )
@@ -425,9 +430,10 @@ PDF Tools (use in sequence: open → operate → close):
 3. close_pdf: Close the document when done to free resources
 
 Canvas Board Tools (requires a .board file to be open):
-- canvas_draw: Draw using p5.js code (e.g. fill(255,0,0); rect(100,100,200,150)). Each call appends one instruction.
+- canvas_setup: Configure canvas for animation. Set loop=true for animation mode, declare persistent vars (e.g. vars={x:0, speed:3}). Variables persist across frames so x++ accumulates.
+- canvas_draw: Draw using p5.js code (e.g. fill(255,0,0); rect(100,100,200,150)). Each call appends one instruction. Code has access to vars declared in canvas_setup.
 - canvas_clear: Clear all drawings from the canvas.
-- canvas_get_instructions: Get all drawing instructions on the canvas to review what has been drawn.
+- canvas_get_instructions: Get all drawing instructions with runtime error status.
 - canvas_snapshot: Take a screenshot of the canvas, returns file path. Use Read tool to view the image.
 """
 

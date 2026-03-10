@@ -8,6 +8,8 @@ import re
 
 from claude_agent_sdk import ClaudeAgentOptions, ClaudeSDKClient
 
+from .workspace import build_sdk_env
+
 # Debug logging flag
 DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 
@@ -77,16 +79,11 @@ async def generate_semantic_filename(messages: list[dict]) -> str | None:
 
 只返回文件名，不要其他内容（不要加 .md 后缀，不要加引号）。"""
 
-        # Create minimal SDK client for simple text generation
         options = ClaudeAgentOptions(
             allowed_tools=[],  # No tools needed
             permission_mode="bypassPermissions",
             max_turns=1,  # Single turn
-            env={
-                "ANTHROPIC_BASE_URL": os.getenv("ANTHROPIC_BASE_URL"),
-                "ANTHROPIC_AUTH_TOKEN": os.getenv("ANTHROPIC_AUTH_TOKEN"),
-                "ANTHROPIC_API_KEY": os.getenv("ANTHROPIC_API_KEY", ""),
-            },
+            env=build_sdk_env(),
         )
 
         client = ClaudeSDKClient(options=options)
