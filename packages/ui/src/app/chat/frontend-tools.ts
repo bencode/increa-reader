@@ -5,6 +5,8 @@
 import type { SelectionContext } from '@/contexts/selection-context'
 import { uploadImage } from '@/lib/upload'
 import { useViewContext } from '@/stores/view-context'
+import type { BoardAnimation } from '@/types/board'
+import { compileInstruction } from '../board-viewer/p5-executor'
 
 export type ToolContext = {
   visibleElements: Set<HTMLElement>
@@ -12,8 +14,10 @@ export type ToolContext = {
   boardAppend: (tabKey: string, code: string) => number
   boardClear: (tabKey: string) => void
   getBoardInstructions: (tabKey: string) => string[]
+  getBoardErrors: (tabKey: string) => Record<number, string> | undefined
   getActiveTab: () => string | null
   getCanvasElement: () => HTMLCanvasElement | null
+  setAnimation: (tabKey: string, config: BoardAnimation) => void
 }
 
 type ToolResult = { result?: unknown; error?: string }
@@ -64,6 +68,11 @@ const canvasDraw = async (ctx: ToolContext, args: Record<string, unknown>): Prom
   if (!tabKey) {
     throw new Error('No .board file is open. Ask the user to open or create a .board file first.')
   }
+  // Compile-time validation — fail fast so LLM can retry
+  const { error } = compileInstruction(code)
+  if (error) {
+    throw new Error(`Compile error: ${error}\nCode: ${code}`)
+  }
   const total = ctx.boardAppend(tabKey, code)
   return `Drawing instruction added (total: ${total})`
 }
@@ -77,14 +86,20 @@ const canvasClear = async (ctx: ToolContext): Promise<string> => {
   return 'Canvas cleared'
 }
 
-const canvasGetInstructions = async (ctx: ToolContext): Promise<string[] | string> => {
+const canvasGetInstructions = async (ctx: ToolContext): Promise<string> => {
   const tabKey = ctx.getActiveTab()
   if (!tabKey) {
     throw new Error('No .board file is open. Ask the user to open or create a .board file first.')
   }
   const instructions = ctx.getBoardInstructions(tabKey)
   if (instructions.length === 0) return 'No drawing instructions on the canvas.'
-  return instructions
+
+  const errors = ctx.getBoardErrors(tabKey)
+  const lines = instructions.map((code, i) => {
+    const status = errors?.[i] ? `\u2717 ${errors[i]}` : '\u2713'
+    return `[${i}] ${JSON.stringify(code)}  ${status}`
+  })
+  return lines.join('\n')
 }
 
 const canvasSnapshot = async (ctx: ToolContext): Promise<{ absolutePath: string; filename: string }> => {
@@ -93,10 +108,32 @@ const canvasSnapshot = async (ctx: ToolContext): Promise<{ absolutePath: string;
     throw new Error('No canvas element found. Make sure a board is open with drawings.')
   }
 
+  const tabKey = ctx.getActiveTab()
+  const errors = tabKey ? ctx.getBoardErrors(tabKey) : undefined
+  const errorCount = errors ? Object.keys(errors).length : 0
+
   const dataUrl = canvas.toDataURL('image/png')
   const res = await fetch(dataUrl)
   const blob = await res.blob()
-  return uploadImage(blob)
+  const result = await uploadImage(blob)
+
+  if (errorCount > 0) {
+    return { ...result, errorSummary: `${errorCount} instruction(s) have runtime errors` } as { absolutePath: string; filename: string }
+  }
+  return result
+}
+
+const canvasSetup = async (ctx: ToolContext, args: Record<string, unknown>): Promise<string> => {
+  const tabKey = ctx.getActiveTab()
+  if (!tabKey) {
+    throw new Error('No .board file is open. Ask the user to open or create a .board file first.')
+  }
+  const loop = (args.loop as boolean) ?? false
+  const fps = (args.fps as number) ?? 60
+  const vars = (args.vars as Record<string, unknown>) ?? {}
+  ctx.setAnimation(tabKey, { loop, fps, vars })
+  const varNames = Object.keys(vars)
+  return `Canvas setup: loop=${loop}, fps=${fps}${varNames.length > 0 ? `, vars=${varNames.join(', ')}` : ''}`
 }
 
 const toolHandlers: Record<string, ToolHandler> = {
@@ -108,6 +145,7 @@ const toolHandlers: Record<string, ToolHandler> = {
   canvas_clear: (ctx) => canvasClear(ctx),
   canvas_get_instructions: (ctx) => canvasGetInstructions(ctx),
   canvas_snapshot: (ctx) => canvasSnapshot(ctx),
+  canvas_setup: (ctx, args) => canvasSetup(ctx, args),
 }
 
 /**

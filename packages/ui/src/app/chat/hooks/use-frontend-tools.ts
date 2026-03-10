@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { SSEMessage } from '@/types/chat'
 import { useSelectionQueue } from '@/contexts/selection-context'
-import { useBoardStore } from '@/stores/board-store'
+import { useBoardStore, getTab, setAnimation } from '@/stores/board-store'
 import { executeFrontendTool, type ToolContext } from '../frontend-tools'
 import { useVisibleContent } from '../../../contexts/visible-content-context'
 
@@ -38,19 +38,28 @@ export const useFrontendTools = () => {
               },
               boardAppend: (tabKey, code) => {
                 const s = useBoardStore.getState()
-                const updated = [...(s.tabs[tabKey] ?? []), code]
-                useBoardStore.setState({ tabs: { ...s.tabs, [tabKey]: updated } })
+                const tab = getTab(s, tabKey)
+                const updated = [...tab.instructions, code]
+                useBoardStore.setState({
+                  tabs: { ...s.tabs, [tabKey]: { ...tab, instructions: updated } },
+                })
                 return updated.length
               },
               boardClear: (tabKey) => {
                 const s = useBoardStore.getState()
-                useBoardStore.setState({ tabs: { ...s.tabs, [tabKey]: [] } })
+                useBoardStore.setState({
+                  tabs: { ...s.tabs, [tabKey]: { instructions: [], errors: undefined } },
+                })
               },
               getBoardInstructions: (tabKey) => {
-                return useBoardStore.getState().tabs[tabKey] ?? []
+                return getTab(useBoardStore.getState(), tabKey).instructions
+              },
+              getBoardErrors: (tabKey) => {
+                return getTab(useBoardStore.getState(), tabKey).errors
               },
               getActiveTab: () => useBoardStore.getState().activeTab,
               getCanvasElement: () => document.querySelector<HTMLCanvasElement>('canvas'),
+              setAnimation: (tabKey, config) => setAnimation(tabKey, config),
             }
 
             const toolResult = await executeFrontendTool(ctx, name, args)

@@ -48,20 +48,53 @@ function createMathFunction(p: p5) {
   }
 }
 
-export function executeInstruction(p: p5, code: string) {
-  const scope: Record<string, unknown> = {}
+// --- Compilation cache ---
 
+type CompiledFn = { fn: (ctx: Record<string, unknown>) => void; error?: string }
+
+const compilationCache = new Map<string, CompiledFn>()
+
+export function compileInstruction(code: string): CompiledFn {
+  const cached = compilationCache.get(code)
+  if (cached) return cached
+
+  let result: CompiledFn
+  try {
+    // Using with($ctx) so instruction code can access p5 functions and user vars directly
+    const compiled = new Function('$ctx', `with($ctx) { ${code} }`)
+    result = { fn: compiled as (ctx: Record<string, unknown>) => void }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    result = { fn: () => {}, error: msg }
+  }
+  compilationCache.set(code, result)
+  return result
+}
+
+// --- Context building ---
+
+export function buildContext(p: p5, vars?: Record<string, unknown>): Record<string, unknown> {
+  const ctx: Record<string, unknown> = { ...(vars ?? {}) }
   for (const fn of DRAWING_FUNCTIONS) {
     const val = (p as unknown as Record<string, unknown>)[fn]
-    scope[fn] = typeof val === 'function' ? (val as (...args: unknown[]) => unknown).bind(p) : val
+    ctx[fn] = typeof val === 'function' ? (val as (...args: unknown[]) => unknown).bind(p) : val
   }
+  ctx.math = createMathFunction(p)
+  ctx.frameCount = 0
+  return ctx
+}
 
-  scope.math = createMathFunction(p)
+// --- Execution ---
 
-  const keys = Object.keys(scope)
-  const values = Object.values(scope)
-  const fn = new Function(...keys, code)
-  fn(...values)
+export function executeInstruction(ctx: Record<string, unknown>, code: string): string | null {
+  const { fn, error } = compileInstruction(code)
+  if (error) return `Compile error: ${error}`
+  try {
+    fn(ctx)
+    return null
+  } catch (e) {
+    return `Runtime error: ${e instanceof Error ? e.message : String(e)}`
+  }
 }
 
 export function clearMathCache() {

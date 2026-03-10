@@ -194,6 +194,41 @@ async def canvas_snapshot(args: dict[str, Any]) -> dict[str, Any]:
     return await frontend_tool_wrapper("canvas_snapshot")
 
 
+@tool(
+    "canvas_setup",
+    "Configure the canvas board for animation or static drawing. "
+    "Set loop=true to enable animation mode with continuous frame updates. "
+    "Use vars to declare persistent variables accessible in drawing instructions "
+    "(e.g. vars={x: 0, y: 0, speed: 3}). "
+    "Variables persist across frames, so x++ in canvas_draw will accumulate. "
+    "Requires a .board file to be open.",
+    {
+        "loop": {
+            "type": "boolean",
+            "description": "Enable animation loop (default: false)",
+            "default": False,
+        },
+        "fps": {
+            "type": "integer",
+            "description": "Frames per second (default: 60)",
+            "default": 60,
+        },
+        "vars": {
+            "type": "object",
+            "description": "Persistent variables for animation state (e.g. {x: 0, y: 300, speed: 3})",
+        },
+    },
+)
+async def canvas_setup(args: dict[str, Any]) -> dict[str, Any]:
+    """Configure the canvas board for animation"""
+    return await frontend_tool_wrapper(
+        "canvas_setup",
+        loop=args.get("loop", False),
+        fps=args.get("fps", 60),
+        vars=args.get("vars", {}),
+    )
+
+
 def complete_tool_call(call_id: str, result: Any = None, error: Optional[str] = None):
     """
     Complete a pending tool call with result or error
@@ -229,4 +264,5 @@ FRONTEND_TOOLS = [
     canvas_clear,
     canvas_get_instructions,
     canvas_snapshot,
+    canvas_setup,
 ]

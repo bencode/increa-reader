@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
-import { ZoomIn, ZoomOut, RotateCcw, Trash2, Save } from 'lucide-react'
+import { ZoomIn, ZoomOut, RotateCcw, Trash2, Save, Play, Pause } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useBoardStore } from '@/stores/board-store'
+import { useBoardStore, getTab } from '@/stores/board-store'
 import type { BoardFile } from '@/types/board'
 import { useP5Canvas } from './use-p5-canvas'
 import { useCanvasNavigation } from './use-canvas-navigation'
@@ -17,10 +17,14 @@ const EMPTY: string[] = []
 
 export function BoardViewer({ repo, filePath, data }: BoardViewerProps) {
   const tabKey = repo && filePath ? `${repo}/${filePath}` : 'default'
-  const instructions = useBoardStore(s => s.tabs[tabKey] ?? EMPTY)
+  const tab = useBoardStore(s => s.tabs[tabKey])
+  const instructions = tab?.instructions ?? EMPTY
+  const animation = tab?.animation
   const background = data?.canvas?.background ?? DEFAULT_BACKGROUND
   const { position, scale, isDragging, containerRef, reset, zoomIn, zoomOut, handlers } = useCanvasNavigation()
-  useP5Canvas({ containerRef, position, scale, background, instructions })
+  const { isLooping, toggleLoop } = useP5Canvas({
+    containerRef, tabKey, position, scale, background, instructions, animation,
+  })
 
   useEffect(() => {
     useBoardStore.setState({ activeTab: tabKey })
@@ -32,17 +36,26 @@ export function BoardViewer({ repo, filePath, data }: BoardViewerProps) {
   }, [tabKey])
 
   useEffect(() => {
-    if (data?.instructions) {
-      useBoardStore.setState(s => ({
-        tabs: { ...s.tabs, [tabKey]: data.instructions },
-      }))
-    }
+    if (!data) return
+    const s = useBoardStore.getState()
+    const existing = getTab(s, tabKey)
+    useBoardStore.setState({
+      tabs: {
+        ...s.tabs,
+        [tabKey]: {
+          ...existing,
+          instructions: data.instructions,
+          ...(data.animation ? { animation: data.animation } : {}),
+        },
+      },
+    })
   }, [data, tabKey])
 
   const clear = () => {
-    useBoardStore.setState(s => ({
-      tabs: { ...s.tabs, [tabKey]: [] },
-    }))
+    const s = useBoardStore.getState()
+    useBoardStore.setState({
+      tabs: { ...s.tabs, [tabKey]: { instructions: [], errors: undefined } },
+    })
   }
 
   const handleSave = async () => {
@@ -50,6 +63,7 @@ export function BoardViewer({ repo, filePath, data }: BoardViewerProps) {
       version: 1,
       canvas: { background },
       instructions,
+      ...(animation ? { animation } : {}),
     }
 
     if (repo && filePath) {
@@ -75,6 +89,11 @@ export function BoardViewer({ repo, filePath, data }: BoardViewerProps) {
   return (
     <div className="relative h-full flex flex-col">
       <div className="absolute top-4 right-4 z-10 flex gap-2 bg-background/80 backdrop-blur-sm rounded-md p-2 shadow-md">
+        {animation?.loop && (
+          <Button variant="ghost" size="icon" onClick={toggleLoop} title={isLooping ? 'Pause' : 'Play'}>
+            {isLooping ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+          </Button>
+        )}
         <Button variant="ghost" size="icon" onClick={zoomIn} title="Zoom in">
           <ZoomIn className="h-4 w-4" />
         </Button>
