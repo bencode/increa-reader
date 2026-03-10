@@ -32,6 +32,10 @@ export const HELP_TEXT = `## Available Commands
 - \`/rename <title>\` - Rename current session
 - \`/delete <id>\` - Delete session by id or index
 
+**Model**
+- \`/model\` - Show current model
+- \`/model <name>\` - Switch model (sonnet, opus, haiku)
+
 💡 Tip: Context follows the file you select in the left panel.
 `
 

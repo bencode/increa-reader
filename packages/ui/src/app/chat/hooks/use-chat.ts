@@ -113,6 +113,7 @@ export const useChat = (getContext: () => ContextData) => {
           prompt: text,
           sessionId: workingSession.stats?.sessionId,
           context,
+          options: workingSession.model ? { model: workingSession.model } : undefined,
         }),
       })
 

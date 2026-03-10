@@ -176,6 +176,16 @@ export const useCommands = (ctx: CommandContext) => {
         addMessage('system', `Session renamed to: **${args}**`)
       },
 
+      model: () => {
+        if (!args) {
+          const current = currentSession?.model || 'default'
+          addMessage('system', `Current model: **${current}**`)
+          return
+        }
+        setCurrentSession(prev => prev ? { ...prev, model: args, lastActiveAt: Date.now() } : prev)
+        addMessage('system', `Model switched to **${args}**`)
+      },
+
       delete: async () => {
         if (!args) {
           addMessage('error', 'Usage: /delete <id or index>')

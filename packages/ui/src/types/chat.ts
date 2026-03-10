@@ -36,6 +36,7 @@ export type Session = {
   title: string
   messages: Message[]
   stats?: ChatStats
+  model?: string
   createdAt: number
   lastActiveAt: number
 }

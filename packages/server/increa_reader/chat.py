@@ -350,6 +350,7 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
         ]
 
         query_options = ClaudeAgentOptions(
+            model=request.options.get("model") if request.options else None,
             cwd=cwd,
             mcp_servers={"pdf-reader": pdf_server, "frontend": frontend_server},
             allowed_tools=(
