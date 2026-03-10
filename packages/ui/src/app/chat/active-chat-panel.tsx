@@ -12,6 +12,7 @@ type ActiveChatPanelProps = {
   isStreaming: boolean
   onInputChange: (value: string) => void
   onKeyDown: (e: React.KeyboardEvent) => void
+  onInsertText: (text: string) => void
   context: ContextData
   repos: Repo[]
   sessionId?: string
@@ -34,6 +35,7 @@ export const ActiveChatPanel = ({
   isStreaming,
   onInputChange,
   onKeyDown,
+  onInsertText,
   context,
   repos,
   sessionId,
@@ -48,6 +50,7 @@ export const ActiveChatPanel = ({
         isStreaming={isStreaming}
         onInputChange={onInputChange}
         onKeyDown={onKeyDown}
+        onInsertText={onInsertText}
       />
       <ChatStats
         context={context}

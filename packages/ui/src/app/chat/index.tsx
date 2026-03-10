@@ -63,6 +63,13 @@ export const ChatPanel = () => {
     }
   }
 
+  const handleInsertText = useCallback((text: string) => {
+    setInput(prev => {
+      const separator = prev && !prev.endsWith('\n') ? '\n' : ''
+      return prev + separator + text
+    })
+  }, [setInput])
+
   return (
     <div className="flex flex-col h-full font-mono">
       <ChatHeader isSplitView={isSplitView} onToggleSplit={() => setIsSplitView(!isSplitView)} />
@@ -81,6 +88,7 @@ export const ChatPanel = () => {
               isStreaming={isStreaming}
               onInputChange={setInput}
               onKeyDown={handleKeyDown}
+              onInsertText={handleInsertText}
               context={getContext()}
               repos={repos}
               sessionId={sessionId}
@@ -97,6 +105,7 @@ export const ChatPanel = () => {
             isStreaming={isStreaming}
             onInputChange={setInput}
             onKeyDown={handleKeyDown}
+            onInsertText={handleInsertText}
             context={getContext()}
             repos={repos}
             sessionId={sessionId}

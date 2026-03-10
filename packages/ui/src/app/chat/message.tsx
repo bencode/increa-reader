@@ -42,6 +42,11 @@ const formatToolParams = (toolName: string, params?: Record<string, unknown>) =>
   return formatters[toolName]?.(params) || ''
 }
 
+const resolveImageSrc = (src?: string) =>
+  src && src.includes('.increa/uploads/')
+    ? `/api/uploads/${src.split('/').pop()}`
+    : src
+
 export const Message = ({ role, content, isStreaming, toolCalls }: MessageType) => {
   const prefix = role === 'user' ? '$' : role === 'system' ? '>' : role === 'error' ? '!' : '<'
   const textColor = role === 'user' ? 'text-blue-600 dark:text-blue-400' : role === 'error' ? 'text-red-700 dark:text-red-300' : ''
@@ -78,14 +83,29 @@ export const Message = ({ role, content, isStreaming, toolCalls }: MessageType) 
             </div>
           )}
 
-          {role === 'user' || role === 'error' ? (
+          {role === 'error' ? (
             <span>{content}</span>
+          ) : role === 'user' ? (
+            <div ref={markdownRef} className="prose prose-sm prose-slate dark:prose-invert max-w-none prose-p:leading-relaxed prose-img:max-w-xs prose-img:rounded">
+              <ReactMarkdown
+                components={{
+                  img({ src, alt, ...props }) {
+                    return <img src={resolveImageSrc(src)} alt={alt} {...props} />
+                  },
+                }}
+              >
+                {content}
+              </ReactMarkdown>
+            </div>
           ) : (
             <div ref={markdownRef} className="prose prose-sm prose-slate dark:prose-invert max-w-none prose-headings:text-base prose-headings:my-1 prose-h1:text-lg prose-h1:my-1.5 prose-h2:text-base prose-h2:my-1 prose-h3:text-sm prose-h3:my-1 prose-h4:text-sm prose-h4:my-0.5 prose-h5:text-xs prose-h5:my-0.5 prose-h6:text-xs prose-h6:my-0.5 prose-p:leading-relaxed prose-pre:p-0 prose-pre:bg-transparent">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm, remarkMath]}
                 rehypePlugins={[rehypeKatex]}
                 components={{
+                  img({ src, alt, ...props }) {
+                    return <img src={resolveImageSrc(src)} alt={alt} {...props} />
+                  },
                   code({ inline, className, children, ...props }: {
                     inline?: boolean
                     className?: string

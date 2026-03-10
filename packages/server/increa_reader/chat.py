@@ -3,13 +3,16 @@ Chat API endpoints with streaming support
 """
 
 import asyncio
+import base64
 import json
 import os
+import time
+import uuid
 from pathlib import Path
 
 from claude_agent_sdk import ClaudeAgentOptions, ClaudeSDKClient, create_sdk_mcp_server
 from fastapi import HTTPException, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 
 from .chat_utils import generate_semantic_filename
 from .models import ChatRequest, ChatSaveRequest, WorkspaceConfig
@@ -51,6 +54,55 @@ async def cleanup_active_sessions():
 
 def create_chat_routes(app, workspace_config: WorkspaceConfig):
     """Create chat-related API routes"""
+
+    @app.post("/api/upload/image")
+    async def upload_image(request: dict):
+        """Upload a base64-encoded image to the first repo's .increa/uploads/ directory"""
+        data = request.get("data")
+        if not data:
+            raise HTTPException(status_code=400, detail="data is required")
+
+        if not workspace_config.repos:
+            raise HTTPException(status_code=400, detail="No repositories configured")
+
+        # Save to first repo's .increa/uploads/
+        repo_root = Path(workspace_config.repos[0].root)
+        uploads_dir = repo_root / ".increa" / "uploads"
+        uploads_dir.mkdir(parents=True, exist_ok=True)
+
+        # Strip data URL prefix if present (e.g. "data:image/png;base64,...")
+        if "," in data:
+            data = data.split(",", 1)[1]
+
+        image_bytes = base64.b64decode(data)
+        filename = f"clipboard_{int(time.time())}_{uuid.uuid4().hex[:8]}.png"
+        filepath = uploads_dir / filename
+        filepath.write_bytes(image_bytes)
+
+        absolute_path = str(filepath.resolve())
+        if DEBUG:
+            print(f"✓ Image uploaded: {absolute_path}")
+
+        return {"absolutePath": absolute_path, "filename": filename}
+
+    @app.get("/api/uploads/{filename}")
+    async def get_uploaded_image(filename: str):
+        """Serve uploaded images from the first repo's .increa/uploads/ directory"""
+        if not workspace_config.repos:
+            raise HTTPException(status_code=404, detail="No repositories configured")
+
+        repo_root = Path(workspace_config.repos[0].root)
+        filepath = (repo_root / ".increa" / "uploads" / filename).resolve()
+
+        # Security: ensure path stays within uploads directory
+        uploads_dir = (repo_root / ".increa" / "uploads").resolve()
+        if not str(filepath).startswith(str(uploads_dir)):
+            raise HTTPException(status_code=403, detail="Access denied")
+
+        if not filepath.exists() or not filepath.is_file():
+            raise HTTPException(status_code=404, detail="File not found")
+
+        return FileResponse(filepath, media_type="image/png")
 
     @app.post("/api/chat/save")
     async def chat_save(request: ChatSaveRequest):
