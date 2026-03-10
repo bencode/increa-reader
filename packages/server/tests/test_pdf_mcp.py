@@ -3,6 +3,7 @@ Test script for PDF MCP integration with Claude Agent SDK
 """
 
 import asyncio
+import os
 
 from claude_agent_sdk import ClaudeAgentOptions, create_sdk_mcp_server, query
 
@@ -38,7 +39,7 @@ async def main():
         print(f"[CLI STDERR] {line}")
 
     options = ClaudeAgentOptions(
-        cwd="/Users/bencode/work/brain2/pages",
+        cwd=os.getenv("TEST_PDF_CWD", "."),
         mcp_servers={"pdf-reader": pdf_server},
         allowed_tools=[
             "Bash",

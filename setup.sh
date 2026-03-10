@@ -16,10 +16,10 @@ echo
 # Check prerequisites
 echo "Checking prerequisites..."
 
-command -v node >/dev/null 2>&1 || error "Node.js is not installed. Please install Node.js 18+."
+command -v node >/dev/null 2>&1 || error "Node.js is not installed. Please install Node.js 22+."
 NODE_VERSION=$(node -v | sed 's/v//' | cut -d. -f1)
-if [ "$NODE_VERSION" -lt 18 ]; then
-  error "Node.js 18+ is required (found v$(node -v))"
+if [ "$NODE_VERSION" -lt 22 ]; then
+  error "Node.js 22+ is required (found v$(node -v))"
 fi
 info "Node.js $(node -v)"
 

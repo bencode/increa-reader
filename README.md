@@ -13,7 +13,7 @@ A modern code and document reader with AI-powered chat functionality.
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 22+
 - Python 3.10+
 - pnpm (`npm install -g pnpm`)
 
@@ -57,6 +57,13 @@ INCREA_REPO="/path/to/repo1:/path/to/repo2"
 
 # Required for AI chat: your Anthropic API key
 ANTHROPIC_API_KEY="your-api-key"
+```
+
+If using a third-party API proxy:
+
+```bash
+ANTHROPIC_BASE_URL="https://your-proxy-url/api/anthropic"
+ANTHROPIC_AUTH_TOKEN="your-proxy-token"
 ```
 
 Alternatively, you can configure repositories through the UI settings panel after starting the application.
