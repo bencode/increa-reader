@@ -2,6 +2,7 @@
 File viewing and preview API routes
 """
 
+import json
 import mimetypes
 from pathlib import Path
 
@@ -191,6 +192,13 @@ def create_file_routes(app, workspace_config: WorkspaceConfig):
         # PDF files
         if ext == ".pdf":
             return await get_pdf_metadata(file_path, path)
+
+        # Board files
+        if ext == ".board":
+            async with aiofiles.open(file_path, "r", encoding="utf-8") as f:
+                content = await f.read()
+            board_data = json.loads(content)
+            return {"type": "board", "path": path, "data": board_data}
 
         # Markdown files
         if ext in [".md", ".markdown"]:

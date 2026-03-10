@@ -11,6 +11,8 @@ import 'katex/dist/katex.min.css'
 import { fetchPreview } from './api'
 import { PDFViewer } from './pdf-viewer'
 import { ImageViewer } from './image-viewer'
+import { BoardViewer } from './board-viewer'
+import type { BoardFile } from '@/types/board'
 import { useSetContext, useRefreshKey } from '@/stores/view-context'
 import { useExternalLinks } from '@/hooks/use-external-links'
 import { useVisibleContent } from '../contexts/visible-content-context'
@@ -22,6 +24,7 @@ type PreviewData =
   | { type: 'code'; lang: string; body: string }
   | { type: 'image'; path: string }
   | { type: 'pdf'; path: string; metadata: PDFMetadata }
+  | { type: 'board'; path: string; data: BoardFile }
   | { type: 'unsupported'; path: string }
 
 type PDFMetadata = {
@@ -212,6 +215,10 @@ export function FileViewer() {
 
       {preview.type === 'pdf' && (
         <PDFViewer repo={repoName!} filePath={preview.path} metadata={preview.metadata} />
+      )}
+
+      {preview.type === 'board' && (
+        <BoardViewer repo={repoName} filePath={preview.path} data={preview.data} />
       )}
 
       {preview.type === 'unsupported' && (

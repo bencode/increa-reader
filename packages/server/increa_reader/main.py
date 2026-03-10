@@ -19,6 +19,7 @@ except ImportError:
 import uvicorn
 from fastapi import FastAPI
 
+from .board_routes import create_board_routes
 from .chat import cleanup_active_sessions, create_chat_routes
 from .config_routes import create_config_routes
 
@@ -90,6 +91,7 @@ def create_app() -> FastAPI:
     create_file_routes(app, workspace_config)
     create_pdf_routes(app, workspace_config)
     create_chat_routes(app, workspace_config)
+    create_board_routes(app, workspace_config)
     create_session_routes(app, workspace_config)
 
     @app.get("/api")
