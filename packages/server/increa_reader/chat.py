@@ -343,6 +343,10 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
             "mcp__frontend__get_selection",
             "mcp__frontend__get_current_page",
             "mcp__frontend__refresh_view",
+            "mcp__frontend__canvas_draw",
+            "mcp__frontend__canvas_clear",
+            "mcp__frontend__canvas_get_instructions",
+            "mcp__frontend__canvas_snapshot",
         ]
 
         query_options = ClaudeAgentOptions(
@@ -418,6 +422,12 @@ PDF Tools (use in sequence: open → operate → close):
 1. open_pdf: Open a PDF file, returns a doc_id for subsequent operations
 2. page_count / extract_text / render_page_png / search_text: Operate on the opened document using doc_id
 3. close_pdf: Close the document when done to free resources
+
+Canvas Board Tools (requires a .board file to be open):
+- canvas_draw: Draw using p5.js code (e.g. fill(255,0,0); rect(100,100,200,150)). Each call appends one instruction.
+- canvas_clear: Clear all drawings from the canvas.
+- canvas_get_instructions: Get all drawing instructions on the canvas to review what has been drawn.
+- canvas_snapshot: Take a screenshot of the canvas, returns file path. Use Read tool to view the image.
 """
 
                     quote_count = request.context.quoteCount

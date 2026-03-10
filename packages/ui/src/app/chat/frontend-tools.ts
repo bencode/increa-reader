@@ -3,11 +3,17 @@
  */
 
 import type { SelectionContext } from '@/contexts/selection-context'
+import { uploadImage } from '@/lib/upload'
 import { useViewContext } from '@/stores/view-context'
 
 export type ToolContext = {
   visibleElements: Set<HTMLElement>
   getSelections: (max?: number) => SelectionContext[]
+  boardAppend: (tabKey: string, code: string) => number
+  boardClear: (tabKey: string) => void
+  getBoardInstructions: (tabKey: string) => string[]
+  getActiveTab: () => string | null
+  getCanvasElement: () => HTMLCanvasElement | null
 }
 
 type ToolResult = { result?: unknown; error?: string }
@@ -52,11 +58,56 @@ const refreshView = async (): Promise<string> => {
   return 'View refreshed'
 }
 
+const canvasDraw = async (ctx: ToolContext, args: Record<string, unknown>): Promise<string> => {
+  const code = args.code as string
+  const tabKey = ctx.getActiveTab()
+  if (!tabKey) {
+    throw new Error('No .board file is open. Ask the user to open or create a .board file first.')
+  }
+  const total = ctx.boardAppend(tabKey, code)
+  return `Drawing instruction added (total: ${total})`
+}
+
+const canvasClear = async (ctx: ToolContext): Promise<string> => {
+  const tabKey = ctx.getActiveTab()
+  if (!tabKey) {
+    throw new Error('No .board file is open. Ask the user to open or create a .board file first.')
+  }
+  ctx.boardClear(tabKey)
+  return 'Canvas cleared'
+}
+
+const canvasGetInstructions = async (ctx: ToolContext): Promise<string[] | string> => {
+  const tabKey = ctx.getActiveTab()
+  if (!tabKey) {
+    throw new Error('No .board file is open. Ask the user to open or create a .board file first.')
+  }
+  const instructions = ctx.getBoardInstructions(tabKey)
+  if (instructions.length === 0) return 'No drawing instructions on the canvas.'
+  return instructions
+}
+
+const canvasSnapshot = async (ctx: ToolContext): Promise<{ absolutePath: string; filename: string }> => {
+  const canvas = ctx.getCanvasElement()
+  if (!canvas) {
+    throw new Error('No canvas element found. Make sure a board is open with drawings.')
+  }
+
+  const dataUrl = canvas.toDataURL('image/png')
+  const res = await fetch(dataUrl)
+  const blob = await res.blob()
+  return uploadImage(blob)
+}
+
 const toolHandlers: Record<string, ToolHandler> = {
-  get_visible_content: ctx => getVisibleContent(ctx),
+  get_visible_content: (ctx) => getVisibleContent(ctx),
   get_selection: (ctx, args) => getSelection(ctx, args),
   get_current_page: () => getCurrentPage(),
   refresh_view: () => refreshView(),
+  canvas_draw: (ctx, args) => canvasDraw(ctx, args),
+  canvas_clear: (ctx) => canvasClear(ctx),
+  canvas_get_instructions: (ctx) => canvasGetInstructions(ctx),
+  canvas_snapshot: (ctx) => canvasSnapshot(ctx),
 }
 
 /**

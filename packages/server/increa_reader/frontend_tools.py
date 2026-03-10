@@ -3,6 +3,7 @@ Frontend tools - LLM can call these tools to interact with the frontend UI
 """
 
 import asyncio
+import json
 import os
 import uuid
 from typing import Any, Dict, Optional
@@ -69,8 +70,6 @@ async def frontend_tool_wrapper(name: str, **kwargs) -> dict[str, Any]:
             actual_result = result
 
         # Format result as text
-        import json
-
         if isinstance(actual_result, (dict, list)):
             text = json.dumps(actual_result, ensure_ascii=False, indent=2)
         else:
@@ -136,6 +135,65 @@ async def refresh_view(args: dict[str, Any]) -> dict[str, Any]:
     return await frontend_tool_wrapper("refresh_view")
 
 
+@tool(
+    "canvas_draw",
+    "Draw on the canvas board using p5.js drawing code. "
+    "REQUIRES a .board file to be open in the viewer. "
+    "The code runs in a p5.js scope with functions like rect(), ellipse(), text(), fill(), stroke(), etc. "
+    "Use standard p5.js API. Each call appends one drawing instruction. "
+    "Example: fill(255,0,0); rect(100,100,200,150); "
+    "For math formulas use: math('E=mc^2', x, y, size)",
+    {
+        "code": {
+            "type": "string",
+            "description": "p5.js drawing code string. Available functions: background, fill, noFill, stroke, noStroke, strokeWeight, rect, ellipse, circle, line, triangle, text, textSize, textAlign, push, pop, translate, rotate, scale, math(latex, x, y, size), etc.",
+        }
+    },
+)
+async def canvas_draw(args: dict[str, Any]) -> dict[str, Any]:
+    """Draw on the canvas board using p5.js code"""
+    code = args.get("code", "")
+    return await frontend_tool_wrapper("canvas_draw", code=code)
+
+
+@tool(
+    "canvas_clear",
+    "Clear all drawings from the canvas board. Requires a .board file to be open.",
+    {},
+)
+async def canvas_clear(args: dict[str, Any]) -> dict[str, Any]:
+    """Clear all drawings from the canvas"""
+    return await frontend_tool_wrapper("canvas_clear")
+
+
+
+@tool(
+    "canvas_get_instructions",
+    "Get all drawing instructions currently on the canvas board. "
+    "Requires a .board file to be open. "
+    "Returns the list of p5.js code strings that have been drawn. "
+    "Use this to review what has been drawn so far.",
+    {},
+)
+async def canvas_get_instructions(args: dict[str, Any]) -> dict[str, Any]:
+    """Get all drawing instructions on the canvas"""
+    return await frontend_tool_wrapper("canvas_get_instructions")
+
+
+@tool(
+    "canvas_snapshot",
+    "Take a screenshot of the current canvas board and save it as a PNG image. "
+    "Requires a .board file to be open. "
+    "Returns the absolute file path of the saved image. "
+    "You can then use the Read tool to view the image. "
+    "Use this to see the current state of your drawings on the canvas.",
+    {},
+)
+async def canvas_snapshot(args: dict[str, Any]) -> dict[str, Any]:
+    """Take a snapshot of the canvas board"""
+    return await frontend_tool_wrapper("canvas_snapshot")
+
+
 def complete_tool_call(call_id: str, result: Any = None, error: Optional[str] = None):
     """
     Complete a pending tool call with result or error
@@ -167,4 +225,8 @@ FRONTEND_TOOLS = [
     get_selection,
     get_current_page,
     refresh_view,
+    canvas_draw,
+    canvas_clear,
+    canvas_get_instructions,
+    canvas_snapshot,
 ]

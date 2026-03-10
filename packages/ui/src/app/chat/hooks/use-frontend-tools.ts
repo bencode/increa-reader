@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { SSEMessage } from '@/types/chat'
 import { useSelectionQueue } from '@/contexts/selection-context'
+import { useBoardStore } from '@/stores/board-store'
 import { executeFrontendTool, type ToolContext } from '../frontend-tools'
 import { useVisibleContent } from '../../../contexts/visible-content-context'
 
@@ -29,13 +30,27 @@ export const useFrontendTools = () => {
           if (msg.type === 'tool_call') {
             const { call_id, name, arguments: args } = msg
 
-            // Build tool context
             const ctx: ToolContext = {
               visibleElements: elementsRef.current,
               getSelections: (max) => {
                 const all = itemsRef.current
                 return max ? all.slice(0, max) : [...all]
               },
+              boardAppend: (tabKey, code) => {
+                const s = useBoardStore.getState()
+                const updated = [...(s.tabs[tabKey] ?? []), code]
+                useBoardStore.setState({ tabs: { ...s.tabs, [tabKey]: updated } })
+                return updated.length
+              },
+              boardClear: (tabKey) => {
+                const s = useBoardStore.getState()
+                useBoardStore.setState({ tabs: { ...s.tabs, [tabKey]: [] } })
+              },
+              getBoardInstructions: (tabKey) => {
+                return useBoardStore.getState().tabs[tabKey] ?? []
+              },
+              getActiveTab: () => useBoardStore.getState().activeTab,
+              getCanvasElement: () => document.querySelector<HTMLCanvasElement>('canvas'),
             }
 
             const toolResult = await executeFrontendTool(ctx, name, args)
