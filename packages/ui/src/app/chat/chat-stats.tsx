@@ -7,6 +7,7 @@ type ChatStatsProps = {
   repos: Array<{ name: string }>
   sessionId?: string
   isStreaming?: boolean
+  model?: string | null
   stats?: {
     sessionId?: string
     duration?: number
@@ -19,6 +20,11 @@ type ChatStatsProps = {
   }
 }
 
+const formatModelName = (model: string): string => {
+  const match = model.match(/^claude-(\w+-[\d]+(?:-\d{1,2})*?)(?:-\d{8})?$/)
+  return match ? match[1] : model
+}
+
 const formatTokens = (tokens: number): string => {
   if (tokens < 1000) {
     return tokens.toString()
@@ -26,7 +32,7 @@ const formatTokens = (tokens: number): string => {
   return (tokens / 1000).toFixed(1) + 'K'
 }
 
-export const ChatStats = ({ context, repos, sessionId, isStreaming, stats }: ChatStatsProps) => {
+export const ChatStats = ({ context, repos, sessionId, isStreaming, model, stats }: ChatStatsProps) => {
   const displayRepo = context.repo || (repos.length > 0 ? repos[0].name : 'loading...')
   if (!stats?.sessionId) {
     return null
@@ -41,6 +47,12 @@ export const ChatStats = ({ context, repos, sessionId, isStreaming, stats }: Cha
               user@{displayRepo}
             </span>
           </div>
+
+          {model && (
+            <span className="text-purple-600 dark:text-purple-400">
+              {formatModelName(model)}
+            </span>
+          )}
 
           {stats.sessionId && (
             <div className="flex items-center gap-1">

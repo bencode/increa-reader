@@ -16,6 +16,7 @@ type ActiveChatPanelProps = {
   context: ContextData
   repos: Repo[]
   sessionId?: string
+  model?: string | null
   stats?: {
     sessionId?: string
     duration?: number
@@ -39,6 +40,7 @@ export const ActiveChatPanel = ({
   context,
   repos,
   sessionId,
+  model,
   stats,
 }: ActiveChatPanelProps) => {
   return (
@@ -57,6 +59,7 @@ export const ActiveChatPanel = ({
         repos={repos}
         sessionId={sessionId}
         isStreaming={isStreaming}
+        model={model}
         stats={stats}
       />
     </div>

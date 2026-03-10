@@ -73,4 +73,24 @@ export async function updateConfigRepos(paths: string[]): Promise<RepoConfigInfo
   return data.data
 }
 
+export type ApiSettings = {
+  base_url: string | null
+  api_key: string | null
+  default_model: string | null
+}
+
+export async function fetchApiSettings(): Promise<ApiSettings> {
+  const response = await fetch('/api/config/api-settings')
+  return response.json()
+}
+
+export async function updateApiSettings(settings: Partial<ApiSettings>): Promise<ApiSettings> {
+  const response = await fetch('/api/config/api-settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(settings),
+  })
+  return response.json()
+}
+
 export type { TreeNode, RepoInfo, RepoTreeData, RepoConfigInfo }

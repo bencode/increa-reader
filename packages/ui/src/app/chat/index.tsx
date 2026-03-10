@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useGetContext } from '@/stores/view-context'
 import { useSelectionQueue } from '@/contexts/selection-context'
+import { fetchApiSettings } from '@/app/api'
 import { ChatHeader } from './chat-header'
 import { HistoryPanel } from './history-panel'
 import { ActiveChatPanel } from './active-chat-panel'
@@ -22,6 +23,8 @@ export const ChatPanel = () => {
     quoteCount: itemsRef.current.length,
   }), [getContext])
 
+  const [defaultModel, setDefaultModel] = useState<string | null>(null)
+
   const {
     messages,
     input,
@@ -31,15 +34,24 @@ export const ChatPanel = () => {
     repos,
     setRepos,
     stats,
+    currentSession,
     sendMessage,
     initializeFromStorage,
   } = useChat(getContextWithQuotes)
+
+  const effectiveModel = currentSession?.model || defaultModel || null
 
   useFrontendTools()
 
   // Initialize session from storage on mount
   useEffect(() => {
     initializeFromStorage()
+  }, [])
+
+  useEffect(() => {
+    fetchApiSettings()
+      .then(settings => setDefaultModel(settings.default_model))
+      .catch(console.error)
   }, [])
 
   useEffect(() => {
@@ -92,6 +104,7 @@ export const ChatPanel = () => {
               context={getContext()}
               repos={repos}
               sessionId={sessionId}
+              model={effectiveModel}
               stats={stats}
             />
           </ResizablePanel>
@@ -109,6 +122,7 @@ export const ChatPanel = () => {
             context={getContext()}
             repos={repos}
             sessionId={sessionId}
+            model={effectiveModel}
             stats={stats}
           />
         </div>

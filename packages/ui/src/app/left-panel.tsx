@@ -3,8 +3,8 @@ import { Settings } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { fetchRepos, type RepoInfo } from './api'
-import { RepoConfigDrawer } from './repo-config-drawer'
 import { RepoPanel } from './repo-panel'
+import { SettingsDrawer } from './settings-drawer'
 
 export function LeftPanel() {
   const [repos, setRepos] = useState<RepoInfo[]>([])
@@ -41,7 +41,7 @@ export function LeftPanel() {
         ))}
       </div>
 
-      <RepoConfigDrawer
+      <SettingsDrawer
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
         onReposChanged={loadRepos}
