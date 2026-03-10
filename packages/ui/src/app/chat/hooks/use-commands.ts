@@ -178,8 +178,8 @@ export const useCommands = (ctx: CommandContext) => {
 
       model: () => {
         if (!args) {
-          const current = currentSession?.model || 'default'
-          addMessage('system', `Current model: **${current}**`)
+          setCurrentSession(prev => prev ? { ...prev, model: undefined, lastActiveAt: Date.now() } : prev)
+          addMessage('system', 'Model reset to default')
           return
         }
         setCurrentSession(prev => prev ? { ...prev, model: args, lastActiveAt: Date.now() } : prev)
