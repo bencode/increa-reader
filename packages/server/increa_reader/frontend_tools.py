@@ -201,6 +201,11 @@ async def canvas_snapshot(args: dict[str, Any]) -> dict[str, Any]:
     "Use vars to declare persistent variables accessible in drawing instructions "
     "(e.g. vars={x: 0, y: 0, speed: 3}). "
     "Variables persist across frames, so x++ in canvas_draw will accumulate. "
+    "Use controls to declare interactive UI controls that users can adjust in real-time. "
+    "Each control becomes a variable in drawing code. "
+    "Example: controls={radius: {type: 'range', min: 10, max: 200, default: 50}} "
+    "creates a slider; user drags it and 'radius' updates live without resetting animation. "
+    "Supported types: 'range' (slider, requires min/max), 'number' (input field). "
     "Requires a .board file to be open.",
     {
         "loop": {
@@ -217,16 +222,22 @@ async def canvas_snapshot(args: dict[str, Any]) -> dict[str, Any]:
             "type": "object",
             "description": "Persistent variables for animation state (e.g. {x: 0, y: 300, speed: 3})",
         },
+        "controls": {
+            "type": "object",
+            "description": "Interactive UI controls. Each key is a variable name, value is {type: 'range', min, max, step?, default?} or {type: 'number', min?, max?, default?}. Control values are injected into drawing context and update live when user adjusts them.",
+        },
     },
 )
 async def canvas_setup(args: dict[str, Any]) -> dict[str, Any]:
     """Configure the canvas board for animation"""
-    return await frontend_tool_wrapper(
-        "canvas_setup",
-        loop=args.get("loop", False),
-        fps=args.get("fps", 60),
-        vars=args.get("vars", {}),
-    )
+    kwargs: dict[str, Any] = {
+        "loop": args.get("loop", False),
+        "fps": args.get("fps", 60),
+        "vars": args.get("vars", {}),
+    }
+    if "controls" in args:
+        kwargs["controls"] = args["controls"]
+    return await frontend_tool_wrapper("canvas_setup", **kwargs)
 
 
 def complete_tool_call(call_id: str, result: Any = None, error: Optional[str] = None):

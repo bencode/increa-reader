@@ -132,9 +132,21 @@ const canvasSetup = async (ctx: ToolContext, args: Record<string, unknown>): Pro
   const loop = coerce('boolean', args.loop ?? false) as boolean
   const fps = coerce('integer', args.fps ?? 60) as number
   const vars = coerce('object', args.vars ?? {}) as Record<string, unknown>
-  ctx.setAnimation(tabKey, { loop, fps, vars })
+  const controls = args.controls
+    ? coerce('object', args.controls) as Record<string, unknown>
+    : undefined
+  ctx.setAnimation(tabKey, {
+    loop,
+    fps,
+    vars,
+    ...(controls ? { controls: controls as BoardAnimation['controls'] } : {}),
+  })
   const varNames = Object.keys(vars)
-  return `Canvas setup: loop=${loop}, fps=${fps}${varNames.length > 0 ? `, vars=${varNames.join(', ')}` : ''}`
+  const controlNames = controls ? Object.keys(controls) : []
+  const parts = [`loop=${loop}`, `fps=${fps}`]
+  if (varNames.length > 0) parts.push(`vars=${varNames.join(', ')}`)
+  if (controlNames.length > 0) parts.push(`controls=${controlNames.join(', ')}`)
+  return `Canvas setup: ${parts.join(', ')}`
 }
 
 const toolHandlers: Record<string, ToolHandler> = {

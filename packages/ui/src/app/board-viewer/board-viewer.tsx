@@ -1,10 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ZoomIn, ZoomOut, RotateCcw, Trash2, Save, Play, Pause } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useBoardStore, getTab } from '@/stores/board-store'
 import type { BoardFile } from '@/types/board'
 import { useP5Canvas } from './use-p5-canvas'
 import { useCanvasNavigation } from './use-canvas-navigation'
+import { ControlsPanel } from './controls-panel'
 
 type BoardViewerProps = {
   repo?: string
@@ -21,9 +22,29 @@ export function BoardViewer({ repo, filePath, data }: BoardViewerProps) {
   const instructions = tab?.instructions ?? EMPTY
   const animation = tab?.animation
   const background = data?.canvas?.background ?? DEFAULT_BACKGROUND
+  const [controlValues, setControlValues] = useState<Record<string, number>>({})
+
+  const controlsKey = useMemo(
+    () => animation?.controls ? JSON.stringify(animation.controls) : '',
+    [animation?.controls],
+  )
+
+  useEffect(() => {
+    if (!animation?.controls) {
+      setControlValues({})
+      return
+    }
+    const initial: Record<string, number> = {}
+    for (const [name, def] of Object.entries(animation.controls)) {
+      initial[name] = def.default ?? (def.type === 'range' ? def.min : 0)
+    }
+    setControlValues(initial)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [controlsKey])
+
   const { position, scale, isDragging, containerRef, reset, zoomIn, zoomOut, handlers } = useCanvasNavigation()
   const { isLooping, toggleLoop } = useP5Canvas({
-    containerRef, tabKey, position, scale, background, instructions, animation,
+    containerRef, tabKey, position, scale, background, instructions, animation, controlValues,
   })
 
   useEffect(() => {
@@ -120,6 +141,14 @@ export function BoardViewer({ repo, filePath, data }: BoardViewerProps) {
         style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
         {...handlers}
       />
+
+      {animation?.controls && Object.keys(animation.controls).length > 0 && (
+        <ControlsPanel
+          controls={animation.controls}
+          values={controlValues}
+          onChange={setControlValues}
+        />
+      )}
     </div>
   )
 }

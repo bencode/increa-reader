@@ -12,6 +12,7 @@ type CanvasOptions = {
   background: [number, number, number]
   instructions: string[]
   animation?: BoardAnimation
+  controlValues: Record<string, number>
 }
 
 type DrawRefs = {
@@ -92,6 +93,7 @@ export function useP5Canvas({
   background,
   instructions,
   animation,
+  controlValues,
 }: CanvasOptions) {
   const p5Ref = useRef<p5 | null>(null)
 
@@ -108,6 +110,8 @@ export function useP5Canvas({
   const ctxRef = useRef<Record<string, unknown> | null>(null)
   const setupReadyRef = useRef(false)
   const animationRef = useRef(animation)
+  const controlValuesRef = useRef(controlValues)
+  controlValuesRef.current = controlValues
 
   // Rebuild context when animation config changes
   useEffect(() => {
@@ -117,6 +121,9 @@ export function useP5Canvas({
     if (!p || !setupReadyRef.current) return
 
     ctxRef.current = buildContext(p, animation?.vars)
+    for (const [key, value] of Object.entries(controlValuesRef.current)) {
+      ctxRef.current[key] = value
+    }
 
     if (animation?.loop) {
       p.frameRate(animation.fps ?? 60)
@@ -130,6 +137,18 @@ export function useP5Canvas({
       }
     }
   }, [animation, loopStore])
+
+  // Sync control values into context without rebuilding
+  useEffect(() => {
+    const ctx = ctxRef.current
+    if (!ctx) return
+    for (const [key, value] of Object.entries(controlValues)) {
+      ctx[key] = value
+    }
+    if (!animationRef.current?.loop) {
+      p5Ref.current?.redraw()
+    }
+  }, [controlValues])
 
   // Sync refs and trigger redraw for static mode
   useEffect(() => {
