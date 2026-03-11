@@ -6,6 +6,7 @@ import type { SelectionContext } from '@/contexts/selection-context'
 import { uploadImage } from '@/lib/upload'
 import { useViewContext } from '@/stores/view-context'
 import type { BoardAnimation } from '@/types/board'
+import { coerce } from '@/lib/coerce'
 import { compileInstruction } from '../board-viewer/p5-executor'
 
 export type ToolContext = {
@@ -128,9 +129,9 @@ const canvasSetup = async (ctx: ToolContext, args: Record<string, unknown>): Pro
   if (!tabKey) {
     throw new Error('No .board file is open. Ask the user to open or create a .board file first.')
   }
-  const loop = (args.loop as boolean) ?? false
-  const fps = (args.fps as number) ?? 60
-  const vars = (args.vars as Record<string, unknown>) ?? {}
+  const loop = coerce('boolean', args.loop ?? false) as boolean
+  const fps = coerce('integer', args.fps ?? 60) as number
+  const vars = coerce('object', args.vars ?? {}) as Record<string, unknown>
   ctx.setAnimation(tabKey, { loop, fps, vars })
   const varNames = Object.keys(vars)
   return `Canvas setup: loop=${loop}, fps=${fps}${varNames.length > 0 ? `, vars=${varNames.join(', ')}` : ''}`
