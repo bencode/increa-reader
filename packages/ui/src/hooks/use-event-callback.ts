@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useLayoutEffect, useRef } from 'react'
 
 /**
  * Create a stable event handler reference that always accesses the latest values
@@ -21,7 +21,7 @@ export function useEventCallback<Args extends unknown[], R>(
   callback: (...args: Args) => R
 ): (...args: Args) => R {
   const callbackRef = useRef(callback)
-  callbackRef.current = callback
+  useLayoutEffect(() => { callbackRef.current = callback })
 
   return useCallback((...args: Args) => callbackRef.current(...args), [])
 }

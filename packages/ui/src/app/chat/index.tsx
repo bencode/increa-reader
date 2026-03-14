@@ -46,7 +46,7 @@ export const ChatPanel = () => {
   // Initialize session from storage on mount
   useEffect(() => {
     initializeFromStorage()
-  }, [])
+  }, [initializeFromStorage])
 
   useEffect(() => {
     fetchApiSettings()

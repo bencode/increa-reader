@@ -117,7 +117,6 @@ export const Message = ({ role, content, isStreaming, toolCalls }: MessageType) 
                     }
                     return !inline && match ? (
                       <SyntaxHighlighter
-                        /* @ts-ignore - SyntaxHighlighter style type mismatch */
                         style={syntaxTheme}
                         language={match[1]}
                         PreTag="div"

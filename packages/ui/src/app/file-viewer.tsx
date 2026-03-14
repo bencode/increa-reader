@@ -102,8 +102,11 @@ export function FileViewer() {
     const scrollBody = scrollBodyRef.current
     if (!scrollBody) return
 
+    // Capture ref value for cleanup
+    const elements = elementsRef.current
+
     // Clear previous elements
-    elementsRef.current.clear()
+    elements.clear()
 
     const observer = new IntersectionObserver(
       entries => {
@@ -128,7 +131,7 @@ export function FileViewer() {
 
     return () => {
       observer.disconnect()
-      elementsRef.current.clear()
+      elements.clear()
     }
   }, [state.preview, elementsRef])
 
@@ -179,7 +182,7 @@ export function FileViewer() {
                 return match ? (
                   <SyntaxHighlighter
                     language={match[1]}
-                    /* @ts-ignore - SyntaxHighlighter style type mismatch */
+                    /* @ts-expect-error SyntaxHighlighter style type mismatch */
                     style={vscDarkPlus}
                     PreTag="div"
                     customStyle={{ margin: 0, padding: 0, background: 'transparent' }}
