@@ -142,11 +142,15 @@ async def refresh_view(args: dict[str, Any]) -> dict[str, Any]:
     "The code runs in a p5.js scope with functions like rect(), ellipse(), text(), fill(), stroke(), etc. "
     "Use standard p5.js API. Each call appends one drawing instruction. "
     "Example: fill(255,0,0); rect(100,100,200,150); "
-    "For math formulas use: math('E=mc^2', x, y, size)",
+    "For math formulas use: math('E=mc^2', x, y, size). "
+    "In WebGL mode (set via canvas_setup renderer='webgl'), 3D functions are also available: "
+    "box, sphere, cylinder, cone, torus, plane, rotateX, rotateY, rotateZ, "
+    "ambientLight, directionalLight, pointLight, normalMaterial, specularMaterial, "
+    "ambientMaterial, camera, perspective, ortho, texture.",
     {
         "code": {
             "type": "string",
-            "description": "p5.js drawing code string. Available functions: background, fill, noFill, stroke, noStroke, strokeWeight, rect, ellipse, circle, line, triangle, text, textSize, textAlign, push, pop, translate, rotate, scale, math(latex, x, y, size), etc.",
+            "description": "p5.js drawing code string. Available functions: background, fill, noFill, stroke, noStroke, strokeWeight, rect, ellipse, circle, line, triangle, text, textSize, textAlign, push, pop, translate, rotate, scale, math(latex, x, y, size), etc. In WebGL mode: box, sphere, cylinder, cone, torus, plane, rotateX, rotateY, rotateZ, ambientLight, directionalLight, pointLight, normalMaterial, specularMaterial, ambientMaterial, camera, perspective, ortho.",
         }
     },
 )
@@ -197,6 +201,7 @@ async def canvas_snapshot(args: dict[str, Any]) -> dict[str, Any]:
 @tool(
     "canvas_setup",
     "Configure the canvas board for animation or static drawing. "
+    "Set renderer='webgl' to enable 3D rendering (WebGL mode). Default is '2d'. "
     "Set loop=true to enable animation mode with continuous frame updates. "
     "Use vars to declare persistent variables accessible in drawing instructions "
     "(e.g. vars={x: 0, y: 0, speed: 3}). "
@@ -208,6 +213,12 @@ async def canvas_snapshot(args: dict[str, Any]) -> dict[str, Any]:
     "Supported types: 'range' (slider, requires min/max), 'number' (input field). "
     "Requires a .board file to be open.",
     {
+        "renderer": {
+            "type": "string",
+            "description": "Canvas renderer mode: '2d' (default) or 'webgl' for 3D rendering",
+            "enum": ["2d", "webgl"],
+            "default": "2d",
+        },
         "loop": {
             "type": "boolean",
             "description": "Enable animation loop (default: false)",
@@ -231,6 +242,7 @@ async def canvas_snapshot(args: dict[str, Any]) -> dict[str, Any]:
 async def canvas_setup(args: dict[str, Any]) -> dict[str, Any]:
     """Configure the canvas board for animation"""
     kwargs: dict[str, Any] = {
+        "renderer": args.get("renderer", "2d"),
         "loop": args.get("loop", False),
         "fps": args.get("fps", 60),
         "vars": args.get("vars", {}),

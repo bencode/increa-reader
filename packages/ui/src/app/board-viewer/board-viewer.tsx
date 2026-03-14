@@ -21,6 +21,7 @@ export function BoardViewer({ repo, filePath, data }: BoardViewerProps) {
   const tab = useBoardStore(s => s.tabs[tabKey])
   const instructions = tab?.instructions ?? EMPTY
   const animation = tab?.animation
+  const renderer = tab?.renderer
   const background = data?.canvas?.background ?? DEFAULT_BACKGROUND
   const [controlValues, setControlValues] = useState<Record<string, number>>({})
 
@@ -44,7 +45,7 @@ export function BoardViewer({ repo, filePath, data }: BoardViewerProps) {
 
   const { position, scale, isDragging, containerRef, reset, zoomIn, zoomOut, handlers } = useCanvasNavigation()
   const { isLooping, toggleLoop } = useP5Canvas({
-    containerRef, tabKey, position, scale, background, instructions, animation, controlValues,
+    containerRef, tabKey, position, scale, background, instructions, animation, controlValues, renderer,
   })
 
   useEffect(() => {
@@ -67,6 +68,7 @@ export function BoardViewer({ repo, filePath, data }: BoardViewerProps) {
           ...existing,
           instructions: data.instructions,
           ...(data.animation ? { animation: data.animation } : {}),
+          ...(data.renderer ? { renderer: data.renderer } : {}),
         },
       },
     })
@@ -85,6 +87,7 @@ export function BoardViewer({ repo, filePath, data }: BoardViewerProps) {
       canvas: { background },
       instructions,
       ...(animation ? { animation } : {}),
+      ...(renderer ? { renderer } : {}),
     }
 
     if (repo && filePath) {

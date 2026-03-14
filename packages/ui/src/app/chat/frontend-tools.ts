@@ -5,7 +5,7 @@
 import type { SelectionContext } from '@/contexts/selection-context'
 import { uploadImage } from '@/lib/upload'
 import { useViewContext } from '@/stores/view-context'
-import type { BoardAnimation } from '@/types/board'
+import type { BoardAnimation, RendererMode } from '@/types/board'
 import { coerce } from '@/lib/coerce'
 import { compileInstruction } from '../board-viewer/p5-executor'
 
@@ -19,6 +19,7 @@ export type ToolContext = {
   getActiveTab: () => string | null
   getCanvasElement: () => HTMLCanvasElement | null
   setAnimation: (tabKey: string, config: BoardAnimation) => void
+  setRenderer: (tabKey: string, renderer: RendererMode) => void
 }
 
 type ToolResult = { result?: unknown; error?: string }
@@ -135,6 +136,9 @@ const canvasSetup = async (ctx: ToolContext, args: Record<string, unknown>): Pro
   const controls = args.controls
     ? coerce('object', args.controls) as Record<string, unknown>
     : undefined
+  const rendererArg = (args.renderer as string | undefined) ?? '2d'
+  const rendererMode: RendererMode = rendererArg === 'webgl' ? 'webgl' : '2d'
+  ctx.setRenderer(tabKey, rendererMode)
   ctx.setAnimation(tabKey, {
     loop,
     fps,
@@ -143,7 +147,7 @@ const canvasSetup = async (ctx: ToolContext, args: Record<string, unknown>): Pro
   })
   const varNames = Object.keys(vars)
   const controlNames = controls ? Object.keys(controls) : []
-  const parts = [`loop=${loop}`, `fps=${fps}`]
+  const parts = [`renderer=${rendererMode}`, `loop=${loop}`, `fps=${fps}`]
   if (varNames.length > 0) parts.push(`vars=${varNames.join(', ')}`)
   if (controlNames.length > 0) parts.push(`controls=${controlNames.join(', ')}`)
   return `Canvas setup: ${parts.join(', ')}`

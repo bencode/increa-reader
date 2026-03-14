@@ -1,4 +1,5 @@
 import type p5 from 'p5'
+import type { RendererMode } from '@/types/board'
 import { renderMathToImage } from './math-renderer'
 
 const DRAWING_FUNCTIONS = [
@@ -24,6 +25,20 @@ const DRAWING_FUNCTIONS = [
   'min', 'max', 'dist',
   // Image
   'image', 'loadImage',
+] as const
+
+const WEBGL_FUNCTIONS = [
+  // 3D primitives
+  'box', 'sphere', 'cylinder', 'cone', 'torus', 'plane',
+  // 3D transforms
+  'rotateX', 'rotateY', 'rotateZ',
+  // Lighting
+  'ambientLight', 'directionalLight', 'pointLight',
+  'specularMaterial', 'ambientMaterial', 'normalMaterial', 'emissiveMaterial', 'shininess',
+  // Camera
+  'camera', 'perspective', 'ortho',
+  // Texture
+  'texture', 'textureMode', 'textureWrap',
 ] as const
 
 const mathImageCache = new Map<string, p5.Image>()
@@ -73,9 +88,12 @@ export function compileInstruction(code: string): CompiledFn {
 
 // --- Context building ---
 
-export function buildContext(p: p5, vars?: Record<string, unknown>): Record<string, unknown> {
+export function buildContext(p: p5, vars?: Record<string, unknown>, renderer?: RendererMode): Record<string, unknown> {
   const ctx: Record<string, unknown> = { ...(vars ?? {}) }
-  for (const fn of DRAWING_FUNCTIONS) {
+  const functions = renderer === 'webgl'
+    ? [...DRAWING_FUNCTIONS, ...WEBGL_FUNCTIONS]
+    : DRAWING_FUNCTIONS
+  for (const fn of functions) {
     const val = (p as unknown as Record<string, unknown>)[fn]
     ctx[fn] = typeof val === 'function' ? (val as (...args: unknown[]) => unknown).bind(p) : val
   }

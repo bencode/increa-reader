@@ -22,9 +22,12 @@ export type BoardAnimation = {
   controls?: Record<string, ControlDef>
 }
 
+export type RendererMode = '2d' | 'webgl'
+
 export type BoardFile = {
   version: number
   canvas: { background: [number, number, number] }
   instructions: string[]
   animation?: BoardAnimation
+  renderer?: RendererMode
 }

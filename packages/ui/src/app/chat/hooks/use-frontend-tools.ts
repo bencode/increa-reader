@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { SSEMessage } from '@/types/chat'
 import { useSelectionQueue } from '@/contexts/selection-context'
-import { useBoardStore, getTab, setAnimation } from '@/stores/board-store'
+import { useBoardStore, getTab, setAnimation, setRenderer } from '@/stores/board-store'
 import { executeFrontendTool, type ToolContext } from '../frontend-tools'
 import { useVisibleContent } from '../../../contexts/visible-content-context'
 
@@ -60,6 +60,7 @@ export const useFrontendTools = () => {
               getActiveTab: () => useBoardStore.getState().activeTab,
               getCanvasElement: () => document.querySelector<HTMLCanvasElement>('canvas'),
               setAnimation: (tabKey, config) => setAnimation(tabKey, config),
+              setRenderer: (tabKey, mode) => setRenderer(tabKey, mode),
             }
 
             const toolResult = await executeFrontendTool(ctx, name, args)

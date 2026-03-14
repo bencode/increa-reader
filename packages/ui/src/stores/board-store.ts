@@ -1,9 +1,10 @@
 import { create } from 'zustand'
-import type { BoardAnimation } from '@/types/board'
+import type { BoardAnimation, RendererMode } from '@/types/board'
 
 export type BoardTab = {
   instructions: string[]
   animation?: BoardAnimation
+  renderer?: RendererMode
   errors?: Record<number, string>
 }
 
@@ -28,6 +29,15 @@ export function setAnimation(tabKey: string, config: BoardAnimation) {
     tabs: {
       ...s.tabs,
       [tabKey]: { ...getTab(s, tabKey), animation: config },
+    },
+  }))
+}
+
+export function setRenderer(tabKey: string, renderer: RendererMode) {
+  useBoardStore.setState(s => ({
+    tabs: {
+      ...s.tabs,
+      [tabKey]: { ...getTab(s, tabKey), renderer },
     },
   }))
 }

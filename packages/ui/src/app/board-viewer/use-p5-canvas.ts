@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore, type RefObject } from 'react'
 import p5 from 'p5'
-import type { BoardAnimation } from '@/types/board'
+import type { BoardAnimation, RendererMode } from '@/types/board'
 import { setErrors } from '@/stores/board-store'
 import { buildContext, executeInstruction } from './p5-executor'
 
@@ -13,6 +13,7 @@ type CanvasOptions = {
   instructions: string[]
   animation?: BoardAnimation
   controlValues: Record<string, number>
+  renderer?: RendererMode
 }
 
 type DrawRefs = {
@@ -22,6 +23,7 @@ type DrawRefs = {
   instructionsRef: React.RefObject<string[]>
   ctxRef: React.RefObject<Record<string, unknown> | null>
   tabKeyRef: React.RefObject<string>
+  rendererRef: React.RefObject<RendererMode | undefined>
 }
 
 function runInstructions(p: p5, refs: DrawRefs) {
@@ -30,9 +32,16 @@ function runInstructions(p: p5, refs: DrawRefs) {
 
   const pos = refs.positionRef.current
   const s = refs.scaleRef.current
-  p.translate(pos.x + p.width / 2, pos.y + p.height / 2)
-  p.scale(s)
-  p.translate(-p.width / 2, -p.height / 2)
+  const isWebGL = refs.rendererRef.current === 'webgl'
+
+  if (isWebGL) {
+    p.translate(pos.x, pos.y, 0)
+    p.scale(s)
+  } else {
+    p.translate(pos.x + p.width / 2, pos.y + p.height / 2)
+    p.scale(s)
+    p.translate(-p.width / 2, -p.height / 2)
+  }
 
   const items = refs.instructionsRef.current
   const ctx = refs.ctxRef.current
@@ -59,11 +68,17 @@ function createP5Instance(
   refs: DrawRefs,
   animation: BoardAnimation | undefined,
   setupReadyRef: React.RefObject<boolean>,
+  renderer?: RendererMode,
 ) {
   return new p5((p: p5) => {
     p.setup = () => {
-      p.createCanvas(container.clientWidth, container.clientHeight)
-      refs.ctxRef.current = buildContext(p, animation?.vars)
+      if (renderer === 'webgl') {
+        p.createCanvas(container.clientWidth, container.clientHeight, p.WEBGL)
+        p.setAttributes('preserveDrawingBuffer', true)
+      } else {
+        p.createCanvas(container.clientWidth, container.clientHeight)
+      }
+      refs.ctxRef.current = buildContext(p, animation?.vars, renderer)
       if (animation?.loop) {
         p.frameRate(animation.fps ?? 60)
       } else {
@@ -94,6 +109,7 @@ export function useP5Canvas({
   instructions,
   animation,
   controlValues,
+  renderer,
 }: CanvasOptions) {
   const p5Ref = useRef<p5 | null>(null)
 
@@ -108,6 +124,7 @@ export function useP5Canvas({
   const instructionsRef = useRef(instructions)
   const tabKeyRef = useRef(tabKey)
   const ctxRef = useRef<Record<string, unknown> | null>(null)
+  const rendererRef = useRef(renderer)
   const setupReadyRef = useRef(false)
   const animationRef = useRef(animation)
   const controlValuesRef = useRef(controlValues)
@@ -120,7 +137,7 @@ export function useP5Canvas({
     const p = p5Ref.current
     if (!p || !setupReadyRef.current) return
 
-    ctxRef.current = buildContext(p, animation?.vars)
+    ctxRef.current = buildContext(p, animation?.vars, rendererRef.current)
     for (const [key, value] of Object.entries(controlValuesRef.current)) {
       ctxRef.current[key] = value
     }
@@ -168,8 +185,8 @@ export function useP5Canvas({
     const container = containerRef.current!
 
     if (!p5Ref.current) {
-      const refs: DrawRefs = { positionRef, scaleRef, backgroundRef, instructionsRef, ctxRef, tabKeyRef }
-      p5Ref.current = createP5Instance(container, refs, animation, setupReadyRef)
+      const refs: DrawRefs = { positionRef, scaleRef, backgroundRef, instructionsRef, ctxRef, tabKeyRef, rendererRef }
+      p5Ref.current = createP5Instance(container, refs, animation, setupReadyRef, renderer)
     }
 
     const observer = new ResizeObserver(() => {
@@ -187,6 +204,20 @@ export function useP5Canvas({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Rebuild p5 instance when renderer mode changes
+  useEffect(() => {
+    if (rendererRef.current === renderer) return
+    rendererRef.current = renderer
+    const container = containerRef.current
+    if (!container) return
+
+    p5Ref.current?.remove()
+    setupReadyRef.current = false
+    const refs: DrawRefs = { positionRef, scaleRef, backgroundRef, instructionsRef, ctxRef, tabKeyRef, rendererRef }
+    p5Ref.current = createP5Instance(container, refs, animationRef.current, setupReadyRef, renderer)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [renderer])
 
   const toggleLoop = useCallback(() => {
     const p = p5Ref.current
