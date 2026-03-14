@@ -12,6 +12,7 @@ import { fetchPreview } from './api'
 import { PDFViewer } from './pdf-viewer'
 import { ImageViewer } from './image-viewer'
 import { BoardViewer } from './board-viewer'
+import { HtmlViewer } from './html-viewer'
 import type { BoardFile } from '@/types/board'
 import { useSetContext, useRefreshKey } from '@/stores/view-context'
 import { useExternalLinks } from '@/hooks/use-external-links'
@@ -25,6 +26,7 @@ type PreviewData =
   | { type: 'image'; path: string }
   | { type: 'pdf'; path: string; metadata: PDFMetadata }
   | { type: 'board'; path: string; data: BoardFile }
+  | { type: 'html'; path: string; body: string }
   | { type: 'unsupported'; path: string }
 
 type PDFMetadata = {
@@ -150,6 +152,10 @@ export function FileViewer() {
 
   if (!preview) {
     return null
+  }
+
+  if (preview.type === 'html') {
+    return <HtmlViewer body={preview.body} />
   }
 
   return (

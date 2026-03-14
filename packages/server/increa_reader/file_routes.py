@@ -200,6 +200,12 @@ def create_file_routes(app, workspace_config: WorkspaceConfig):
             board_data = json.loads(content)
             return {"type": "board", "path": path, "data": board_data}
 
+        # HTML files
+        if ext in [".html", ".htm"]:
+            async with aiofiles.open(file_path, "r", encoding="utf-8") as f:
+                content = await f.read()
+            return {"type": "html", "path": path, "body": content}
+
         # Markdown files
         if ext in [".md", ".markdown"]:
             async with aiofiles.open(file_path, "r", encoding="utf-8") as f:
