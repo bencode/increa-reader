@@ -1,24 +1,18 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import ReactMarkdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { FileQuestion } from 'lucide-react'
-import remarkGfm from 'remark-gfm'
-import remarkMath from 'remark-math'
-import rehypeKatex from 'rehype-katex'
-import 'katex/dist/katex.min.css'
 import { fetchPreview } from './api'
 import { PDFViewer } from './pdf-viewer'
 import { ImageViewer } from './image-viewer'
 import { BoardViewer } from './board-viewer'
 import { HtmlViewer } from './html-viewer'
+import { MarkdownViewer } from './markdown/markdown-viewer'
 import type { BoardFile } from '@/types/board'
 import { useSetContext, useRefreshKey } from '@/stores/view-context'
-import { useExternalLinks } from '@/hooks/use-external-links'
-import { useVisibleContent } from '../contexts/visible-content-context'
+import { useVisibleContent } from '@/contexts/visible-content-context'
 import { SelectionToolbar } from './selection/selection-toolbar'
-import { MermaidBlock } from '@/components/mermaid-block'
 
 type PreviewData =
   | { type: 'markdown'; body: string }
@@ -41,14 +35,6 @@ type PDFMetadata = {
   encrypted: boolean
 }
 
-function resolveImageSrc(src: string | undefined, repo: string, currentPath: string): string | undefined {
-  if (!src) return src
-  if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('/')) return src
-  const dir = currentPath.substring(0, currentPath.lastIndexOf('/') + 1)
-  const resolved = new URL(src, `http://x/${dir}`).pathname.slice(1)
-  return `/api/raw/${repo}/${resolved}`
-}
-
 export function FileViewer() {
   const { repoName, '*': filePath } = useParams<{ repoName: string; '*': string }>()
   const [state, setState] = useState<{
@@ -62,7 +48,6 @@ export function FileViewer() {
   })
   const setContext = useSetContext()
   const refreshKey = useRefreshKey()
-  const markdownRef = useExternalLinks()
   const scrollBodyRef = useRef<HTMLDivElement>(null)
   const elementsRef = useVisibleContent()
   const prevRouteRef = useRef({ repoName, filePath })
@@ -161,47 +146,22 @@ export function FileViewer() {
     return <HtmlViewer body={preview.body} />
   }
 
+  if (preview.type === 'markdown') {
+    return (
+      <div className="h-full relative">
+        <MarkdownViewer
+          body={preview.body}
+          repoName={repoName!}
+          filePath={filePath!}
+          elementsRef={elementsRef}
+        />
+      </div>
+    )
+  }
+
   return (
     <div ref={scrollBodyRef} className="h-full overflow-auto scroll-body">
       <SelectionToolbar containerRef={scrollBodyRef} />
-      {preview.type === 'markdown' && (
-        <div ref={markdownRef} className="prose prose-slate dark:prose-invert max-w-none p-4 prose-headings:text-lg prose-headings:my-2 prose-h1:text-2xl prose-h1:my-3 prose-h2:text-xl prose-h2:my-2.5 prose-h3:text-lg prose-h3:my-2 prose-h4:text-base prose-h4:my-1.5 prose-h5:text-sm prose-h5:my-1 prose-h6:text-xs prose-h6:my-1 prose-p:my-1 prose-p:leading-relaxed">
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeKatex]}
-            components={{
-              img({ src, alt, ...props }) {
-                const resolvedSrc = resolveImageSrc(src, repoName!, filePath!)
-                return <img src={resolvedSrc} alt={alt} {...props} />
-              },
-              code({ className, children, ...props }) {
-                const match = /language-(\w+)/.exec(className || '')
-                if (match?.[1] === 'mermaid') {
-                  return <MermaidBlock code={String(children).replace(/\n$/, '')} />
-                }
-                return match ? (
-                  <SyntaxHighlighter
-                    language={match[1]}
-                    /* @ts-expect-error SyntaxHighlighter style type mismatch */
-                    style={vscDarkPlus}
-                    PreTag="div"
-                    customStyle={{ margin: 0, padding: 0, background: 'transparent' }}
-                    {...props}
-                  >
-                    {String(children).replace(/\n$/, '')}
-                  </SyntaxHighlighter>
-                ) : (
-                  <code className={className} {...props}>
-                    {children}
-                  </code>
-                )
-              },
-            }}
-          >
-            {preview.body}
-          </ReactMarkdown>
-        </div>
-      )}
 
       {preview.type === 'code' && (
         <div>
