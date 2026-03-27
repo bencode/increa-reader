@@ -1,25 +1,26 @@
 # Increa Reader
 
-A modern code and document reader with AI-powered chat functionality.
+一个面向代码、Markdown、PDF 和画板文件的阅读器，带 AI 聊天侧栏。
 
-## Features
+## 功能
 
-- **Three-panel resizable layout**: File tree, content viewer, and chat panel
-- **Multi-repository support**: Browse multiple code repositories simultaneously
-- **PDF processing**: Built-in PDF viewing and search capabilities
-- **AI chat integration**: Claude-powered assistance for code and document analysis
-- **Syntax highlighting**: Rich code display with language-specific highlighting
-- **Streaming responses**: Real-time AI interaction
+- 三栏布局：文件树、内容区、聊天区
+- 多仓库阅读：可同时挂多个代码仓库
+- Markdown / PDF / 代码 / 图片 / HTML / `.board` 预览
+- PDF 双视图：原始 PDF 视图 + Markdown 阅读视图
+- 便签系统：
+  - Markdown / PDF 中双击创建便利贴
+  - 支持改颜色、拖动、失焦自动保存、`Esc` 取消编辑
+  - 数据保存在仓库内的 `.increa/notes.json`
+- AI 辅助：
+  - 可读取当前可见内容、选中文本、当前 PDF 页
+  - 可读取当前文档全部便签或当前视口便签
+  - 支持 PDF MCP 工具和前端交互工具
+- 画板能力：`.board` 文件支持 p5.js 指令绘制与截图
 
-## Prerequisites
+## 快速开始
 
-- Node.js 22+
-- Python 3.10+
-- pnpm (`npm install -g pnpm`)
-
-## Quick Start
-
-### Automated Setup (Recommended)
+### 1. 安装依赖
 
 ```bash
 git clone <repository-url>
@@ -27,93 +28,89 @@ cd increa-reader
 pnpm run setup
 ```
 
-This will install all dependencies, create a Python virtual environment, and generate a `.env` file. After setup, edit `packages/server/.env` to configure your settings.
+`setup` 会安装前端依赖、创建 `packages/server/.venv`，并生成 `packages/server/.env`。
 
-### Manual Setup
+### 2. 配置仓库和 AI
 
-```bash
-git clone <repository-url>
-cd increa-reader
-
-# Install Node.js dependencies
-pnpm install
-
-# Create Python virtual environment and install dependencies
-python3 -m venv packages/server/.venv
-packages/server/.venv/bin/pip install -r packages/server/requirements.txt
-
-# Create .env from example
-cp packages/server/.env.example packages/server/.env
-# Edit .env with your configuration
-```
-
-### Configuration
-
-Edit `packages/server/.env`:
+编辑 `packages/server/.env`：
 
 ```bash
-# Required: paths to repositories you want to browse (colon-separated)
+# 要浏览的仓库，多个路径用冒号分隔
 INCREA_REPO="/path/to/repo1:/path/to/repo2"
 
-# Required for AI chat: your Anthropic API key
+# AI 聊天所需
 ANTHROPIC_API_KEY="your-api-key"
 ```
 
-If using a third-party API proxy:
+如果走代理：
 
 ```bash
 ANTHROPIC_BASE_URL="https://your-proxy-url/api/anthropic"
 ANTHROPIC_AUTH_TOKEN="your-proxy-token"
 ```
 
-Alternatively, you can configure repositories through the UI settings panel after starting the application.
+也可以先启动应用，再在 UI 的 settings 里配置仓库。
 
-### Start Development
+### 3. 启动开发环境
 
 ```bash
 pnpm dev
 ```
 
-This starts both the frontend (http://localhost:5173) and backend (http://localhost:3000). Open http://localhost:5173 in your browser.
+- 前端：`http://localhost:5173`
+- 后端：`http://localhost:3000`
 
-## Architecture
-
-- **Frontend** (`packages/ui`): React 19, TypeScript, Tailwind CSS v4, shadcn/ui, Vite
-- **Backend** (`packages/server`): FastAPI, PyMuPDF, Claude SDK, MCP
-- **PDF MCP** (`packages/pdf-reader-mcp`): Standalone MCP service for PDF processing
-
-## Commands
+## 常用命令
 
 ```bash
-pnpm dev                                      # Start both frontend and backend
-pnpm --filter @increa-reader/ui dev           # Frontend only (port 5173)
-pnpm --filter @increa-reader/server dev       # Backend only (port 3000)
-pnpm build                                    # Build all packages
-pnpm --filter @increa-reader/ui typecheck     # Type checking
-pnpm --filter @increa-reader/ui lint          # ESLint
+pnpm dev
+pnpm build
+pnpm test
+
+pnpm --filter @increa-reader/ui dev
+pnpm --filter @increa-reader/ui typecheck
+pnpm --filter @increa-reader/ui lint
+
+pnpm --filter @increa-reader/server dev
+pnpm --filter @increa-reader/server test
 ```
 
-## Troubleshooting
+## 便签说明
 
-**"python: command not found" or venv errors**
-The server expects a virtual environment at `packages/server/.venv`. Run `pnpm run setup` or create it manually:
+- 便签目前支持 `Markdown` 和 `PDF`
+- Markdown 便签按段落锚点定位
+- PDF 便签按 `page + ratio` 定位
+- PDF 便签只在 `PDF` 原始视图显示，不在 PDF 的 Markdown 视图显示
+- AI 可通过工具读取：
+  - 当前文档全部便签
+  - 当前可见范围便签
+
+## 结构
+
+- `packages/ui`: React 19 + TypeScript + Vite
+- `packages/server`: FastAPI + Claude SDK + PyMuPDF
+- `packages/pdf-reader-mcp`: PDF MCP 服务
+
+## 排查
+
+**Python / venv 有问题**
+
 ```bash
 python3 -m venv packages/server/.venv
 packages/server/.venv/bin/pip install -r packages/server/requirements.txt
 ```
 
-**Port 3000 already in use**
-Set a custom port in `packages/server/.env`:
-```bash
-PORT=3001
-```
-Note: if you change the backend port, also update `packages/ui/vite.config.ts` proxy target to match.
+**聊天不可用**
 
-**AI chat not working**
-Ensure `ANTHROPIC_API_KEY` is set in `packages/server/.env`. The server will print a warning on startup if the key is missing.
+检查 `packages/server/.env` 中是否配置了 `ANTHROPIC_API_KEY`。
 
-**No repositories showing**
-Set `INCREA_REPO` in `packages/server/.env`, or configure repositories through the UI settings panel.
+**没有仓库显示**
+
+检查 `INCREA_REPO`，或者在 UI settings 中重新配置。
+
+**改了后端端口**
+
+如果修改了 `PORT`，记得同步更新 `packages/ui/vite.config.ts` 里的代理目标。
 
 ## License
 

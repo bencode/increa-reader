@@ -1,156 +1,107 @@
-# Increa Reader Server (Python)
+# Increa Reader Server
 
-这是用Python重新实现的Increa Reader后端服务，集成了PDF处理和聊天功能。
+Increa Reader 的 Python 后端，负责文件预览、PDF 能力、聊天流式接口、前端工具桥接和便签持久化。
 
-## 功能特性
+## 职责
 
-- 🗂️ **文件系统浏览** - 支持多仓库文件树浏览
-- 📄 **PDF处理** - 完整的PDF读取、搜索、渲染功能
-- 💬 **AI聊天** - 集成Claude SDK，支持MCP工具
-- 🔍 **文件预览** - 支持代码、Markdown、图片等文件预览
+- 多仓库文件树与文件读取
+- Markdown / 代码 / 图片 / HTML / PDF 预览接口
+- PDF 页面渲染、文本提取、搜索
+- Claude SDK 聊天接口与流式返回
+- MCP 工具注册：
+  - PDF tools
+  - frontend tools
+- 文档便签 CRUD，数据写入仓库内 `.increa/notes.json`
 
-## 依赖安装
+## 开发
+
+### 安装
 
 ```bash
-# 安装Python依赖
-pip install -r requirements.txt
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+```
 
-# 或者使用npm脚本
-npm run install:python
+或者在仓库根目录执行：
+
+```bash
+pnpm run setup
+```
+
+### 启动
+
+```bash
+pnpm --filter @increa-reader/server dev
+```
+
+### 测试
+
+```bash
+pnpm --filter @increa-reader/server test
+pnpm --filter @increa-reader/server test:cov
 ```
 
 ## 环境变量
 
 ```bash
-# 仓库路径（多个路径用冒号分隔）
-export INCREA_REPO="/path/to/repo1:/path/to/repo2"
+INCREA_REPO="/path/to/repo1:/path/to/repo2"
+PORT=3000
 
-# 端口号（默认3000）
-export PORT=3000
-
-# Claude API配置
-export ANTHROPIC_API_KEY="your-api-key"
-export ANTHROPIC_BASE_URL="https://api.anthropic.com"
+ANTHROPIC_API_KEY="your-api-key"
+ANTHROPIC_BASE_URL="https://api.anthropic.com"
+ANTHROPIC_AUTH_TOKEN=""
 ```
 
-## 启动服务
+## 关键接口
 
-### 开发模式（支持热重载）
-```bash
-npm run dev:python
-# 或者
-python server.py
-```
+### 文件与预览
 
-### 生产模式
-```bash
-npm run start:python
-```
+- `GET /api/workspace/tree`
+- `GET /api/raw/{repo}/{path}`
+- `GET /api/preview?repo={repo}&path={path}`
 
-## API接口
+### PDF
 
-### 1. 获取工作区文件树
-```
-GET /api/workspace/tree
-```
+- `GET /api/pdf/metadata`
+- `GET /api/pdf/page-render`
+- `GET /api/pdf/page`
+- `GET /api/pdf/search`
 
-### 2. 获取文件内容
-```
-GET /api/views/{repo}/{path}
-```
+### 聊天
 
-### 3. 获取文件预览
-```
-GET /api/preview?repo={repo}&path={path}
-```
+- `POST /api/chat/query`
+- `POST /api/chat/abort`
+- `GET /api/chat/frontend-events`
+- `POST /api/chat/tool-result`
 
-### 4. AI聊天（流式响应）
-```
-POST /api/chat/query
-Content-Type: application/json
+### 便签
 
-{
-  "prompt": "帮我分析这个PDF文件",
-  "repo": "my-repo",
-  "sessionId": "optional-session-id"
-}
-```
+- `GET /api/notes`
+- `POST /api/notes`
+- `PUT /api/notes/{note_id}`
+- `DELETE /api/notes/{note_id}`
 
-## MCP工具集成
+## AI 工具
 
-集成了以下MCP工具：
+聊天侧会向模型暴露两类工具：
 
-### PDF Reader工具
-- `open_pdf(path)` - 打开PDF文件
-- `page_count(doc_id)` - 获取PDF页数
-- `extract_text(doc_id, page)` - 提取页面文本
-- `render_page_png(doc_id, page, dpi)` - 渲染页面为PNG
-- `search_text(doc_id, query, max_hits)` - 搜索PDF文本
-- `close_pdf(doc_id)` - 关闭PDF文件
+### PDF tools
 
-### 原生工具
-- `Read` - 读取文件内容
-- `Grep` - 搜索文本
-- `Glob` - 文件匹配
+- `open_pdf`
+- `page_count`
+- `extract_text`
+- `render_page_png`
+- `search_text`
+- `close_pdf`
 
-## 与TypeScript版本的差异
+### Frontend tools
 
-### 优势
-- ✅ **更强的PDF处理能力** - PyMuPDF是功能最完整的PDF库
-- ✅ **原生AI集成** - 直接使用Claude SDK，无需进程间通信
-- ✅ **统一的开发体验** - 单一技术栈，维护更简单
-- ✅ **更好的错误处理** - Python异常处理机制
+- `get_visible_content`
+- `get_selection`
+- `get_current_page`
+- `get_document_notes`
+- `get_visible_notes`
+- `refresh_view`
+- `canvas_*`
 
-### 功能对比
-| 功能 | TypeScript版本 | Python版本 |
-|------|---------------|------------|
-| 文件浏览 | ✅ | ✅ |
-| 文件预览 | ✅ | ✅ |
-| AI聊天 | ✅ | ✅ |
-| PDF读取 | ❌ | ✅ |
-| PDF搜索 | ❌ | ✅ |
-| PDF渲染 | ❌ | ✅ |
-
-## 迁移说明
-
-如果要从TypeScript版本迁移到Python版本：
-
-1. **API兼容性** - 所有API接口保持一致，前端无需修改
-2. **环境变量** - 环境变量配置保持不变
-3. **启动方式** - 使用`npm run dev:python`替代`npm run dev`
-
-## 故障排除
-
-### 常见问题
-
-1. **PyMuPDF安装失败**
-   ```bash
-   # macOS
-   brew install poppler
-
-   # Ubuntu/Debian
-   sudo apt-get install libpoppler-dev
-
-   # 然后重新安装
-   pip install --upgrade PyMuPDF
-   ```
-
-2. **MCP工具无法使用**
-   - 确保安装了`mcp`和`fastmcp`包
-   - 检查`PYTHONPATH`环境变量是否正确设置
-
-3. **聊天功能不工作**
-   - 检查Anthropic API密钥是否正确设置
-   - 确认网络连接正常
-
-## 开发说明
-
-### 添加新的MCP工具
-1. 在`pdf_reader_mcp.py`中定义新工具
-2. 在`server.py`的`mcp_servers`配置中添加工具权限
-3. 重启服务
-
-### 扩展API接口
-1. 在`server.py`中添加新的FastAPI路由
-2. 定义相应的Pydantic模型
-3. 更新API文档
+其中 `get_document_notes` 和 `get_visible_notes` 用于让 Agent 读取当前文档或当前视口的便签。
