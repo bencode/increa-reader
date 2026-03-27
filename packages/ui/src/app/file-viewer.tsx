@@ -13,6 +13,7 @@ import type { BoardFile } from '@/types/board'
 import { useSetContext, useRefreshKey } from '@/stores/view-context'
 import { useVisibleContent } from '@/contexts/visible-content-context'
 import { SelectionToolbar } from './selection/selection-toolbar'
+import { useNoteToolStore } from '@/stores/note-tool-store'
 
 type PreviewData =
   | { type: 'markdown'; body: string }
@@ -121,6 +122,12 @@ export function FileViewer() {
   }, [state.preview, elementsRef])
 
   const { loading, error, preview } = state
+
+  useEffect(() => {
+    if (!preview || (preview.type !== 'markdown' && preview.type !== 'pdf')) {
+      useNoteToolStore.getState().clear()
+    }
+  }, [preview])
 
   if (loading) {
     return (

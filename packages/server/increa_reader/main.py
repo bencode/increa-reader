@@ -26,6 +26,7 @@ from .config_routes import create_config_routes
 # Import local modules
 from .file_routes import create_file_routes
 from .models import WorkspaceConfig
+from .notes_routes import create_notes_routes
 from .pdf_routes import create_pdf_routes
 from .session_routes import create_session_routes
 from .workspace import load_workspace_config
@@ -89,6 +90,7 @@ def create_app() -> FastAPI:
     create_config_routes(app, workspace_config)
     create_workspace_routes(app, workspace_config)
     create_file_routes(app, workspace_config)
+    create_notes_routes(app, workspace_config)
     create_pdf_routes(app, workspace_config)
     create_chat_routes(app, workspace_config)
     create_board_routes(app, workspace_config)

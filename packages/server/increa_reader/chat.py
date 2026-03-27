@@ -343,6 +343,8 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
             "mcp__frontend__get_visible_content",
             "mcp__frontend__get_selection",
             "mcp__frontend__get_current_page",
+            "mcp__frontend__get_document_notes",
+            "mcp__frontend__get_visible_notes",
             "mcp__frontend__refresh_view",
             "mcp__frontend__canvas_draw",
             "mcp__frontend__canvas_clear",
@@ -414,29 +416,29 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
                         context_info.append(f"Repository: {request.context.repo}")
                     if request.context.path:
                         context_info.append(f"Current File: {request.context.path}")
+                    if request.context.pageNumber:
+                        context_info.append(f"Current Page: {request.context.pageNumber}")
 
                     context_str = "\n".join(context_info)
 
-                    # Build tool guide with dynamic quote status
+                    # Keep tool guidance short; only include tools that benefit from a usage hint.
                     tool_guide = """[Available Tools Guide]
 
-Frontend Interaction Tools:
-- get_visible_content: Get content in the user's current viewport. Use when user asks about "this section", "what I'm seeing", or "current page". Do NOT use for general file questions.
-- get_selection: Retrieve text quoted/selected by the user from a queue. Returns selected text with surrounding context (before/after) for precise document location.
-- get_current_page: Get the current PDF page number the user is viewing.
-- refresh_view: Refresh the file viewer to reload content. Use after modifying a file the user is currently viewing.
+Use frontend tools when the user asks about what they are currently viewing.
+- get_visible_content: For "this section", "what I'm seeing", or current-page questions.
+- get_selection: For user-selected or quoted text.
+- get_current_page: For the current PDF page number.
+- get_document_notes / get_visible_notes: If the user mentions notes, sticky notes, comments, annotations, reminders, or asks you to incorporate their notes, call one of these before answering.
+- refresh_view: After changing a file the user is viewing.
 
-PDF Tools (use in sequence: open → operate → close):
-1. open_pdf: Open a PDF file, returns a doc_id for subsequent operations
-2. page_count / extract_text / render_page_png / search_text: Operate on the opened document using doc_id
-3. close_pdf: Close the document when done to free resources
+PDF tools: open_pdf -> operate with page_count / extract_text / render_page_png / search_text -> close_pdf.
 
-Canvas Board Tools (requires a .board file to be open):
-- canvas_setup: Configure canvas for animation. Set loop=true for animation mode, declare persistent vars (e.g. vars={x:0, speed:3}). Variables persist across frames so x++ accumulates.
-- canvas_draw: Draw using p5.js code (e.g. fill(255,0,0); rect(100,100,200,150)). Each call appends one instruction. Code has access to vars declared in canvas_setup.
-- canvas_clear: Clear all drawings from the canvas.
-- canvas_get_instructions: Get all drawing instructions with runtime error status.
-- canvas_snapshot: Take a screenshot of the canvas, returns file path. Use Read tool to view the image.
+Canvas tools require a .board file to be open:
+- canvas_setup
+- canvas_draw
+- canvas_clear
+- canvas_get_instructions
+- canvas_snapshot
 """
 
                     quote_count = request.context.quoteCount

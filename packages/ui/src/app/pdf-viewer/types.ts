@@ -25,6 +25,23 @@ export type PDFPageProps = {
   repo: string
   filePath: string
   pageNum: number
+  viewMode: ViewMode
+  onViewModeChange: (mode: ViewMode) => void
+  notes?: import('@/types/notes').DocumentNote<import('@/types/notes').PDFNotePosition>[]
+  draftNotes?: import('@/types/notes').DraftDocumentNote<import('@/types/notes').PDFNotePosition>[]
+  onCreateDraft?: (page: number, xRatio: number, yRatio: number) => void
+  onMoveNote?: (noteId: string, position: import('@/types/notes').PDFNotePosition) => void
+  onChangeColor?: (noteId: string, color: import('@/types/notes').NoteColor) => Promise<void> | void
+  onSaveDraft?: (
+    note: import('@/types/notes').DraftDocumentNote<import('@/types/notes').PDFNotePosition>,
+    content: string,
+  ) => Promise<void>
+  onSaveNote?: (
+    note: import('@/types/notes').DocumentNote<import('@/types/notes').PDFNotePosition>,
+    content: string,
+  ) => Promise<void>
+  onDeleteDraft?: (noteId: string) => void
+  onDeleteNote?: (noteId: string) => Promise<void>
   onHeightChange?: (pageNum: number, height: number) => void
 }
 

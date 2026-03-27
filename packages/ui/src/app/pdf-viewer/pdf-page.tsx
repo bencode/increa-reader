@@ -11,6 +11,7 @@ import 'katex/dist/katex.min.css'
 import type { ViewMode, PDFPageData, PDFPageProps } from './types'
 import { RegionSelect } from './region-select'
 import { MermaidBlock } from '@/components/mermaid-block'
+import { PDFNotesLayer } from '@/app/notes/pdf-notes-layer'
 
 type PageToolbarProps = {
   pageNum: number
@@ -63,11 +64,39 @@ function PageToolbar({ pageNum, viewMode, pageData, onViewModeChange }: PageTool
   )
 }
 
-function SVGContent({ repo, filePath, pageNum }: Pick<PDFPageProps, 'repo' | 'filePath' | 'pageNum'>) {
+function SVGContent({
+  repo,
+  filePath,
+  pageNum,
+  notes,
+  draftNotes,
+  onCreateDraft,
+  onMoveNote,
+  onChangeColor,
+  onSaveDraft,
+  onSaveNote,
+  onDeleteDraft,
+  onDeleteNote,
+}: Pick<
+  PDFPageProps,
+  | 'repo'
+  | 'filePath'
+  | 'pageNum'
+  | 'notes'
+  | 'draftNotes'
+  | 'onCreateDraft'
+  | 'onMoveNote'
+  | 'onChangeColor'
+  | 'onSaveDraft'
+  | 'onSaveNote'
+  | 'onDeleteDraft'
+  | 'onDeleteNote'
+>) {
   const imgRef = useRef<HTMLImageElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   return (
-    <div className="relative">
+    <div ref={containerRef} className="relative">
       <img
         ref={imgRef}
         src={`/api/pdf/page-render?repo=${encodeURIComponent(repo)}&path=${encodeURIComponent(filePath)}&page=${pageNum}`}
@@ -81,6 +110,20 @@ function SVGContent({ repo, filePath, pageNum }: Pick<PDFPageProps, 'repo' | 'fi
         pageNum={pageNum}
         imgRef={imgRef}
       />
+      {onCreateDraft && onMoveNote && onChangeColor && onSaveDraft && onSaveNote && onDeleteDraft && onDeleteNote && (
+        <PDFNotesLayer
+          pageNum={pageNum}
+          notes={[...(notes ?? []), ...(draftNotes ?? [])]}
+          containerRef={containerRef}
+          onCreateDraft={onCreateDraft}
+          onMoveNote={onMoveNote}
+          onChangeColor={onChangeColor}
+          onSaveDraft={onSaveDraft}
+          onSaveNote={onSaveNote}
+          onDeleteDraft={onDeleteDraft}
+          onDeleteNote={onDeleteNote}
+        />
+      )}
     </div>
   )
 }
@@ -147,8 +190,23 @@ function MarkdownContent({ pageData, loading, error }: MarkdownContentProps) {
   )
 }
 
-export function PDFPage({ repo, filePath, pageNum, onHeightChange }: PDFPageProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>('svg')
+export function PDFPage({
+  repo,
+  filePath,
+  pageNum,
+  viewMode,
+  onViewModeChange,
+  notes,
+  draftNotes,
+  onCreateDraft,
+  onMoveNote,
+  onChangeColor,
+  onSaveDraft,
+  onSaveNote,
+  onDeleteDraft,
+  onDeleteNote,
+  onHeightChange,
+}: PDFPageProps) {
   const [pageData, setPageData] = useState<PDFPageData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -204,11 +262,24 @@ export function PDFPage({ repo, filePath, pageNum, onHeightChange }: PDFPageProp
         pageNum={pageNum}
         viewMode={viewMode}
         pageData={pageData}
-        onViewModeChange={setViewMode}
+        onViewModeChange={onViewModeChange}
       />
 
       {viewMode === 'svg' ? (
-        <SVGContent repo={repo} filePath={filePath} pageNum={pageNum} />
+        <SVGContent
+          repo={repo}
+          filePath={filePath}
+          pageNum={pageNum}
+          notes={notes}
+          draftNotes={draftNotes}
+          onCreateDraft={onCreateDraft}
+          onMoveNote={onMoveNote}
+          onChangeColor={onChangeColor}
+          onSaveDraft={onSaveDraft}
+          onSaveNote={onSaveNote}
+          onDeleteDraft={onDeleteDraft}
+          onDeleteNote={onDeleteNote}
+        />
       ) : (
         <MarkdownContent pageData={pageData} loading={loading} error={error} />
       )}

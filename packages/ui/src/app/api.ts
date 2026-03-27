@@ -1,3 +1,5 @@
+import type { DocumentNote, NotePosition } from '@/types/notes'
+
 type TreeNode = {
   type: 'dir' | 'file'
   name: string
@@ -38,6 +40,64 @@ export async function fetchPreview(repo: string, path: string): Promise<PreviewR
   const response = await fetch(`/api/preview?${params}`)
   const data = await response.json()
   return data
+}
+
+export async function fetchDocumentNotes(repo: string, path: string): Promise<DocumentNote[]> {
+  const params = new URLSearchParams({ repo, path })
+  const response = await fetch(`/api/notes?${params}`)
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(error.detail || 'Failed to load notes')
+  }
+  const data = await response.json()
+  return data.notes
+}
+
+export async function createDocumentNote(
+  repo: string,
+  path: string,
+  note: { color: DocumentNote['color']; content: string; position: NotePosition },
+): Promise<DocumentNote> {
+  const response = await fetch('/api/notes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ repo, path, note }),
+  })
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(error.detail || 'Failed to create note')
+  }
+  const data = await response.json()
+  return data.note
+}
+
+export async function updateDocumentNote(
+  repo: string,
+  path: string,
+  noteId: string,
+  note: { color: DocumentNote['color']; content: string; position: NotePosition },
+): Promise<{ deleted: boolean; note?: DocumentNote }> {
+  const response = await fetch(`/api/notes/${encodeURIComponent(noteId)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ repo, path, note }),
+  })
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(error.detail || 'Failed to update note')
+  }
+  return response.json()
+}
+
+export async function deleteDocumentNote(repo: string, path: string, noteId: string): Promise<void> {
+  const params = new URLSearchParams({ repo, path })
+  const response = await fetch(`/api/notes/${encodeURIComponent(noteId)}?${params}`, {
+    method: 'DELETE',
+  })
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(error.detail || 'Failed to delete note')
+  }
 }
 
 export async function deleteFile(repo: string, path: string): Promise<{ success: boolean }> {

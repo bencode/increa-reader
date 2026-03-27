@@ -4,6 +4,7 @@ import { useSelectionQueue } from '@/contexts/selection-context'
 import { useBoardStore, getTab, setAnimation, setRenderer } from '@/stores/board-store'
 import { executeFrontendTool, type ToolContext } from '../frontend-tools'
 import { useVisibleContent } from '../../../contexts/visible-content-context'
+import { getDocumentNotesPayload, getVisibleNotesPayload } from '@/stores/note-tool-store'
 
 export const useFrontendTools = () => {
   const elementsRef = useVisibleContent()
@@ -36,6 +37,8 @@ export const useFrontendTools = () => {
                 const all = itemsRef.current
                 return max ? all.slice(0, max) : [...all]
               },
+              getDocumentNotes: () => getDocumentNotesPayload(),
+              getVisibleNotes: () => getVisibleNotesPayload(),
               boardAppend: (tabKey, code) => {
                 const s = useBoardStore.getState()
                 const tab = getTab(s, tabKey)

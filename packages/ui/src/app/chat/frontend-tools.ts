@@ -8,10 +8,13 @@ import { useViewContext } from '@/stores/view-context'
 import type { BoardAnimation, RendererMode } from '@/types/board'
 import { coerce } from '@/lib/coerce'
 import { compileInstruction } from '../board-viewer/p5-executor'
+import { getDocumentNotesPayload, getVisibleNotesPayload } from '@/stores/note-tool-store'
 
 export type ToolContext = {
   visibleElements: Set<HTMLElement>
   getSelections: (max?: number) => SelectionContext[]
+  getDocumentNotes: () => ReturnType<typeof getDocumentNotesPayload>
+  getVisibleNotes: () => ReturnType<typeof getVisibleNotesPayload>
   boardAppend: (tabKey: string, code: string) => number
   boardClear: (tabKey: string) => void
   getBoardInstructions: (tabKey: string) => string[]
@@ -62,6 +65,14 @@ const getCurrentPage = async (): Promise<number> => {
 const refreshView = async (): Promise<string> => {
   useViewContext.getState().requestRefresh()
   return 'View refreshed'
+}
+
+const getDocumentNotes = async (ctx: ToolContext): Promise<ReturnType<typeof getDocumentNotesPayload>> => {
+  return ctx.getDocumentNotes()
+}
+
+const getVisibleNotes = async (ctx: ToolContext): Promise<ReturnType<typeof getVisibleNotesPayload>> => {
+  return ctx.getVisibleNotes()
 }
 
 const canvasDraw = async (ctx: ToolContext, args: Record<string, unknown>): Promise<string> => {
@@ -187,6 +198,8 @@ const toolHandlers: Record<string, ToolHandler> = {
   get_selection: (ctx, args) => getSelection(ctx, args),
   get_current_page: () => getCurrentPage(),
   refresh_view: () => refreshView(),
+  get_document_notes: (ctx) => getDocumentNotes(ctx),
+  get_visible_notes: (ctx) => getVisibleNotes(ctx),
   canvas_draw: (ctx, args) => canvasDraw(ctx, args),
   canvas_clear: (ctx) => canvasClear(ctx),
   canvas_get_instructions: (ctx) => canvasGetInstructions(ctx),

@@ -11,6 +11,7 @@ import { ListTree } from 'lucide-react'
 import { useExternalLinks } from '@/hooks/use-external-links'
 import { usePref } from '@/hooks/use-pref'
 import { MermaidBlock } from '@/components/mermaid-block'
+import { MarkdownNotesLayer } from '@/app/notes/markdown-notes-layer'
 import { ArticleOutline } from './article-outline'
 import { useHeadingObserver } from './use-heading-observer'
 import { parseHeadings } from './heading-utils'
@@ -35,6 +36,7 @@ export function MarkdownViewer({ body, repoName, filePath, elementsRef }: Markdo
   const [showOutline, setShowOutline] = useState(() => pref.get('visible', true))
   const markdownRef = useExternalLinks()
   const scrollRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
 
   const headings = useMemo(() => parseHeadings(body), [body])
   const activeId = useHeadingObserver(scrollRef, headings)
@@ -116,18 +118,28 @@ export function MarkdownViewer({ body, repoName, filePath, elementsRef }: Markdo
 
   return (
     <div className="flex h-full">
-      <div ref={scrollRef} className="flex-1 min-w-0 overflow-auto scroll-body">
-        <div
-          ref={markdownRef}
-          className="prose prose-slate dark:prose-invert max-w-none p-4 prose-headings:text-lg prose-headings:my-2 prose-h1:text-2xl prose-h1:my-3 prose-h2:text-xl prose-h2:my-2.5 prose-h3:text-lg prose-h3:my-2 prose-h4:text-base prose-h4:my-1.5 prose-h5:text-sm prose-h5:my-1 prose-h6:text-xs prose-h6:my-1 prose-p:my-1 prose-p:leading-relaxed"
-        >
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeKatex]}
-            components={components}
+      <div ref={scrollRef} className="relative flex-1 min-w-0 overflow-auto scroll-body">
+        <div ref={contentRef} className="relative min-h-full">
+          <div
+            ref={markdownRef}
+            className="prose prose-slate dark:prose-invert max-w-none p-4 prose-headings:text-lg prose-headings:my-2 prose-h1:text-2xl prose-h1:my-3 prose-h2:text-xl prose-h2:my-2.5 prose-h3:text-lg prose-h3:my-2 prose-h4:text-base prose-h4:my-1.5 prose-h5:text-sm prose-h5:my-1 prose-h6:text-xs prose-h6:my-1 prose-p:my-1 prose-p:leading-relaxed"
           >
-            {body}
-          </ReactMarkdown>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm, remarkMath]}
+              rehypePlugins={[rehypeKatex]}
+              components={components}
+            >
+              {body}
+            </ReactMarkdown>
+          </div>
+
+          <MarkdownNotesLayer
+            repoName={repoName}
+            filePath={filePath}
+            contentRef={contentRef}
+            markdownRef={markdownRef}
+            scrollRef={scrollRef}
+          />
         </div>
       </div>
       {outlineVisible && (

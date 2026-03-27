@@ -125,6 +125,30 @@ async def get_current_page(args: dict[str, Any]) -> dict[str, Any]:
 
 
 @tool(
+    "get_document_notes",
+    "Get all sticky notes attached to the current document. "
+    "Returns the current document info plus every saved note with a standardized locator. "
+    "Use when the user asks about notes, comments, reminders, or annotations on the current file.",
+    {},
+)
+async def get_document_notes(args: dict[str, Any]) -> dict[str, Any]:
+    """Get all sticky notes for the current document"""
+    return await frontend_tool_wrapper("get_document_notes")
+
+
+@tool(
+    "get_visible_notes",
+    "Get the sticky notes relevant to the user's current viewport. "
+    "For PDFs this is typically the current page; for markdown this is the visible section. "
+    "Use when the user asks about notes on the current page or visible content.",
+    {},
+)
+async def get_visible_notes(args: dict[str, Any]) -> dict[str, Any]:
+    """Get sticky notes relevant to the current viewport"""
+    return await frontend_tool_wrapper("get_visible_notes")
+
+
+@tool(
     "refresh_view",
     "Refresh the file viewer to reload content. "
     "Use after modifying a file the user is viewing.",
@@ -313,6 +337,8 @@ FRONTEND_TOOLS = [
     get_visible_content,
     get_selection,
     get_current_page,
+    get_document_notes,
+    get_visible_notes,
     refresh_view,
     canvas_draw,
     canvas_clear,
