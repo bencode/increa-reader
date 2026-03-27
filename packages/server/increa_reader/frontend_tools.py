@@ -277,6 +277,37 @@ def complete_tool_call(call_id: str, result: Any = None, error: Optional[str] = 
             print(f"⚠️  [Frontend Tool] No pending call found for {call_id[:8]}...")
 
 
+@tool(
+    "get_headings",
+    "Get the heading outline of the current markdown document. "
+    "Returns a list of headings with id, text, and level. "
+    "Use when user asks about document structure, chapters, or sections.",
+    {},
+)
+async def get_headings(args: dict[str, Any]) -> dict[str, Any]:
+    """Get headings from the current markdown document"""
+    return await frontend_tool_wrapper("get_headings")
+
+
+@tool(
+    "scroll_to_heading",
+    "Scroll the markdown viewer to a specific heading. "
+    "Use when user asks to navigate to a chapter or section "
+    "(e.g. '翻到第二章', 'go to Introduction'). "
+    "The heading text is matched fuzzily against document headings.",
+    {
+        "heading": {
+            "type": "string",
+            "description": "Heading text to scroll to (fuzzy matched)",
+        }
+    },
+)
+async def scroll_to_heading(args: dict[str, Any]) -> dict[str, Any]:
+    """Scroll to a heading in the markdown viewer"""
+    heading = args.get("heading", "")
+    return await frontend_tool_wrapper("scroll_to_heading", heading=heading)
+
+
 # Export tools for MCP server creation
 FRONTEND_TOOLS = [
     get_visible_content,
@@ -288,4 +319,6 @@ FRONTEND_TOOLS = [
     canvas_get_instructions,
     canvas_snapshot,
     canvas_setup,
+    get_headings,
+    scroll_to_heading,
 ]

@@ -349,6 +349,8 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
             "mcp__frontend__canvas_get_instructions",
             "mcp__frontend__canvas_snapshot",
             "mcp__frontend__canvas_setup",
+            "mcp__frontend__get_headings",
+            "mcp__frontend__scroll_to_heading",
         ]
 
         # Config-first resolution: config.json > env vars

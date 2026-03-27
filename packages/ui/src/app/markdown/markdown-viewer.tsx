@@ -9,6 +9,7 @@ import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
 import { ListTree } from 'lucide-react'
 import { useExternalLinks } from '@/hooks/use-external-links'
+import { usePref } from '@/hooks/use-pref'
 import { MermaidBlock } from '@/components/mermaid-block'
 import { ArticleOutline } from './article-outline'
 import { useHeadingObserver } from './use-heading-observer'
@@ -30,7 +31,8 @@ function resolveImageSrc(src: string | undefined, repo: string, currentPath: str
 }
 
 export function MarkdownViewer({ body, repoName, filePath, elementsRef }: MarkdownViewerProps) {
-  const [showOutline, setShowOutline] = useState(true)
+  const pref = usePref('outline')
+  const [showOutline, setShowOutline] = useState(() => pref.get('visible', true))
   const markdownRef = useExternalLinks()
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -72,6 +74,12 @@ export function MarkdownViewer({ body, repoName, filePath, elementsRef }: Markdo
       elements.clear()
     }
   }, [body, elementsRef])
+
+  const toggleOutline = useCallback(() => {
+    const next = !showOutline
+    setShowOutline(next)
+    pref.set('visible', next)
+  }, [showOutline, pref])
 
   const handleNavigate = useCallback((id: string) => {
     const el = scrollRef.current?.querySelector(`#${CSS.escape(id)}`)
@@ -123,13 +131,13 @@ export function MarkdownViewer({ body, repoName, filePath, elementsRef }: Markdo
         </div>
       </div>
       {outlineVisible && (
-        <aside className="w-48 shrink-0 h-full border-l border-border overflow-y-auto">
+        <aside className="shrink-0 h-full max-w-72 border-l border-border overflow-auto">
           <ArticleOutline headings={headings} activeId={activeId} onNavigate={handleNavigate} />
         </aside>
       )}
       {headings.length > 0 && (
         <button
-          onClick={() => setShowOutline(v => !v)}
+          onClick={toggleOutline}
           className="absolute top-2 right-2 z-10 p-1.5 rounded-md bg-background/80 border border-border text-muted-foreground hover:text-foreground backdrop-blur-sm transition-colors"
           title={showOutline ? '隐藏大纲' : '显示大纲'}
         >

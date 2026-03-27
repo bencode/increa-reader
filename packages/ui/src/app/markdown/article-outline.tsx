@@ -33,7 +33,7 @@ export function ArticleOutline({ headings, activeId, onNavigate }: ArticleOutlin
                   e.preventDefault()
                   onNavigate(heading.id)
                 }}
-                className={`block text-xs py-0.5 truncate border-l-2 pl-2 transition-colors ${
+                className={`block text-xs py-0.5 border-l-2 pl-2 transition-colors whitespace-nowrap ${
                   isActive
                     ? 'border-primary text-primary font-medium'
                     : 'border-transparent text-muted-foreground hover:text-foreground'

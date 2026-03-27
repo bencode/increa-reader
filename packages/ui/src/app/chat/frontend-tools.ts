@@ -153,6 +153,35 @@ const canvasSetup = async (ctx: ToolContext, args: Record<string, unknown>): Pro
   return `Canvas setup: ${parts.join(', ')}`
 }
 
+const queryHeadingElements = () =>
+  Array.from(document.querySelectorAll('.scroll-body .prose h1, .scroll-body .prose h2, .scroll-body .prose h3, .scroll-body .prose h4, .scroll-body .prose h5, .scroll-body .prose h6'))
+
+const getHeadings = async (): Promise<unknown> => {
+  const els = queryHeadingElements()
+  if (els.length === 0) return 'No headings found. The current file may not be a markdown document.'
+  return els.map(el => ({
+    id: el.id,
+    text: el.textContent?.trim() ?? '',
+    level: parseInt(el.tagName[1]),
+  }))
+}
+
+const scrollToHeading = async (_ctx: ToolContext, args: Record<string, unknown>): Promise<string> => {
+  const heading = (args.heading as string).trim()
+  const els = queryHeadingElements()
+  if (els.length === 0) return 'No headings found. The current file may not be a markdown document.'
+  const target = els.find(el => {
+    const text = el.textContent?.trim() ?? ''
+    return text === heading || text.includes(heading) || heading.includes(text)
+  })
+  if (!target) {
+    const available = els.map(el => `- ${el.textContent?.trim()}`).join('\n')
+    return `Heading "${heading}" not found. Available headings:\n${available}`
+  }
+  target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  return `Scrolled to: ${target.textContent?.trim()}`
+}
+
 const toolHandlers: Record<string, ToolHandler> = {
   get_visible_content: (ctx) => getVisibleContent(ctx),
   get_selection: (ctx, args) => getSelection(ctx, args),
@@ -163,6 +192,8 @@ const toolHandlers: Record<string, ToolHandler> = {
   canvas_get_instructions: (ctx) => canvasGetInstructions(ctx),
   canvas_snapshot: (ctx) => canvasSnapshot(ctx),
   canvas_setup: (ctx, args) => canvasSetup(ctx, args),
+  get_headings: () => getHeadings(),
+  scroll_to_heading: (ctx, args) => scrollToHeading(ctx, args),
 }
 
 /**
