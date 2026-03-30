@@ -1,6 +1,7 @@
 # Increa Reader
 
 An AI-assisted reader for code, Markdown, PDF, images, HTML, and `.board` files.
+The chat backend is powered by the Claude Code SDK stack via `claude-agent-sdk`.
 
 ## Features
 
@@ -34,6 +35,9 @@ Edit `packages/server/.env`:
 INCREA_REPO="/path/to/repo1:/path/to/repo2"
 ANTHROPIC_API_KEY="your-api-key"
 ```
+
+The SDK currently reads `ANTHROPIC_*` variables. If you use a Claude-compatible proxy, keep the same
+variable names and point `ANTHROPIC_BASE_URL` at your proxy.
 
 If you use a proxy:
 
@@ -86,7 +90,7 @@ pnpm --filter @increa-reader/server test
 ## Packages
 
 - `packages/ui`: React 19 + TypeScript + Vite + Biome
-- `packages/server`: FastAPI + Claude SDK + PyMuPDF
+- `packages/server`: FastAPI + `claude-agent-sdk` (Claude Code SDK stack) + PyMuPDF
 - `packages/pdf-reader-mcp`: PDF MCP service
 
 ## Troubleshooting
@@ -100,7 +104,8 @@ packages/server/.venv/bin/pip install -r packages/server/requirements.txt
 
 **Chat is not available**
 
-Check that `ANTHROPIC_API_KEY` is set in `packages/server/.env`.
+Check that `ANTHROPIC_API_KEY` is set in `packages/server/.env`. The backend uses the Claude Code
+SDK environment naming, so `ANTHROPIC_*` is expected here.
 
 **No repositories are shown**
 
