@@ -28,6 +28,8 @@ type TreeItemProps = {
   repoName: string
   selectedPath?: string | null
   onDelete?: (path: string) => void
+  searchActive?: boolean
+  forcedOpenPaths?: Set<string>
 }
 
 type FileIconType = 'code' | 'config' | 'text' | 'image' | 'pdf' | 'default'
@@ -75,7 +77,15 @@ function getFileIcon(filename: string) {
   return TYPE_TO_ICON[type]
 }
 
-function TreeItem({ node, onFileClick, repoName, selectedPath, onDelete }: TreeItemProps) {
+function TreeItem({
+  node,
+  onFileClick,
+  repoName,
+  selectedPath,
+  onDelete,
+  searchActive = false,
+  forcedOpenPaths = new Set<string>(),
+}: TreeItemProps) {
   const storageKey = `filetree-${repoName}-${node.path}`
   const isSelected = selectedPath === `${repoName}/${node.path}`
 
@@ -89,13 +99,20 @@ function TreeItem({ node, onFileClick, repoName, selectedPath, onDelete }: TreeI
       return shouldAutoOpen
     }
   })
+  const effectiveIsOpen = searchActive ? forcedOpenPaths.has(node.path) : isOpen
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
+    if (searchActive) return
     localStorage.setItem(storageKey, JSON.stringify(isOpen))
-  }, [isOpen, storageKey])
+  }, [isOpen, searchActive, storageKey])
+
+  useEffect(() => {
+    if (searchActive || !shouldAutoOpen) return
+    setIsOpen(true)
+  }, [searchActive, shouldAutoOpen])
 
   const handleDelete = async () => {
     setIsDeleting(true)
@@ -148,30 +165,35 @@ function TreeItem({ node, onFileClick, repoName, selectedPath, onDelete }: TreeI
     <div>
       <div
         className="py-1 px-2 hover:bg-accent cursor-pointer text-sm flex items-center gap-1"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          if (searchActive) return
+          setIsOpen(!isOpen)
+        }}
       >
-        {isOpen ? (
+        {effectiveIsOpen ? (
           <ChevronDown className="size-4 shrink-0" />
         ) : (
           <ChevronRight className="size-4 shrink-0" />
         )}
-        {isOpen ? (
+        {effectiveIsOpen ? (
           <FolderOpen className="size-4 text-yellow-600" />
         ) : (
           <Folder className="size-4 text-yellow-600" />
         )}
         <span>{node.name}</span>
       </div>
-      {isOpen && node.children && (
+      {effectiveIsOpen && node.children && (
         <div className="pl-4">
-          {node.children.map((child, index) => (
+          {node.children.map((child) => (
             <TreeItem
-              key={index}
+              key={child.path}
               node={child}
               onFileClick={onFileClick}
               repoName={repoName}
               selectedPath={selectedPath}
               onDelete={onDelete}
+              searchActive={searchActive}
+              forcedOpenPaths={forcedOpenPaths}
             />
           ))}
         </div>
@@ -186,19 +208,31 @@ type FileTreeProps = {
   repoName: string
   selectedPath?: string | null
   onDelete?: (path: string) => void
+  searchActive?: boolean
+  forcedOpenPaths?: Set<string>
 }
 
-export function FileTree({ nodes, onFileClick, repoName, selectedPath, onDelete }: FileTreeProps) {
+export function FileTree({
+  nodes,
+  onFileClick,
+  repoName,
+  selectedPath,
+  onDelete,
+  searchActive = false,
+  forcedOpenPaths = new Set<string>(),
+}: FileTreeProps) {
   return (
     <div className="text-foreground">
-      {nodes.map((node, index) => (
+      {nodes.map((node) => (
         <TreeItem
-          key={index}
+          key={node.path}
           node={node}
           onFileClick={onFileClick}
           repoName={repoName}
           selectedPath={selectedPath}
           onDelete={onDelete}
+          searchActive={searchActive}
+          forcedOpenPaths={forcedOpenPaths}
         />
       ))}
     </div>
