@@ -1,6 +1,6 @@
 export async function uploadImage(blob: Blob): Promise<{ absolutePath: string; filename: string }> {
   const reader = new FileReader()
-  const base64 = await new Promise<string>((resolve) => {
+  const base64 = await new Promise<string>(resolve => {
     reader.onload = () => resolve(reader.result as string)
     reader.readAsDataURL(blob)
   })

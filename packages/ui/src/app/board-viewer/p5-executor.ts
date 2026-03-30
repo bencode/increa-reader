@@ -4,41 +4,117 @@ import { renderMathToImage } from './math-renderer'
 
 const DRAWING_FUNCTIONS = [
   // Color
-  'background', 'fill', 'noFill', 'stroke', 'noStroke', 'strokeWeight',
-  'color', 'lerpColor', 'red', 'green', 'blue', 'alpha',
+  'background',
+  'fill',
+  'noFill',
+  'stroke',
+  'noStroke',
+  'strokeWeight',
+  'color',
+  'lerpColor',
+  'red',
+  'green',
+  'blue',
+  'alpha',
   'colorMode',
   // Shape
-  'rect', 'ellipse', 'circle', 'line', 'triangle', 'quad', 'arc', 'point',
-  'bezier', 'curve', 'beginShape', 'vertex', 'endShape',
+  'rect',
+  'ellipse',
+  'circle',
+  'line',
+  'triangle',
+  'quad',
+  'arc',
+  'point',
+  'bezier',
+  'curve',
+  'beginShape',
+  'vertex',
+  'endShape',
   // Text
-  'text', 'textSize', 'textAlign', 'textFont', 'textWidth', 'textLeading',
+  'text',
+  'textSize',
+  'textAlign',
+  'textFont',
+  'textWidth',
+  'textLeading',
   // Transform
-  'push', 'pop', 'translate', 'rotate', 'scale',
+  'push',
+  'pop',
+  'translate',
+  'rotate',
+  'scale',
   // Constants
-  'width', 'height', 'PI', 'TWO_PI', 'HALF_PI',
-  'CLOSE', 'CENTER', 'LEFT', 'RIGHT', 'TOP', 'BOTTOM', 'BASELINE',
-  'CORNERS', 'CORNER', 'RADIUS',
-  'RGB', 'HSB', 'HSL',
+  'width',
+  'height',
+  'PI',
+  'TWO_PI',
+  'HALF_PI',
+  'CLOSE',
+  'CENTER',
+  'LEFT',
+  'RIGHT',
+  'TOP',
+  'BOTTOM',
+  'BASELINE',
+  'CORNERS',
+  'CORNER',
+  'RADIUS',
+  'RGB',
+  'HSB',
+  'HSL',
   // Math
-  'random', 'noise', 'map', 'constrain', 'lerp',
-  'cos', 'sin', 'atan2', 'sqrt', 'abs', 'floor', 'ceil', 'round', 'pow',
-  'min', 'max', 'dist',
+  'random',
+  'noise',
+  'map',
+  'constrain',
+  'lerp',
+  'cos',
+  'sin',
+  'atan2',
+  'sqrt',
+  'abs',
+  'floor',
+  'ceil',
+  'round',
+  'pow',
+  'min',
+  'max',
+  'dist',
   // Image
-  'image', 'loadImage',
+  'image',
+  'loadImage',
 ] as const
 
 const WEBGL_FUNCTIONS = [
   // 3D primitives
-  'box', 'sphere', 'cylinder', 'cone', 'torus', 'plane',
+  'box',
+  'sphere',
+  'cylinder',
+  'cone',
+  'torus',
+  'plane',
   // 3D transforms
-  'rotateX', 'rotateY', 'rotateZ',
+  'rotateX',
+  'rotateY',
+  'rotateZ',
   // Lighting
-  'ambientLight', 'directionalLight', 'pointLight',
-  'specularMaterial', 'ambientMaterial', 'normalMaterial', 'emissiveMaterial', 'shininess',
+  'ambientLight',
+  'directionalLight',
+  'pointLight',
+  'specularMaterial',
+  'ambientMaterial',
+  'normalMaterial',
+  'emissiveMaterial',
+  'shininess',
   // Camera
-  'camera', 'perspective', 'ortho',
+  'camera',
+  'perspective',
+  'ortho',
   // Texture
-  'texture', 'textureMode', 'textureWrap',
+  'texture',
+  'textureMode',
+  'textureWrap',
 ] as const
 
 const mathImageCache = new Map<string, p5.Image>()
@@ -88,11 +164,14 @@ export function compileInstruction(code: string): CompiledFn {
 
 // --- Context building ---
 
-export function buildContext(p: p5, vars?: Record<string, unknown>, renderer?: RendererMode): Record<string, unknown> {
+export function buildContext(
+  p: p5,
+  vars?: Record<string, unknown>,
+  renderer?: RendererMode,
+): Record<string, unknown> {
   const ctx: Record<string, unknown> = { ...(vars ?? {}) }
-  const functions = renderer === 'webgl'
-    ? [...DRAWING_FUNCTIONS, ...WEBGL_FUNCTIONS]
-    : DRAWING_FUNCTIONS
+  const functions =
+    renderer === 'webgl' ? [...DRAWING_FUNCTIONS, ...WEBGL_FUNCTIONS] : DRAWING_FUNCTIONS
   for (const fn of functions) {
     const val = (p as unknown as Record<string, unknown>)[fn]
     ctx[fn] = typeof val === 'function' ? (val as (...args: unknown[]) => unknown).bind(p) : val

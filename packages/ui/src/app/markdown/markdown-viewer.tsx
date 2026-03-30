@@ -1,20 +1,20 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
-import type { RefObject, ComponentPropsWithoutRef } from 'react'
+import type { ComponentPropsWithoutRef, RefObject } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import rehypeKatex from 'rehype-katex'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
-import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
 import { ListTree } from 'lucide-react'
+import { MarkdownNotesLayer } from '@/app/notes/markdown-notes-layer'
+import { MermaidBlock } from '@/components/mermaid-block'
 import { useExternalLinks } from '@/hooks/use-external-links'
 import { usePref } from '@/hooks/use-pref'
-import { MermaidBlock } from '@/components/mermaid-block'
-import { MarkdownNotesLayer } from '@/app/notes/markdown-notes-layer'
 import { ArticleOutline } from './article-outline'
-import { useHeadingObserver } from './use-heading-observer'
 import { parseHeadings } from './heading-utils'
+import { useHeadingObserver } from './use-heading-observer'
 
 type MarkdownViewerProps = {
   body: string
@@ -23,7 +23,11 @@ type MarkdownViewerProps = {
   elementsRef: RefObject<Set<HTMLElement>>
 }
 
-function resolveImageSrc(src: string | undefined, repo: string, currentPath: string): string | undefined {
+function resolveImageSrc(
+  src: string | undefined,
+  repo: string,
+  currentPath: string,
+): string | undefined {
   if (!src) return src
   if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('/')) return src
   const dir = currentPath.substring(0, currentPath.lastIndexOf('/') + 1)
@@ -70,7 +74,9 @@ export function MarkdownViewer({ body, repoName, filePath, elementsRef }: Markdo
       { root: scrollBody, rootMargin: '100px', threshold: 0.1 },
     )
     const targets = scrollBody.querySelectorAll('.prose > *, pre, code')
-    targets.forEach(el => observer.observe(el))
+    targets.forEach(el => {
+      observer.observe(el)
+    })
     return () => {
       observer.disconnect()
       elements.clear()
@@ -88,31 +94,36 @@ export function MarkdownViewer({ body, repoName, filePath, elementsRef }: Markdo
     el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [])
 
-  const components = useMemo(() => ({
-    img({ src, alt, ...props }: ComponentPropsWithoutRef<'img'>) {
-      return <img src={resolveImageSrc(src, repoName, filePath)} alt={alt} {...props} />
-    },
-    code({ className, children, ...props }: ComponentPropsWithoutRef<'code'>) {
-      const match = /language-(\w+)/.exec(className || '')
-      if (match?.[1] === 'mermaid') {
-        return <MermaidBlock code={String(children).replace(/\n$/, '')} />
-      }
-      return match ? (
-        <SyntaxHighlighter
-          language={match[1]}
-          /* @ts-expect-error SyntaxHighlighter style type mismatch */
-          style={vscDarkPlus}
-          PreTag="div"
-          customStyle={{ margin: 0, padding: 0, background: 'transparent' }}
-          {...props}
-        >
-          {String(children).replace(/\n$/, '')}
-        </SyntaxHighlighter>
-      ) : (
-        <code className={className} {...props}>{children}</code>
-      )
-    },
-  }), [repoName, filePath])
+  const components = useMemo(
+    () => ({
+      img({ src, alt, ...props }: ComponentPropsWithoutRef<'img'>) {
+        return <img src={resolveImageSrc(src, repoName, filePath)} alt={alt} {...props} />
+      },
+      code({ className, children, ...props }: ComponentPropsWithoutRef<'code'>) {
+        const match = /language-(\w+)/.exec(className || '')
+        if (match?.[1] === 'mermaid') {
+          return <MermaidBlock code={String(children).replace(/\n$/, '')} />
+        }
+        return match ? (
+          <SyntaxHighlighter
+            language={match[1]}
+            /* @ts-expect-error SyntaxHighlighter style type mismatch */
+            style={vscDarkPlus}
+            PreTag="div"
+            customStyle={{ margin: 0, padding: 0, background: 'transparent' }}
+            {...props}
+          >
+            {String(children).replace(/\n$/, '')}
+          </SyntaxHighlighter>
+        ) : (
+          <code className={className} {...props}>
+            {children}
+          </code>
+        )
+      },
+    }),
+    [repoName, filePath],
+  )
 
   const outlineVisible = showOutline && headings.length > 0
 
@@ -149,6 +160,7 @@ export function MarkdownViewer({ body, repoName, filePath, elementsRef }: Markdo
       )}
       {headings.length > 0 && (
         <button
+          type="button"
           onClick={toggleOutline}
           className="absolute top-2 right-2 z-10 p-1.5 rounded-md bg-background/80 border border-border text-muted-foreground hover:text-foreground backdrop-blur-sm transition-colors"
           title={showOutline ? '隐藏大纲' : '显示大纲'}

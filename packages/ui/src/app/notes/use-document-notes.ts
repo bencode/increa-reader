@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useNoteToolStore } from '@/stores/note-tool-store'
 import type {
   DocumentFileType,
   DocumentNote,
@@ -11,13 +12,16 @@ import {
   fetchDocumentNotes,
   updateDocumentNote,
 } from '../api'
-import { useNoteToolStore } from '@/stores/note-tool-store'
 
 type UseDocumentNotesResultFor<TPosition extends NotePosition> = {
   notes: DocumentNote<TPosition>[]
   loading: boolean
   error: string | null
-  createNote: (note: { color: DocumentNote['color']; content: string; position: TPosition }) => Promise<DocumentNote<TPosition>>
+  createNote: (note: {
+    color: DocumentNote['color']
+    content: string
+    position: TPosition
+  }) => Promise<DocumentNote<TPosition>>
   updateNote: (
     noteId: string,
     note: { color: DocumentNote['color']; content: string; position: TPosition },
@@ -60,31 +64,40 @@ export function useDocumentNotes<TPosition extends NotePosition>(
     void reload()
   }, [reload])
 
-  const createNote = useCallback(async (
-    note: { color: DocumentNote['color']; content: string; position: TPosition },
-  ) => {
-    const created = await createDocumentNote(repo, path, note)
-    setNotes(prev => [...prev, created as DocumentNote<TPosition>])
-    return created as DocumentNote<TPosition>
-  }, [repo, path])
+  const createNote = useCallback(
+    async (note: { color: DocumentNote['color']; content: string; position: TPosition }) => {
+      const created = await createDocumentNote(repo, path, note)
+      setNotes(prev => [...prev, created as DocumentNote<TPosition>])
+      return created as DocumentNote<TPosition>
+    },
+    [repo, path],
+  )
 
-  const updateNote = useCallback(async (
-    noteId: string,
-    note: { color: DocumentNote['color']; content: string; position: TPosition },
-  ) => {
-    const result = await updateDocumentNote(repo, path, noteId, note)
-    setNotes(prev => (
-      result.deleted
-        ? prev.filter(item => item.id !== noteId)
-        : prev.map(item => (item.id === noteId ? result.note! as DocumentNote<TPosition> : item))
-    ))
-    return result as { deleted: boolean; note?: DocumentNote<TPosition> }
-  }, [repo, path])
+  const updateNote = useCallback(
+    async (
+      noteId: string,
+      note: { color: DocumentNote['color']; content: string; position: TPosition },
+    ) => {
+      const result = await updateDocumentNote(repo, path, noteId, note)
+      setNotes(prev =>
+        result.deleted
+          ? prev.filter(item => item.id !== noteId)
+          : prev.map(item =>
+              item.id === noteId ? (result.note! as DocumentNote<TPosition>) : item,
+            ),
+      )
+      return result as { deleted: boolean; note?: DocumentNote<TPosition> }
+    },
+    [repo, path],
+  )
 
-  const deleteNote = useCallback(async (noteId: string) => {
-    await deleteDocumentNote(repo, path, noteId)
-    setNotes(prev => prev.filter(item => item.id !== noteId))
-  }, [repo, path])
+  const deleteNote = useCallback(
+    async (noteId: string) => {
+      await deleteDocumentNote(repo, path, noteId)
+      setNotes(prev => prev.filter(item => item.id !== noteId))
+    },
+    [repo, path],
+  )
 
   return {
     notes,

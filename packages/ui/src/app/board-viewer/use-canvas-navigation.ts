@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, type MouseEvent, type RefObject } from 'react'
+import { type MouseEvent, type RefObject, useCallback, useEffect, useRef, useState } from 'react'
 
 type Position = { x: number; y: number }
 
@@ -15,7 +15,7 @@ export function useCanvasNavigation() {
     const handler = (e: globalThis.WheelEvent) => {
       e.preventDefault()
       const delta = e.deltaY > 0 ? 0.9 : 1.1
-      setScale((prev) => Math.max(0.1, Math.min(10, prev * delta)))
+      setScale(prev => Math.max(0.1, Math.min(10, prev * delta)))
     }
     el.addEventListener('wheel', handler, { passive: false })
     return () => el.removeEventListener('wheel', handler)
@@ -54,8 +54,8 @@ export function useCanvasNavigation() {
     isDragging,
     containerRef: containerRef as RefObject<HTMLDivElement>,
     reset,
-    zoomIn: useCallback(() => setScale((s) => Math.min(10, s * 1.2)), []),
-    zoomOut: useCallback(() => setScale((s) => Math.max(0.1, s / 1.2)), []),
+    zoomIn: useCallback(() => setScale(s => Math.min(10, s * 1.2)), []),
+    zoomOut: useCallback(() => setScale(s => Math.max(0.1, s / 1.2)), []),
     handlers: {
       onMouseDown: handleMouseDown,
       onMouseMove: handleMouseMove,

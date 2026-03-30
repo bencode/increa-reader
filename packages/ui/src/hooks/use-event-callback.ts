@@ -18,10 +18,12 @@ import { useCallback, useLayoutEffect, useRef } from 'react'
  * }, [handleClick])
  */
 export function useEventCallback<Args extends unknown[], R>(
-  callback: (...args: Args) => R
+  callback: (...args: Args) => R,
 ): (...args: Args) => R {
   const callbackRef = useRef(callback)
-  useLayoutEffect(() => { callbackRef.current = callback })
+  useLayoutEffect(() => {
+    callbackRef.current = callback
+  })
 
   return useCallback((...args: Args) => callbackRef.current(...args), [])
 }

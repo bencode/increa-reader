@@ -1,6 +1,6 @@
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Message } from './message'
 import type { Message as MessageType } from '@/types/chat'
+import { Message } from './message'
 
 type ChatMessagesProps = {
   messages: MessageType[]

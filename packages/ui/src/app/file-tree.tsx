@@ -1,19 +1,19 @@
-import { useState, useEffect } from 'react'
 import {
-  ChevronRight,
   ChevronDown,
-  Folder,
-  FolderOpen,
-  FileText,
+  ChevronRight,
+  File,
   FileCode,
   FileJson,
-  Image,
-  File,
+  FileText,
   FileType,
+  Folder,
+  FolderOpen,
+  Image,
   Trash2,
 } from 'lucide-react'
-import { DeleteConfirmDialog } from './delete-confirm-dialog'
+import { useEffect, useState } from 'react'
 import { deleteFile } from './api'
+import { DeleteConfirmDialog } from './delete-confirm-dialog'
 
 type TreeNode = {
   type: 'dir' | 'file'
@@ -141,8 +141,9 @@ function TreeItem({
           {getFileIcon(node.name)}
           <span>{node.name}</span>
           <button
+            type="button"
             className="absolute right-2 opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation()
               setDeleteDialogOpen(true)
             }}
@@ -184,7 +185,7 @@ function TreeItem({
       </div>
       {effectiveIsOpen && node.children && (
         <div className="pl-4">
-          {node.children.map((child) => (
+          {node.children.map(child => (
             <TreeItem
               key={child.path}
               node={child}
@@ -223,7 +224,7 @@ export function FileTree({
 }: FileTreeProps) {
   return (
     <div className="text-foreground">
-      {nodes.map((node) => (
+      {nodes.map(node => (
         <TreeItem
           key={node.path}
           node={node}

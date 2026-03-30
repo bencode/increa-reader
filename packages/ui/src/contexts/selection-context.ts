@@ -26,18 +26,19 @@ type SelectionQueueState = {
   clear: () => void
 }
 
-const useSelectionQueueStore = create<SelectionQueueState>((set) => ({
+const useSelectionQueueStore = create<SelectionQueueState>(set => ({
   items: [],
-  push: (ctx) => {
-    set((state) => {
-      const next = state.items.length >= MAX_QUEUE_SIZE
-        ? [...state.items.slice(1), ctx]
-        : [...state.items, ctx]
+  push: ctx => {
+    set(state => {
+      const next =
+        state.items.length >= MAX_QUEUE_SIZE
+          ? [...state.items.slice(1), ctx]
+          : [...state.items, ctx]
       return { items: next }
     })
   },
-  remove: (index) => {
-    set((state) => ({
+  remove: index => {
+    set(state => ({
       items: state.items.filter((_, i) => i !== index),
     }))
   },
@@ -45,14 +46,19 @@ const useSelectionQueueStore = create<SelectionQueueState>((set) => ({
 }))
 
 export const useSelectionQueue = () =>
-  useSelectionQueueStore(useShallow((state) => ({
-    items: state.items,
-    push: state.push,
-    remove: state.remove,
-    clear: state.clear,
-  })))
+  useSelectionQueueStore(
+    useShallow(state => ({
+      items: state.items,
+      push: state.push,
+      remove: state.remove,
+      clear: state.clear,
+    })),
+  )
 
-const collectSurroundingText = (range: Range, maxChars = 500): { before: string; after: string } => {
+const collectSurroundingText = (
+  range: Range,
+  maxChars = 500,
+): { before: string; after: string } => {
   try {
     const ancestor = range.commonAncestorContainer
     const element =
@@ -60,8 +66,7 @@ const collectSurroundingText = (range: Range, maxChars = 500): { before: string;
 
     if (!element) return { before: '', after: '' }
 
-    const section =
-      element.closest('[data-index], .prose, pre, article, section') || element
+    const section = element.closest('[data-index], .prose, pre, article, section') || element
 
     const beforeRange = document.createRange()
     beforeRange.selectNodeContents(section)

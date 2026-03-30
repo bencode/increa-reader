@@ -17,11 +17,7 @@ export const ChatHeader = ({ isSplitView, onToggleSplit }: ChatHeaderProps) => {
         title={isSplitView ? 'Exit split view' : 'Split view'}
         className="h-7 w-7 p-0"
       >
-        {isSplitView ? (
-          <PanelTopClose className="h-4 w-4" />
-        ) : (
-          <PanelTop className="h-4 w-4" />
-        )}
+        {isSplitView ? <PanelTopClose className="h-4 w-4" /> : <PanelTop className="h-4 w-4" />}
       </Button>
     </div>
   )

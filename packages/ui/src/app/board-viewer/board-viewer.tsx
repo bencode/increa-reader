@@ -1,11 +1,11 @@
+import { Pause, Play, RotateCcw, Save, Trash2, ZoomIn, ZoomOut } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { ZoomIn, ZoomOut, RotateCcw, Trash2, Save, Play, Pause } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useBoardStore, getTab } from '@/stores/board-store'
+import { getTab, useBoardStore } from '@/stores/board-store'
 import type { BoardFile } from '@/types/board'
-import { useP5Canvas } from './use-p5-canvas'
-import { useCanvasNavigation } from './use-canvas-navigation'
 import { ControlsPanel } from './controls-panel'
+import { useCanvasNavigation } from './use-canvas-navigation'
+import { useP5Canvas } from './use-p5-canvas'
 
 type BoardViewerProps = {
   repo?: string
@@ -26,7 +26,7 @@ export function BoardViewer({ repo, filePath, data }: BoardViewerProps) {
   const [controlValues, setControlValues] = useState<Record<string, number>>({})
 
   const controlsKey = useMemo(
-    () => animation?.controls ? JSON.stringify(animation.controls) : '',
+    () => (animation?.controls ? JSON.stringify(animation.controls) : ''),
     [animation?.controls],
   )
 
@@ -40,12 +40,20 @@ export function BoardViewer({ repo, filePath, data }: BoardViewerProps) {
       initial[name] = def.default ?? (def.type === 'range' ? def.min : 0)
     }
     setControlValues(initial)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [controlsKey])
 
-  const { position, scale, isDragging, containerRef, reset, zoomIn, zoomOut, handlers } = useCanvasNavigation()
+  const { position, scale, isDragging, containerRef, reset, zoomIn, zoomOut, handlers } =
+    useCanvasNavigation()
   const { isLooping, toggleLoop } = useP5Canvas({
-    containerRef, tabKey, position, scale, background, instructions, animation, controlValues, renderer,
+    containerRef,
+    tabKey,
+    position,
+    scale,
+    background,
+    instructions,
+    animation,
+    controlValues,
+    renderer,
   })
 
   useEffect(() => {
@@ -114,7 +122,12 @@ export function BoardViewer({ repo, filePath, data }: BoardViewerProps) {
     <div className="relative h-full flex flex-col">
       <div className="absolute top-4 right-4 z-10 flex gap-2 bg-background/80 backdrop-blur-sm rounded-md p-2 shadow-md">
         {animation?.loop && (
-          <Button variant="ghost" size="icon" onClick={toggleLoop} title={isLooping ? 'Pause' : 'Play'}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleLoop}
+            title={isLooping ? 'Pause' : 'Play'}
+          >
             {isLooping ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           </Button>
         )}

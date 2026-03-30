@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
 import { AlertTriangle, Plus, Trash2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/drawer'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { fetchConfigRepos, updateConfigRepos, type RepoConfigInfo } from './api'
+import { fetchConfigRepos, type RepoConfigInfo, updateConfigRepos } from './api'
 import { ApiSettingsForm } from './api-settings-form'
 
 type SettingsDrawerProps = {
@@ -37,7 +37,7 @@ export function SettingsDrawer({ open, onOpenChange, onReposChanged }: SettingsD
 
     setLoading(true)
     try {
-      const paths = [...repos.map((r) => r.root), path]
+      const paths = [...repos.map(r => r.root), path]
       const updated = await updateConfigRepos(paths)
       setRepos(updated)
       setNewPath('')
@@ -52,7 +52,7 @@ export function SettingsDrawer({ open, onOpenChange, onReposChanged }: SettingsD
   const handleRemove = async (index: number) => {
     setLoading(true)
     try {
-      const paths = repos.filter((_, i) => i !== index).map((r) => r.root)
+      const paths = repos.filter((_, i) => i !== index).map(r => r.root)
       const updated = await updateConfigRepos(paths)
       setRepos(updated)
       onReposChanged()
@@ -122,7 +122,7 @@ export function SettingsDrawer({ open, onOpenChange, onReposChanged }: SettingsD
               <Input
                 placeholder="Repository path..."
                 value={newPath}
-                onChange={(e) => setNewPath(e.target.value)}
+                onChange={e => setNewPath(e.target.value)}
                 onKeyDown={handleKeyDown}
                 disabled={loading}
               />

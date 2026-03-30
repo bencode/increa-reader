@@ -63,7 +63,9 @@ function isHeadingElement(element: Element) {
 }
 
 export function collectMarkdownBlocks(root: HTMLElement): MarkdownBlockMeta[] {
-  const blocks = Array.from(root.children).filter((node): node is HTMLElement => node instanceof HTMLElement)
+  const blocks = Array.from(root.children).filter(
+    (node): node is HTMLElement => node instanceof HTMLElement,
+  )
   const stack: string[] = []
 
   return blocks.map((element, index) => {
@@ -94,21 +96,26 @@ export function findBestMarkdownBlock(
   if (blocks.length === 0) return null
 
   const normalizedAnchor = normalizeText(position.blockText).toLowerCase()
-  const scopedBlocks = position.headingPath.length > 0
-    ? blocks.filter(block => arraysEqual(block.headingPath, position.headingPath))
-    : blocks
+  const scopedBlocks =
+    position.headingPath.length > 0
+      ? blocks.filter(block => arraysEqual(block.headingPath, position.headingPath))
+      : blocks
 
   if (normalizedAnchor) {
     const exactMatch = scopedBlocks.find(block => block.normalizedText === normalizedAnchor)
     if (exactMatch) return exactMatch
 
-    const partialMatch = scopedBlocks.find(block =>
-      block.normalizedText.includes(normalizedAnchor) || normalizedAnchor.includes(block.normalizedText),
+    const partialMatch = scopedBlocks.find(
+      block =>
+        block.normalizedText.includes(normalizedAnchor) ||
+        normalizedAnchor.includes(block.normalizedText),
     )
     if (partialMatch) return partialMatch
 
-    const globalMatch = blocks.find(block =>
-      block.normalizedText.includes(normalizedAnchor) || normalizedAnchor.includes(block.normalizedText),
+    const globalMatch = blocks.find(
+      block =>
+        block.normalizedText.includes(normalizedAnchor) ||
+        normalizedAnchor.includes(block.normalizedText),
     )
     if (globalMatch) return globalMatch
   }
@@ -120,9 +127,8 @@ export function findBestMarkdownBlock(
 }
 
 export function buildMarkdownLocator(note: DocumentNote<MarkdownNotePosition>): StandardizedNote {
-  const label = note.position.headingPath.length > 0
-    ? note.position.headingPath.join(' / ')
-    : 'Document'
+  const label =
+    note.position.headingPath.length > 0 ? note.position.headingPath.join(' / ') : 'Document'
 
   return {
     id: note.id,

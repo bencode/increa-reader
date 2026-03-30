@@ -55,7 +55,10 @@ export type Repo = {
 
 export type SSEMessage =
   | { type: 'system'; subtype: 'init'; session_id: string }
-  | { type: 'stream_event'; event: { delta?: { type: string; text?: string; partial_json?: string } } }
+  | {
+      type: 'stream_event'
+      event: { delta?: { type: string; text?: string; partial_json?: string } }
+    }
   | { type: 'assistant'; content: string }
   | { type: 'result'; session_id: string; duration_ms: number; usage: Message['usage'] }
   | { type: 'error'; message: string }

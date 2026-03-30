@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback, type MouseEvent, type WheelEvent } from 'react'
-import { ZoomIn, ZoomOut, Maximize2, RotateCcw } from 'lucide-react'
+import { Maximize2, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react'
+import { type MouseEvent, useCallback, useRef, useState, type WheelEvent } from 'react'
 import { Button } from '@/components/ui/button'
 
 type ImageViewerProps = {
@@ -14,14 +14,11 @@ export function ImageViewer({ src, alt }: ImageViewerProps) {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const handleWheel = useCallback(
-    (e: WheelEvent<HTMLDivElement>) => {
-      e.preventDefault()
-      const delta = e.deltaY > 0 ? 0.9 : 1.1
-      setScale(prev => Math.max(0.1, Math.min(10, prev * delta)))
-    },
-    []
-  )
+  const handleWheel = useCallback((e: WheelEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    const delta = e.deltaY > 0 ? 0.9 : 1.1
+    setScale(prev => Math.max(0.1, Math.min(10, prev * delta)))
+  }, [])
 
   const handleMouseDown = useCallback(
     (e: MouseEvent<HTMLDivElement>) => {
@@ -29,7 +26,7 @@ export function ImageViewer({ src, alt }: ImageViewerProps) {
       setIsDragging(true)
       setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y })
     },
-    [position]
+    [position],
   )
 
   const handleMouseMove = useCallback(
@@ -40,7 +37,7 @@ export function ImageViewer({ src, alt }: ImageViewerProps) {
         y: e.clientY - dragStart.y,
       })
     },
-    [isDragging, dragStart]
+    [isDragging, dragStart],
   )
 
   const handleMouseUp = useCallback(() => {

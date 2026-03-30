@@ -1,10 +1,10 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
-import type { Message, Repo, Session } from '@/types/chat'
-import type { ContextData } from '@/stores/view-context'
-import { parseCommand, extractTextContent, detectToolFromParams } from '../utils'
-import { useSessionManager } from './use-session-manager'
-import { useCommands } from './use-commands'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useEventCallback } from '@/hooks/use-event-callback'
+import type { ContextData } from '@/stores/view-context'
+import type { Message, Repo, Session } from '@/types/chat'
+import { detectToolFromParams, extractTextContent, parseCommand } from '../utils'
+import { useCommands } from './use-commands'
+import { useSessionManager } from './use-session-manager'
 
 export const useChat = (getContext: () => ContextData) => {
   const [currentSession, setCurrentSession] = useState<Session | null>(null)
@@ -20,7 +20,9 @@ export const useChat = (getContext: () => ContextData) => {
 
   // Wrap functions with useEventCallback for stable references
   const createSessionEvent = useEventCallback(() => sessionManager.createSession())
-  const saveSessionEvent = useEventCallback((session: Session) => sessionManager.saveSession(session))
+  const saveSessionEvent = useEventCallback((session: Session) =>
+    sessionManager.saveSession(session),
+  )
   const getContextEvent = useEventCallback(() => getContext())
 
   // 便捷访问
@@ -39,198 +41,224 @@ export const useChat = (getContext: () => ContextData) => {
     })
   })
 
-  const sendMessage = useCallback(async (directMessage?: string) => {
-    const text = directMessage ?? input
-    if (!text.trim()) return
+  const sendMessage = useCallback(
+    async (directMessage?: string) => {
+      const text = directMessage ?? input
+      if (!text.trim()) return
 
-    const normalized = text.replace(/^／/, '/')
-    const cmd = parseCommand(normalized)
+      const normalized = text.replace(/^／/, '/')
+      const cmd = parseCommand(normalized)
 
-    if (cmd) {
-      setCurrentSession(prev => {
-        if (!prev) return prev
-        return {
-          ...prev,
-          messages: [
-            ...prev.messages,
-            {
-              role: 'user',
-              content: normalized,
-              timestamp: Date.now(),
-            },
-          ],
-          lastActiveAt: Date.now(),
-        }
-      })
+      if (cmd) {
+        setCurrentSession(prev => {
+          if (!prev) return prev
+          return {
+            ...prev,
+            messages: [
+              ...prev.messages,
+              {
+                role: 'user',
+                content: normalized,
+                timestamp: Date.now(),
+              },
+            ],
+            lastActiveAt: Date.now(),
+          }
+        })
 
-      handleCommand(cmd.name, cmd.args)
-      if (!directMessage) setInput('')
-      return
-    }
-
-    if (isStreaming) {
-      addMessage('error', 'Cannot send message while streaming. Use /abort to stop generation.')
-      return
-    }
-
-    // 确保有 session（用局部变量）
-    let workingSession = currentSession
-    if (!workingSession) {
-      workingSession = createSessionEvent()
-      setCurrentSession(workingSession)
-    }
-
-    const userMsg: Message = { role: 'user', content: text, timestamp: Date.now() }
-    setCurrentSession(prev => ({
-      ...prev!,
-      messages: [...prev!.messages, userMsg],
-      lastActiveAt: Date.now(),
-    }))
-    if (!directMessage) setInput('')
-    setIsStreaming(true)
-
-    let assistantContent = ''
-    let toolCalls: Message['toolCalls'] = []
-    const assistantMsg: Message = {
-      role: 'assistant',
-      content: '',
-      timestamp: Date.now(),
-      isStreaming: true,
-      toolCalls: [],
-    }
-    setCurrentSession(prev => ({
-      ...prev!,
-      messages: [...prev!.messages, assistantMsg],
-    }))
-
-    try {
-      const context = getContextEvent()
-
-      const response = await fetch('/api/chat/query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: text,
-          sessionId: workingSession.stats?.sessionId,
-          context,
-          options: workingSession.model ? { model: workingSession.model } : undefined,
-        }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`)
+        handleCommand(cmd.name, cmd.args)
+        if (!directMessage) setInput('')
+        return
       }
 
-      const reader = response.body?.getReader()
-      const decoder = new TextDecoder()
+      if (isStreaming) {
+        addMessage('error', 'Cannot send message while streaming. Use /abort to stop generation.')
+        return
+      }
 
-      if (!reader) throw new Error('No response body')
+      // 确保有 session（用局部变量）
+      let workingSession = currentSession
+      if (!workingSession) {
+        workingSession = createSessionEvent()
+        setCurrentSession(workingSession)
+      }
 
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
+      const userMsg: Message = { role: 'user', content: text, timestamp: Date.now() }
+      setCurrentSession(prev => ({
+        ...prev!,
+        messages: [...prev!.messages, userMsg],
+        lastActiveAt: Date.now(),
+      }))
+      if (!directMessage) setInput('')
+      setIsStreaming(true)
 
-        const chunk = decoder.decode(value)
-        const lines = chunk.split('\n')
+      let assistantContent = ''
+      let toolCalls: Message['toolCalls'] = []
+      const assistantMsg: Message = {
+        role: 'assistant',
+        content: '',
+        timestamp: Date.now(),
+        isStreaming: true,
+        toolCalls: [],
+      }
+      setCurrentSession(prev => ({
+        ...prev!,
+        messages: [...prev!.messages, assistantMsg],
+      }))
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6)
-            try {
-              const msg = JSON.parse(data)
+      try {
+        const context = getContextEvent()
 
-              if (msg.type === 'system' && msg.subtype === 'init') {
-                setCurrentSession(prev => ({
-                  ...prev!,
-                  stats: { ...prev!.stats, sessionId: msg.session_id },
-                }))
-              }
+        const response = await fetch('/api/chat/query', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: text,
+            sessionId: workingSession.stats?.sessionId,
+            context,
+            options: workingSession.model ? { model: workingSession.model } : undefined,
+          }),
+        })
 
-              if (msg.type === 'stream_event') {
-                const delta = msg.event?.delta
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`)
+        }
 
-                const deltaText = extractTextContent(msg)
-                if (deltaText) {
-                  assistantContent += deltaText
+        const reader = response.body?.getReader()
+        const decoder = new TextDecoder()
+
+        if (!reader) throw new Error('No response body')
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          const chunk = decoder.decode(value)
+          const lines = chunk.split('\n')
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6)
+              try {
+                const msg = JSON.parse(data)
+
+                if (msg.type === 'system' && msg.subtype === 'init') {
                   setCurrentSession(prev => ({
                     ...prev!,
-                    messages: [
-                      ...prev!.messages.slice(0, -1),
-                      { ...assistantMsg, content: assistantContent, toolCalls, isStreaming: true },
-                    ],
+                    stats: { ...prev!.stats, sessionId: msg.session_id },
                   }))
                 }
 
-                if (delta?.type === 'input_json_delta') {
-                  try {
-                    const params = JSON.parse(delta.partial_json)
-                    const toolName = detectToolFromParams(params)
+                if (msg.type === 'stream_event') {
+                  const delta = msg.event?.delta
 
-                    const existingIndex = toolCalls?.findIndex(t => t.name === toolName && t.status === 'running')
-                    if (existingIndex !== undefined && existingIndex >= 0) {
-                      toolCalls![existingIndex].params = params
-                    } else {
-                      toolCalls = [...(toolCalls || []), { name: toolName, status: 'running', params }]
-                    }
-
+                  const deltaText = extractTextContent(msg)
+                  if (deltaText) {
+                    assistantContent += deltaText
                     setCurrentSession(prev => ({
                       ...prev!,
                       messages: [
                         ...prev!.messages.slice(0, -1),
-                        { ...assistantMsg, content: assistantContent, toolCalls, isStreaming: true },
+                        {
+                          ...assistantMsg,
+                          content: assistantContent,
+                          toolCalls,
+                          isStreaming: true,
+                        },
                       ],
                     }))
-                  } catch {
-                    // Partial JSON may not be parseable yet
+                  }
+
+                  if (delta?.type === 'input_json_delta') {
+                    try {
+                      const params = JSON.parse(delta.partial_json)
+                      const toolName = detectToolFromParams(params)
+
+                      const existingIndex = toolCalls?.findIndex(
+                        t => t.name === toolName && t.status === 'running',
+                      )
+                      if (existingIndex !== undefined && existingIndex >= 0) {
+                        toolCalls![existingIndex].params = params
+                      } else {
+                        toolCalls = [
+                          ...(toolCalls || []),
+                          { name: toolName, status: 'running', params },
+                        ]
+                      }
+
+                      setCurrentSession(prev => ({
+                        ...prev!,
+                        messages: [
+                          ...prev!.messages.slice(0, -1),
+                          {
+                            ...assistantMsg,
+                            content: assistantContent,
+                            toolCalls,
+                            isStreaming: true,
+                          },
+                        ],
+                      }))
+                    } catch {
+                      // Partial JSON may not be parseable yet
+                    }
                   }
                 }
-              }
 
-              if (msg.type === 'result') {
-                const completedTools = toolCalls?.map(t => ({ ...t, status: 'done' as const }))
+                if (msg.type === 'result') {
+                  const completedTools = toolCalls?.map(t => ({ ...t, status: 'done' as const }))
 
-                setCurrentSession(prev => ({
-                  ...prev!,
-                  messages: [
-                    ...prev!.messages.slice(0, -1),
-                    {
-                      ...assistantMsg,
-                      content: assistantContent,
-                      toolCalls: completedTools,
-                      isStreaming: false,
+                  setCurrentSession(prev => ({
+                    ...prev!,
+                    messages: [
+                      ...prev!.messages.slice(0, -1),
+                      {
+                        ...assistantMsg,
+                        content: assistantContent,
+                        toolCalls: completedTools,
+                        isStreaming: false,
+                      },
+                    ],
+                    stats: {
+                      sessionId: msg.session_id,
+                      duration: msg.duration_ms,
+                      usage: msg.usage,
                     },
-                  ],
-                  stats: {
-                    sessionId: msg.session_id,
-                    duration: msg.duration_ms,
-                    usage: msg.usage,
-                  },
-                  lastActiveAt: Date.now(),
-                }))
+                    lastActiveAt: Date.now(),
+                  }))
 
-                setIsStreaming(false)
-              }
+                  setIsStreaming(false)
+                }
 
-              if (msg.type === 'error') {
-                setCurrentSession(prev => ({
-                  ...prev!,
-                  messages: prev!.messages.slice(0, -1),
-                }))
-                addMessage('error', msg.message || 'Unknown error occurred')
-                setIsStreaming(false)
+                if (msg.type === 'error') {
+                  setCurrentSession(prev => ({
+                    ...prev!,
+                    messages: prev!.messages.slice(0, -1),
+                  }))
+                  addMessage('error', msg.message || 'Unknown error occurred')
+                  setIsStreaming(false)
+                }
+              } catch (e) {
+                console.error('Failed to parse SSE message:', e)
               }
-            } catch (e) {
-              console.error('Failed to parse SSE message:', e)
             }
           }
         }
+      } catch (error) {
+        addMessage('error', error instanceof Error ? error.message : 'Unknown error')
+        setIsStreaming(false)
       }
-    } catch (error) {
-      addMessage('error', error instanceof Error ? error.message : 'Unknown error')
-      setIsStreaming(false)
-    }
-  }, [input, currentSession, isStreaming, createSessionEvent, getContextEvent, handleCommand, addMessage])
+    },
+    [
+      input,
+      currentSession,
+      isStreaming,
+      createSessionEvent,
+      getContextEvent,
+      handleCommand,
+      addMessage,
+    ],
+  )
 
   // Auto-save session when messages change (debounced)
   useEffect(() => {

@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-
-import { useGetContext } from '@/stores/view-context'
-import { useSelectionQueue } from '@/contexts/selection-context'
 import { fetchApiSettings } from '@/app/api'
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
+import { useSelectionQueue } from '@/contexts/selection-context'
+import { useGetContext } from '@/stores/view-context'
+import { ActiveChatPanel } from './active-chat-panel'
 import { ChatHeader } from './chat-header'
 import { HistoryPanel } from './history-panel'
-import { ActiveChatPanel } from './active-chat-panel'
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
-import { useFrontendTools } from './hooks/use-frontend-tools'
 import { useChat } from './hooks/use-chat'
+import { useFrontendTools } from './hooks/use-frontend-tools'
 
 export const ChatPanel = () => {
   const [isSplitView, setIsSplitView] = useState(false)
@@ -16,12 +15,17 @@ export const ChatPanel = () => {
   const getContext = useGetContext()
   const { items } = useSelectionQueue()
   const itemsRef = useRef(items)
-  useEffect(() => { itemsRef.current = items })
+  useEffect(() => {
+    itemsRef.current = items
+  })
 
-  const getContextWithQuotes = useCallback(() => ({
-    ...getContext(),
-    quoteCount: itemsRef.current.length,
-  }), [getContext])
+  const getContextWithQuotes = useCallback(
+    () => ({
+      ...getContext(),
+      quoteCount: itemsRef.current.length,
+    }),
+    [getContext],
+  )
 
   const [defaultModel, setDefaultModel] = useState<string | null>(null)
 
@@ -75,12 +79,15 @@ export const ChatPanel = () => {
     }
   }
 
-  const handleInsertText = useCallback((text: string) => {
-    setInput(prev => {
-      const separator = prev && !prev.endsWith('\n') ? '\n' : ''
-      return prev + separator + text
-    })
-  }, [setInput])
+  const handleInsertText = useCallback(
+    (text: string) => {
+      setInput(prev => {
+        const separator = prev && !prev.endsWith('\n') ? '\n' : ''
+        return prev + separator + text
+      })
+    },
+    [setInput],
+  )
 
   return (
     <div className="flex flex-col h-full font-mono">

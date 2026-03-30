@@ -29,10 +29,17 @@ const formatTokens = (tokens: number): string => {
   if (tokens < 1000) {
     return tokens.toString()
   }
-  return (tokens / 1000).toFixed(1) + 'K'
+  return `${(tokens / 1000).toFixed(1)}K`
 }
 
-export const ChatStats = ({ context, repos, sessionId, isStreaming, model, stats }: ChatStatsProps) => {
+export const ChatStats = ({
+  context,
+  repos,
+  sessionId,
+  isStreaming,
+  model,
+  stats,
+}: ChatStatsProps) => {
   const displayRepo = context.repo || (repos.length > 0 ? repos[0].name : 'loading...')
   if (!stats?.sessionId) {
     return null
@@ -43,20 +50,23 @@ export const ChatStats = ({ context, repos, sessionId, isStreaming, model, stats
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
           <div className="flex items-center gap-1">
-            <span className="text-blue-600 dark:text-blue-400">
-              user@{displayRepo}
-            </span>
+            <span className="text-blue-600 dark:text-blue-400">user@{displayRepo}</span>
           </div>
 
           {model && (
-            <span className="text-purple-600 dark:text-purple-400">
-              {formatModelName(model)}
-            </span>
+            <span className="text-purple-600 dark:text-purple-400">{formatModelName(model)}</span>
           )}
 
           {stats.sessionId && (
             <div className="flex items-center gap-1">
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                focusable="false"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -70,7 +80,14 @@ export const ChatStats = ({ context, repos, sessionId, isStreaming, model, stats
 
           {stats.duration && (
             <div className="flex items-center gap-1">
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                focusable="false"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -84,7 +101,14 @@ export const ChatStats = ({ context, repos, sessionId, isStreaming, model, stats
 
           {stats.usage && (
             <div className="flex items-center gap-2">
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                focusable="false"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -113,8 +137,17 @@ export const ChatStats = ({ context, repos, sessionId, isStreaming, model, stats
         </div>
 
         {sessionId && (
-          <div className={`text-xs flex items-center gap-1 ${isStreaming ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div
+            className={`text-xs flex items-center gap-1 ${isStreaming ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}
+          >
+            <svg
+              className="w-3 h-3"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              focusable="false"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"

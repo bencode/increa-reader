@@ -1,15 +1,14 @@
 import ReactMarkdown from 'react-markdown'
+import rehypeKatex from 'rehype-katex'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
-import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
-
-import type { Message as MessageType } from '@/types/chat'
-import { cn } from '@/lib/utils'
-import { useExternalLinks } from '@/hooks/use-external-links'
 import { MermaidBlock } from '@/components/mermaid-block'
+import { useExternalLinks } from '@/hooks/use-external-links'
+import { cn } from '@/lib/utils'
+import type { Message as MessageType } from '@/types/chat'
 
 const getToolIcon = (toolName: string) => {
   switch (toolName) {
@@ -43,13 +42,16 @@ const formatToolParams = (toolName: string, params?: Record<string, unknown>) =>
 }
 
 const resolveImageSrc = (src?: string) =>
-  src && src.includes('.increa/uploads/')
-    ? `/api/uploads/${src.split('/').pop()}`
-    : src
+  src?.includes('.increa/uploads/') ? `/api/uploads/${src.split('/').pop()}` : src
 
 export const Message = ({ role, content, isStreaming, toolCalls }: MessageType) => {
   const prefix = role === 'user' ? '$' : role === 'system' ? '>' : role === 'error' ? '!' : '<'
-  const textColor = role === 'user' ? 'text-blue-600 dark:text-blue-400' : role === 'error' ? 'text-red-700 dark:text-red-300' : ''
+  const textColor =
+    role === 'user'
+      ? 'text-blue-600 dark:text-blue-400'
+      : role === 'error'
+        ? 'text-red-700 dark:text-red-300'
+        : ''
   const bgColor = role === 'error' ? 'bg-red-50 dark:bg-red-950/30 border-l-4 border-red-500' : ''
   const syntaxTheme = oneDark
   const markdownRef = useExternalLinks()
@@ -69,7 +71,7 @@ export const Message = ({ role, content, isStreaming, toolCalls }: MessageType) 
                     'inline-flex items-center gap-1 px-2 py-1 rounded text-xs',
                     tool.status === 'running'
                       ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
-                      : 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                      : 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300',
                   )}
                 >
                   <span>{getToolIcon(tool.name)}</span>
@@ -86,7 +88,10 @@ export const Message = ({ role, content, isStreaming, toolCalls }: MessageType) 
           {role === 'error' ? (
             <span>{content}</span>
           ) : role === 'user' ? (
-            <div ref={markdownRef} className="prose prose-sm prose-slate dark:prose-invert max-w-none prose-p:leading-relaxed prose-img:max-w-xs prose-img:rounded">
+            <div
+              ref={markdownRef}
+              className="prose prose-sm prose-slate dark:prose-invert max-w-none prose-p:leading-relaxed prose-img:max-w-xs prose-img:rounded"
+            >
               <ReactMarkdown
                 components={{
                   img({ src, alt, ...props }) {
@@ -98,7 +103,10 @@ export const Message = ({ role, content, isStreaming, toolCalls }: MessageType) 
               </ReactMarkdown>
             </div>
           ) : (
-            <div ref={markdownRef} className="prose prose-sm prose-slate dark:prose-invert max-w-none prose-headings:text-base prose-headings:my-1 prose-h1:text-lg prose-h1:my-1.5 prose-h2:text-base prose-h2:my-1 prose-h3:text-sm prose-h3:my-1 prose-h4:text-sm prose-h4:my-0.5 prose-h5:text-xs prose-h5:my-0.5 prose-h6:text-xs prose-h6:my-0.5 prose-p:leading-relaxed prose-pre:p-0 prose-pre:bg-transparent">
+            <div
+              ref={markdownRef}
+              className="prose prose-sm prose-slate dark:prose-invert max-w-none prose-headings:text-base prose-headings:my-1 prose-h1:text-lg prose-h1:my-1.5 prose-h2:text-base prose-h2:my-1 prose-h3:text-sm prose-h3:my-1 prose-h4:text-sm prose-h4:my-0.5 prose-h5:text-xs prose-h5:my-0.5 prose-h6:text-xs prose-h6:my-0.5 prose-p:leading-relaxed prose-pre:p-0 prose-pre:bg-transparent"
+            >
               <ReactMarkdown
                 remarkPlugins={[remarkGfm, remarkMath]}
                 rehypePlugins={[rehypeKatex]}
@@ -106,7 +114,12 @@ export const Message = ({ role, content, isStreaming, toolCalls }: MessageType) 
                   img({ src, alt, ...props }) {
                     return <img src={resolveImageSrc(src)} alt={alt} {...props} />
                   },
-                  code({ inline, className, children, ...props }: {
+                  code({
+                    inline,
+                    className,
+                    children,
+                    ...props
+                  }: {
                     inline?: boolean
                     className?: string
                     children?: React.ReactNode
@@ -125,12 +138,18 @@ export const Message = ({ role, content, isStreaming, toolCalls }: MessageType) 
                         {String(children).replace(/\n$/, '')}
                       </SyntaxHighlighter>
                     ) : (
-                      <code className={cn('bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-gray-800 dark:text-gray-200', className)} {...props}>
+                      <code
+                        className={cn(
+                          'bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-gray-800 dark:text-gray-200',
+                          className,
+                        )}
+                        {...props}
+                      >
                         {children}
                       </code>
                     )
                   },
-              }}
+                }}
               >
                 {content}
               </ReactMarkdown>

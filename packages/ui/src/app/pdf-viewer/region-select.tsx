@@ -1,5 +1,5 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
 import { Copy, MessageSquare, X } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSelectionQueue } from '@/contexts/selection-context'
 
 type Rect = { x: number; y: number; w: number; h: number }
@@ -40,12 +40,7 @@ async function extractRegionText(
   return res.json()
 }
 
-function toPDFCoords(
-  rect: Rect,
-  imgEl: HTMLImageElement,
-  pageWidth: number,
-  pageHeight: number,
-) {
+function toPDFCoords(rect: Rect, imgEl: HTMLImageElement, pageWidth: number, pageHeight: number) {
   const displayW = imgEl.clientWidth
   const displayH = imgEl.clientHeight
   const scaleX = pageWidth / displayW
@@ -104,6 +99,7 @@ function ResultPopup({ text, rect, repo, filePath, pageNum, onClose }: ResultPop
       <div className="flex items-center justify-between px-3 py-2 border-b border-border">
         <span className="text-xs text-muted-foreground">Extracted Text</span>
         <button
+          type="button"
           onClick={onClose}
           className="p-0.5 rounded hover:bg-accent text-muted-foreground"
         >
@@ -115,6 +111,7 @@ function ResultPopup({ text, rect, repo, filePath, pageNum, onClose }: ResultPop
       </div>
       <div className="flex items-center gap-1 px-3 py-2 border-t border-border">
         <button
+          type="button"
           onClick={handleAskAI}
           className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
         >
@@ -122,6 +119,7 @@ function ResultPopup({ text, rect, repo, filePath, pageNum, onClose }: ResultPop
           Quote
         </button>
         <button
+          type="button"
           onClick={handleCopy}
           className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md hover:bg-accent transition-colors"
         >
@@ -139,14 +137,11 @@ export function RegionSelect({ repo, filePath, pageNum, imgRef }: RegionSelectPr
   const [result, setResult] = useState<{ text: string; rect: Rect } | null>(null)
   const startRef = useRef<{ x: number; y: number } | null>(null)
 
-  const getRelativePos = useCallback(
-    (e: React.MouseEvent) => {
-      const el = e.currentTarget
-      const bounds = el.getBoundingClientRect()
-      return { x: e.clientX - bounds.left, y: e.clientY - bounds.top }
-    },
-    [],
-  )
+  const getRelativePos = useCallback((e: React.MouseEvent) => {
+    const el = e.currentTarget
+    const bounds = el.getBoundingClientRect()
+    return { x: e.clientX - bounds.left, y: e.clientY - bounds.top }
+  }, [])
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -192,8 +187,13 @@ export function RegionSelect({ repo, filePath, pageNum, imgRef }: RegionSelectPr
       // SVG natural dimensions match PDF page dimensions in points
       const pdfCoords = toPDFCoords(rect, img, img.naturalWidth, img.naturalHeight)
       const data = await extractRegionText(
-        repo, filePath, pageNum,
-        pdfCoords.x0, pdfCoords.y0, pdfCoords.x1, pdfCoords.y1,
+        repo,
+        filePath,
+        pageNum,
+        pdfCoords.x0,
+        pdfCoords.y0,
+        pdfCoords.x1,
+        pdfCoords.y1,
       )
 
       if (data.text) {
@@ -230,7 +230,14 @@ export function RegionSelect({ repo, filePath, pageNum, imgRef }: RegionSelectPr
         />
       )}
       {result && (
-        <ResultPopup text={result.text} rect={result.rect} repo={repo} filePath={filePath} pageNum={pageNum} onClose={handleClose} />
+        <ResultPopup
+          text={result.text}
+          rect={result.rect}
+          repo={repo}
+          filePath={filePath}
+          pageNum={pageNum}
+          onClose={handleClose}
+        />
       )}
     </div>
   )

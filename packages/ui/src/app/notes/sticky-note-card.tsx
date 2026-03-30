@@ -1,6 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
 import { GripHorizontal, Trash2 } from 'lucide-react'
-import { NOTE_COLORS, type DocumentNote, type DraftDocumentNote, type NoteColor } from '@/types/notes'
+import { useEffect, useRef, useState } from 'react'
+import {
+  type DocumentNote,
+  type DraftDocumentNote,
+  NOTE_COLORS,
+  type NoteColor,
+} from '@/types/notes'
 
 type StickyNoteCardProps = {
   note: DocumentNote | DraftDocumentNote
@@ -237,9 +242,7 @@ export function StickyNoteCard({
             className="min-h-28 w-full resize-none rounded-lg border border-black/10 bg-white/72 p-2 text-sm outline-none ring-0 placeholder:text-slate-500"
             placeholder="写点想法..."
           />
-          <div className="text-[11px] text-slate-600">
-            点击别处自动保存，按 Esc 取消修改
-          </div>
+          <div className="text-[11px] text-slate-600">点击别处自动保存，按 Esc 取消修改</div>
         </div>
       ) : (
         <div className="whitespace-pre-wrap break-words p-3 text-sm text-slate-800">

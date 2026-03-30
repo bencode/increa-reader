@@ -21,7 +21,7 @@ export const useSessionPersistence = (
   sessionId: string | undefined,
   messages: Message[],
   stats: Stats | undefined,
-  onRestore: (data: RestoreResult) => void
+  onRestore: (data: RestoreResult) => void,
 ) => {
   // Restore from localStorage on mount
   useEffect(() => {

@@ -3,12 +3,12 @@
  */
 
 import type { SelectionContext } from '@/contexts/selection-context'
+import { coerce } from '@/lib/coerce'
 import { uploadImage } from '@/lib/upload'
+import type { getDocumentNotesPayload, getVisibleNotesPayload } from '@/stores/note-tool-store'
 import { useViewContext } from '@/stores/view-context'
 import type { BoardAnimation, RendererMode } from '@/types/board'
-import { coerce } from '@/lib/coerce'
 import { compileInstruction } from '../board-viewer/p5-executor'
-import { getDocumentNotesPayload, getVisibleNotesPayload } from '@/stores/note-tool-store'
 
 export type ToolContext = {
   visibleElements: Set<HTMLElement>
@@ -67,11 +67,15 @@ const refreshView = async (): Promise<string> => {
   return 'View refreshed'
 }
 
-const getDocumentNotes = async (ctx: ToolContext): Promise<ReturnType<typeof getDocumentNotesPayload>> => {
+const getDocumentNotes = async (
+  ctx: ToolContext,
+): Promise<ReturnType<typeof getDocumentNotesPayload>> => {
   return ctx.getDocumentNotes()
 }
 
-const getVisibleNotes = async (ctx: ToolContext): Promise<ReturnType<typeof getVisibleNotesPayload>> => {
+const getVisibleNotes = async (
+  ctx: ToolContext,
+): Promise<ReturnType<typeof getVisibleNotesPayload>> => {
   return ctx.getVisibleNotes()
 }
 
@@ -115,7 +119,9 @@ const canvasGetInstructions = async (ctx: ToolContext): Promise<string> => {
   return lines.join('\n')
 }
 
-const canvasSnapshot = async (ctx: ToolContext): Promise<{ absolutePath: string; filename: string }> => {
+const canvasSnapshot = async (
+  ctx: ToolContext,
+): Promise<{ absolutePath: string; filename: string }> => {
   const canvas = ctx.getCanvasElement()
   if (!canvas) {
     throw new Error('No canvas element found. Make sure a board is open with drawings.')
@@ -131,7 +137,10 @@ const canvasSnapshot = async (ctx: ToolContext): Promise<{ absolutePath: string;
   const result = await uploadImage(blob)
 
   if (errorCount > 0) {
-    return { ...result, errorSummary: `${errorCount} instruction(s) have runtime errors` } as { absolutePath: string; filename: string }
+    return { ...result, errorSummary: `${errorCount} instruction(s) have runtime errors` } as {
+      absolutePath: string
+      filename: string
+    }
   }
   return result
 }
@@ -145,7 +154,7 @@ const canvasSetup = async (ctx: ToolContext, args: Record<string, unknown>): Pro
   const fps = coerce('integer', args.fps ?? 60) as number
   const vars = coerce('object', args.vars ?? {}) as Record<string, unknown>
   const controls = args.controls
-    ? coerce('object', args.controls) as Record<string, unknown>
+    ? (coerce('object', args.controls) as Record<string, unknown>)
     : undefined
   const rendererArg = (args.renderer as string | undefined) ?? '2d'
   const rendererMode: RendererMode = rendererArg === 'webgl' ? 'webgl' : '2d'
@@ -165,7 +174,11 @@ const canvasSetup = async (ctx: ToolContext, args: Record<string, unknown>): Pro
 }
 
 const queryHeadingElements = () =>
-  Array.from(document.querySelectorAll('.scroll-body .prose h1, .scroll-body .prose h2, .scroll-body .prose h3, .scroll-body .prose h4, .scroll-body .prose h5, .scroll-body .prose h6'))
+  Array.from(
+    document.querySelectorAll(
+      '.scroll-body .prose h1, .scroll-body .prose h2, .scroll-body .prose h3, .scroll-body .prose h4, .scroll-body .prose h5, .scroll-body .prose h6',
+    ),
+  )
 
 const getHeadings = async (): Promise<unknown> => {
   const els = queryHeadingElements()
@@ -173,11 +186,14 @@ const getHeadings = async (): Promise<unknown> => {
   return els.map(el => ({
     id: el.id,
     text: el.textContent?.trim() ?? '',
-    level: parseInt(el.tagName[1]),
+    level: parseInt(el.tagName[1], 10),
   }))
 }
 
-const scrollToHeading = async (_ctx: ToolContext, args: Record<string, unknown>): Promise<string> => {
+const scrollToHeading = async (
+  _ctx: ToolContext,
+  args: Record<string, unknown>,
+): Promise<string> => {
   const heading = (args.heading as string).trim()
   const els = queryHeadingElements()
   if (els.length === 0) return 'No headings found. The current file may not be a markdown document.'
@@ -194,16 +210,16 @@ const scrollToHeading = async (_ctx: ToolContext, args: Record<string, unknown>)
 }
 
 const toolHandlers: Record<string, ToolHandler> = {
-  get_visible_content: (ctx) => getVisibleContent(ctx),
+  get_visible_content: ctx => getVisibleContent(ctx),
   get_selection: (ctx, args) => getSelection(ctx, args),
   get_current_page: () => getCurrentPage(),
   refresh_view: () => refreshView(),
-  get_document_notes: (ctx) => getDocumentNotes(ctx),
-  get_visible_notes: (ctx) => getVisibleNotes(ctx),
+  get_document_notes: ctx => getDocumentNotes(ctx),
+  get_visible_notes: ctx => getVisibleNotes(ctx),
   canvas_draw: (ctx, args) => canvasDraw(ctx, args),
-  canvas_clear: (ctx) => canvasClear(ctx),
-  canvas_get_instructions: (ctx) => canvasGetInstructions(ctx),
-  canvas_snapshot: (ctx) => canvasSnapshot(ctx),
+  canvas_clear: ctx => canvasClear(ctx),
+  canvas_get_instructions: ctx => canvasGetInstructions(ctx),
+  canvas_snapshot: ctx => canvasSnapshot(ctx),
   canvas_setup: (ctx, args) => canvasSetup(ctx, args),
   get_headings: () => getHeadings(),
   scroll_to_heading: (ctx, args) => scrollToHeading(ctx, args),

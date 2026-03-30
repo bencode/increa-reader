@@ -1,5 +1,5 @@
-import { useCallback, useDeferredValue, useEffect, useState } from 'react'
 import { Search, Settings, X } from 'lucide-react'
+import { useCallback, useDeferredValue, useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -44,7 +44,7 @@ export function LeftPanel() {
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
+            onChange={event => setSearchQuery(event.target.value)}
             placeholder="Filter repositories and files"
             className="pr-9 pl-8"
           />
@@ -62,25 +62,21 @@ export function LeftPanel() {
           )}
         </div>
         <div className="mt-1 h-5 text-xs text-muted-foreground">
-          {isFiltering ? 'Filtering...' : deferredSearchQuery ? `Filtering by "${deferredSearchQuery}"` : ''}
+          {isFiltering
+            ? 'Filtering...'
+            : deferredSearchQuery
+              ? `Filtering by "${deferredSearchQuery}"`
+              : ''}
         </div>
       </div>
 
       <div className="flex-1 overflow-auto">
-        {repos.map((repo) => (
-          <RepoPanel
-            key={repo.name}
-            repoName={repo.name}
-            searchQuery={deferredSearchQuery}
-          />
+        {repos.map(repo => (
+          <RepoPanel key={repo.name} repoName={repo.name} searchQuery={deferredSearchQuery} />
         ))}
       </div>
 
-      <SettingsDrawer
-        open={drawerOpen}
-        onOpenChange={setDrawerOpen}
-        onReposChanged={loadRepos}
-      />
+      <SettingsDrawer open={drawerOpen} onOpenChange={setDrawerOpen} onReposChanged={loadRepos} />
     </div>
   )
 }

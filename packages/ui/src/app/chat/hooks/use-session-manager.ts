@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import type { Session, SessionMetadata } from '@/types/chat'
 
 type SessionsData = {

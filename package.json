@@ -6,8 +6,12 @@
   "type": "module",
   "scripts": {
     "setup": "bash setup.sh",
+    "check": "pnpm --filter @increa-reader/ui check",
     "dev": "pnpm --filter \"./packages/ui\" --filter \"./packages/server\" dev",
     "build": "pnpm --filter \"./packages/*\" build",
+    "lint": "pnpm --filter @increa-reader/ui lint",
+    "lint:fix": "pnpm --filter @increa-reader/ui lint:fix",
+    "format": "pnpm --filter @increa-reader/ui format",
     "test": "pnpm --filter \"./packages/*\" test"
   },
   "devDependencies": {

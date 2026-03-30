@@ -1,5 +1,5 @@
-import { useState } from 'react'
 import { ChevronDown, ChevronUp, Quote, X } from 'lucide-react'
+import { useState } from 'react'
 import { useSelectionQueue } from '@/contexts/selection-context'
 
 export function QuoteBar() {
@@ -10,17 +10,21 @@ export function QuoteBar() {
 
   return (
     <div className="border-t border-border bg-muted/30">
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        className="flex items-center justify-between w-full px-4 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <span className="inline-flex items-center gap-1.5">
-          <Quote className="w-3 h-3" />
-          {items.length} quote{items.length > 1 ? 's' : ''}
-          {expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
-        </span>
+      <div className="flex items-center justify-between px-4 py-1.5 text-xs text-muted-foreground">
         <button
-          onClick={(e) => {
+          type="button"
+          onClick={() => setExpanded(v => !v)}
+          className="flex min-w-0 flex-1 items-center gap-1.5 text-left hover:text-foreground transition-colors"
+        >
+          <Quote className="w-3 h-3" />
+          <span>
+            {items.length} quote{items.length > 1 ? 's' : ''}
+          </span>
+          {expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
+        </button>
+        <button
+          type="button"
+          onClick={e => {
             e.stopPropagation()
             clear()
             setExpanded(false)
@@ -29,7 +33,7 @@ export function QuoteBar() {
         >
           Clear
         </button>
-      </button>
+      </div>
       {expanded && (
         <div className="max-h-48 overflow-y-auto border-t border-border">
           {items.map((item, index) => (
@@ -49,6 +53,7 @@ export function QuoteBar() {
                 )}
               </div>
               <button
+                type="button"
                 onClick={() => remove(index)}
                 className="shrink-0 p-0.5 rounded hover:bg-accent text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
               >

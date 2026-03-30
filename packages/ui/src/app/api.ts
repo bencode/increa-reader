@@ -89,7 +89,11 @@ export async function updateDocumentNote(
   return response.json()
 }
 
-export async function deleteDocumentNote(repo: string, path: string, noteId: string): Promise<void> {
+export async function deleteDocumentNote(
+  repo: string,
+  path: string,
+  noteId: string,
+): Promise<void> {
   const params = new URLSearchParams({ repo, path })
   const response = await fetch(`/api/notes/${encodeURIComponent(noteId)}?${params}`, {
     method: 'DELETE',
@@ -127,7 +131,7 @@ export async function updateConfigRepos(paths: string[]): Promise<RepoConfigInfo
   const response = await fetch('/api/config/repos', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ repos: paths.map((path) => ({ path })) }),
+    body: JSON.stringify({ repos: paths.map(path => ({ path })) }),
   })
   const data = await response.json()
   return data.data
@@ -153,4 +157,4 @@ export async function updateApiSettings(settings: Partial<ApiSettings>): Promise
   return response.json()
 }
 
-export type { TreeNode, RepoInfo, RepoTreeData, RepoConfigInfo }
+export type { RepoConfigInfo, RepoInfo, RepoTreeData, TreeNode }

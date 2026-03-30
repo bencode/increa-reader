@@ -1,12 +1,19 @@
-import { useEffect, useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { fetchApiSettings, updateApiSettings, type ApiSettings } from './api'
+import { type ApiSettings, fetchApiSettings, updateApiSettings } from './api'
 
 export function ApiSettingsForm({ open }: { open: boolean }) {
-  const [saved, setSaved] = useState<ApiSettings>({ base_url: null, api_key: null, default_model: null })
+  const baseUrlId = 'api-settings-base-url'
+  const apiKeyId = 'api-settings-api-key'
+  const defaultModelId = 'api-settings-default-model'
+  const [saved, setSaved] = useState<ApiSettings>({
+    base_url: null,
+    api_key: null,
+    default_model: null,
+  })
   const [baseUrl, setBaseUrl] = useState('')
   const [apiKey, setApiKey] = useState('')
   const [defaultModel, setDefaultModel] = useState('')
@@ -18,7 +25,7 @@ export function ApiSettingsForm({ open }: { open: boolean }) {
   useEffect(() => {
     if (!open) return
     fetchApiSettings()
-      .then((s) => {
+      .then(s => {
         setSaved(s)
         setBaseUrl(s.base_url ?? '')
         setDefaultModel(s.default_model ?? '')
@@ -57,22 +64,31 @@ export function ApiSettingsForm({ open }: { open: boolean }) {
   return (
     <div className="space-y-4 px-4 py-2">
       <div className="space-y-1.5">
-        <label className="text-sm font-medium">Base URL</label>
+        <label htmlFor={baseUrlId} className="text-sm font-medium">
+          Base URL
+        </label>
         <Input
+          id={baseUrlId}
           placeholder="https://api.anthropic.com"
           value={baseUrl}
-          onChange={(e) => setBaseUrl(e.target.value)}
+          onChange={e => setBaseUrl(e.target.value)}
         />
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-sm font-medium">API Key</label>
+        <label htmlFor={apiKeyId} className="text-sm font-medium">
+          API Key
+        </label>
         <div className="relative">
           <Input
+            id={apiKeyId}
             type={showKey ? 'text' : 'password'}
             placeholder={saved.api_key ?? 'sk-ant-...'}
             value={apiKey}
-            onChange={(e) => { setApiKey(e.target.value); setKeyTouched(true) }}
+            onChange={e => {
+              setApiKey(e.target.value)
+              setKeyTouched(true)
+            }}
             className="pr-9"
           />
           <Button
@@ -88,11 +104,14 @@ export function ApiSettingsForm({ open }: { open: boolean }) {
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-sm font-medium">Default Model</label>
+        <label htmlFor={defaultModelId} className="text-sm font-medium">
+          Default Model
+        </label>
         <Input
+          id={defaultModelId}
           placeholder="claude-sonnet-4-20250514"
           value={defaultModel}
-          onChange={(e) => setDefaultModel(e.target.value)}
+          onChange={e => setDefaultModel(e.target.value)}
         />
       </div>
 

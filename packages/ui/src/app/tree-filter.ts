@@ -59,11 +59,11 @@ const filterNode = (node: TreeNode, repoName: string, query: string): FilterNode
   const forcedOpenPaths = new Set<string>()
   const children =
     node.children
-      ?.map((child) => filterNode(child, repoName, query))
-      .filter((result) => result.node !== null) ?? []
+      ?.map(child => filterNode(child, repoName, query))
+      .filter(result => result.node !== null) ?? []
 
   const visibleChildren = children
-    .map((result) => {
+    .map(result => {
       for (const path of result.forcedOpenPaths) {
         forcedOpenPaths.add(path)
       }
@@ -85,7 +85,11 @@ const filterNode = (node: TreeNode, repoName: string, query: string): FilterNode
   }
 }
 
-export const filterTree = (nodes: TreeNode[], query: string, repoName: string): TreeFilterResult => {
+export const filterTree = (
+  nodes: TreeNode[],
+  query: string,
+  repoName: string,
+): TreeFilterResult => {
   const normalizedQuery = normalizeQuery(query)
   if (!normalizedQuery) {
     return {
@@ -97,8 +101,8 @@ export const filterTree = (nodes: TreeNode[], query: string, repoName: string): 
 
   const forcedOpenPaths = new Set<string>()
   const filteredNodes = nodes
-    .map((node) => filterNode(node, repoName, normalizedQuery))
-    .filter((result) => result.node !== null)
+    .map(node => filterNode(node, repoName, normalizedQuery))
+    .filter(result => result.node !== null)
 
   let matchCount = 0
   for (const result of filteredNodes) {
@@ -109,7 +113,9 @@ export const filterTree = (nodes: TreeNode[], query: string, repoName: string): 
   }
 
   return {
-    nodes: filteredNodes.map((result) => result.node).filter((node): node is TreeNode => node !== null),
+    nodes: filteredNodes
+      .map(result => result.node)
+      .filter((node): node is TreeNode => node !== null),
     forcedOpenPaths,
     matchCount,
   }

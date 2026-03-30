@@ -1,19 +1,19 @@
-import { useEffect, useState, useRef } from 'react'
+import { FileQuestion } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
-import { FileQuestion } from 'lucide-react'
+import { useVisibleContent } from '@/contexts/visible-content-context'
+import { useNoteToolStore } from '@/stores/note-tool-store'
+import { useRefreshKey, useSetContext } from '@/stores/view-context'
+import type { BoardFile } from '@/types/board'
 import { fetchPreview } from './api'
-import { PDFViewer } from './pdf-viewer'
-import { ImageViewer } from './image-viewer'
 import { BoardViewer } from './board-viewer'
 import { HtmlViewer } from './html-viewer'
+import { ImageViewer } from './image-viewer'
 import { MarkdownViewer } from './markdown/markdown-viewer'
-import type { BoardFile } from '@/types/board'
-import { useSetContext, useRefreshKey } from '@/stores/view-context'
-import { useVisibleContent } from '@/contexts/visible-content-context'
+import { PDFViewer } from './pdf-viewer'
 import { SelectionToolbar } from './selection/selection-toolbar'
-import { useNoteToolStore } from '@/stores/note-tool-store'
 
 type PreviewData =
   | { type: 'markdown'; body: string }
@@ -57,7 +57,8 @@ export function FileViewer() {
   useEffect(() => {
     if (!repoName || !filePath) return
 
-    const isRouteChange = prevRouteRef.current.repoName !== repoName || prevRouteRef.current.filePath !== filePath
+    const isRouteChange =
+      prevRouteRef.current.repoName !== repoName || prevRouteRef.current.filePath !== filePath
     prevRouteRef.current = { repoName, filePath }
 
     // Update view context (clear pageNumber for non-PDF files)
@@ -65,7 +66,6 @@ export function FileViewer() {
 
     // Only show loading state on route change, not on refresh
     if (isRouteChange) {
-      // eslint-disable-next-line
       setState({ preview: null, loading: true, error: null })
     }
 
@@ -108,12 +108,14 @@ export function FileViewer() {
         root: scrollBody,
         rootMargin: '100px',
         threshold: 0.1,
-      }
+      },
     )
 
     // Observe target elements (prose content, code blocks, PDF pages)
     const targets = scrollBody.querySelectorAll('.prose > *, pre, code, [data-index]')
-    targets.forEach(el => observer.observe(el))
+    targets.forEach(el => {
+      observer.observe(el)
+    })
 
     return () => {
       observer.disconnect()
@@ -183,10 +185,7 @@ export function FileViewer() {
       )}
 
       {preview.type === 'image' && (
-        <ImageViewer
-          src={`/api/raw/${repoName}/${preview.path}`}
-          alt={preview.path}
-        />
+        <ImageViewer src={`/api/raw/${repoName}/${preview.path}`} alt={preview.path} />
       )}
 
       {preview.type === 'pdf' && (

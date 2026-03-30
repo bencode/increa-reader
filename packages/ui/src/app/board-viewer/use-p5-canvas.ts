@@ -1,7 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore, type RefObject } from 'react'
 import p5 from 'p5'
-import type { BoardAnimation, RendererMode } from '@/types/board'
+import {
+  type RefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useSyncExternalStore,
+} from 'react'
 import { setErrors } from '@/stores/board-store'
+import type { BoardAnimation, RendererMode } from '@/types/board'
 import { buildContext, executeInstruction } from './p5-executor'
 
 type CanvasOptions = {
@@ -94,9 +101,19 @@ function createP5Instance(
 function createLoopStore(initial: boolean) {
   let looping = initial
   const listeners = new Set<() => void>()
-  const subscribe = (fn: () => void) => { listeners.add(fn); return () => { listeners.delete(fn) } }
+  const subscribe = (fn: () => void) => {
+    listeners.add(fn)
+    return () => {
+      listeners.delete(fn)
+    }
+  }
   const get = () => looping
-  const set = (v: boolean) => { looping = v; listeners.forEach(fn => fn()) }
+  const set = (v: boolean) => {
+    looping = v
+    listeners.forEach(fn => {
+      fn()
+    })
+  }
   return { subscribe, get, set }
 }
 
@@ -114,7 +131,6 @@ export function useP5Canvas({
   const p5Ref = useRef<p5 | null>(null)
 
   // Stable store — subscribe/get never change identity, created once
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const loopStore = useMemo(() => createLoopStore(animation?.loop ?? false), [])
   const isLooping = useSyncExternalStore(loopStore.subscribe, loopStore.get)
 
@@ -185,7 +201,15 @@ export function useP5Canvas({
     const container = containerRef.current!
 
     if (!p5Ref.current) {
-      const refs: DrawRefs = { positionRef, scaleRef, backgroundRef, instructionsRef, ctxRef, tabKeyRef, rendererRef }
+      const refs: DrawRefs = {
+        positionRef,
+        scaleRef,
+        backgroundRef,
+        instructionsRef,
+        ctxRef,
+        tabKeyRef,
+        rendererRef,
+      }
       p5Ref.current = createP5Instance(container, refs, animation, setupReadyRef, renderer)
     }
 
@@ -202,7 +226,6 @@ export function useP5Canvas({
     return () => {
       observer.disconnect()
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Rebuild p5 instance when renderer mode changes
@@ -214,9 +237,16 @@ export function useP5Canvas({
 
     p5Ref.current?.remove()
     setupReadyRef.current = false
-    const refs: DrawRefs = { positionRef, scaleRef, backgroundRef, instructionsRef, ctxRef, tabKeyRef, rendererRef }
+    const refs: DrawRefs = {
+      positionRef,
+      scaleRef,
+      backgroundRef,
+      instructionsRef,
+      ctxRef,
+      tabKeyRef,
+      rendererRef,
+    }
     p5Ref.current = createP5Instance(container, refs, animationRef.current, setupReadyRef, renderer)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [renderer])
 
   const toggleLoop = useCallback(() => {

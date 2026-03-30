@@ -1,16 +1,18 @@
 import { useEffect, useRef } from 'react'
-import type { SSEMessage } from '@/types/chat'
 import { useSelectionQueue } from '@/contexts/selection-context'
-import { useBoardStore, getTab, setAnimation, setRenderer } from '@/stores/board-store'
-import { executeFrontendTool, type ToolContext } from '../frontend-tools'
-import { useVisibleContent } from '../../../contexts/visible-content-context'
+import { getTab, setAnimation, setRenderer, useBoardStore } from '@/stores/board-store'
 import { getDocumentNotesPayload, getVisibleNotesPayload } from '@/stores/note-tool-store'
+import type { SSEMessage } from '@/types/chat'
+import { useVisibleContent } from '../../../contexts/visible-content-context'
+import { executeFrontendTool, type ToolContext } from '../frontend-tools'
 
 export const useFrontendTools = () => {
   const elementsRef = useVisibleContent()
   const { items } = useSelectionQueue()
   const itemsRef = useRef(items)
-  useEffect(() => { itemsRef.current = items })
+  useEffect(() => {
+    itemsRef.current = items
+  })
 
   useEffect(() => {
     let eventSource: EventSource | null = null
@@ -33,7 +35,7 @@ export const useFrontendTools = () => {
 
             const ctx: ToolContext = {
               visibleElements: elementsRef.current,
-              getSelections: (max) => {
+              getSelections: max => {
                 const all = itemsRef.current
                 return max ? all.slice(0, max) : [...all]
               },
@@ -48,16 +50,16 @@ export const useFrontendTools = () => {
                 })
                 return updated.length
               },
-              boardClear: (tabKey) => {
+              boardClear: tabKey => {
                 const s = useBoardStore.getState()
                 useBoardStore.setState({
                   tabs: { ...s.tabs, [tabKey]: { instructions: [], errors: undefined } },
                 })
               },
-              getBoardInstructions: (tabKey) => {
+              getBoardInstructions: tabKey => {
                 return getTab(useBoardStore.getState(), tabKey).instructions
               },
-              getBoardErrors: (tabKey) => {
+              getBoardErrors: tabKey => {
                 return getTab(useBoardStore.getState(), tabKey).errors
               },
               getActiveTab: () => useBoardStore.getState().activeTab,

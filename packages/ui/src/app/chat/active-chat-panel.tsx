@@ -1,9 +1,9 @@
-import { ChatMessages } from './chat-messages'
+import type { ContextData } from '@/stores/view-context'
+import type { Message, Repo } from '@/types/chat'
 import { ChatInput } from './chat-input'
+import { ChatMessages } from './chat-messages'
 import { ChatStats } from './chat-stats'
 import { QuoteBar } from './selection-queue-panel'
-import type { Message, Repo } from '@/types/chat'
-import type { ContextData } from '@/stores/view-context'
 
 type ActiveChatPanelProps = {
   messages: Message[]

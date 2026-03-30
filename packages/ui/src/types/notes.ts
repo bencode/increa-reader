@@ -27,9 +27,10 @@ export type DocumentNote<TPosition extends NotePosition = NotePosition> = {
   position: TPosition
 }
 
-export type DraftDocumentNote<TPosition extends NotePosition = NotePosition> = DocumentNote<TPosition> & {
-  isDraft: true
-}
+export type DraftDocumentNote<TPosition extends NotePosition = NotePosition> =
+  DocumentNote<TPosition> & {
+    isDraft: true
+  }
 
 export type NoteDocumentContext = {
   repo: string

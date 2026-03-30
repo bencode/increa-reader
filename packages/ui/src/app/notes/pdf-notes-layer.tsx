@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
 import type { RefObject } from 'react'
-import { StickyNoteCard } from './sticky-note-card'
-import { clamp } from './note-utils'
+import { useEffect, useState } from 'react'
 import type { DocumentNote, DraftDocumentNote, NoteColor, PDFNotePosition } from '@/types/notes'
+import { clamp } from './note-utils'
+import { StickyNoteCard } from './sticky-note-card'
 
 type NoteWithDraft = DocumentNote<PDFNotePosition> | DraftDocumentNote<PDFNotePosition>
 
@@ -88,16 +88,14 @@ export function PDFNotesLayer({
                 })
               }}
               onChangeColor={color => onChangeColor(note.id, color)}
-              onSave={content => (
+              onSave={content =>
                 'isDraft' in note && note.isDraft
                   ? onSaveDraft(note, content)
                   : onSaveNote(note as DocumentNote<PDFNotePosition>, content)
-              )}
-              onDelete={() => (
-                'isDraft' in note && note.isDraft
-                  ? onDeleteDraft(note.id)
-                  : onDeleteNote(note.id)
-              )}
+              }
+              onDelete={() =>
+                'isDraft' in note && note.isDraft ? onDeleteDraft(note.id) : onDeleteNote(note.id)
+              }
               onCancel={() => {
                 if ('isDraft' in note && note.isDraft) {
                   onDeleteDraft(note.id)

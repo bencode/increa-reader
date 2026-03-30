@@ -1,5 +1,5 @@
-import { useState } from 'react'
 import { Code, Eye } from 'lucide-react'
+import { useState } from 'react'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { Button } from '@/components/ui/button'
@@ -37,11 +37,7 @@ export function HtmlViewer({ body }: HtmlViewerProps) {
       </div>
 
       {mode === 'preview' ? (
-        <iframe
-          srcDoc={body}
-          className="flex-1 border-0"
-          title="HTML Preview"
-        />
+        <iframe srcDoc={body} className="flex-1 border-0" title="HTML Preview" />
       ) : (
         <div className="flex-1 overflow-auto">
           <SyntaxHighlighter

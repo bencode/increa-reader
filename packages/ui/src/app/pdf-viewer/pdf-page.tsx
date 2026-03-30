@@ -1,17 +1,17 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { FileText, Image as ImageIcon, Loader2 } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
-import { Loader2, FileText, Image as ImageIcon } from 'lucide-react'
+import rehypeKatex from 'rehype-katex'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
-import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
 
-import type { ViewMode, PDFPageData, PDFPageProps } from './types'
-import { RegionSelect } from './region-select'
-import { MermaidBlock } from '@/components/mermaid-block'
 import { PDFNotesLayer } from '@/app/notes/pdf-notes-layer'
+import { MermaidBlock } from '@/components/mermaid-block'
+import { RegionSelect } from './region-select'
+import type { PDFPageData, PDFPageProps, ViewMode } from './types'
 
 type PageToolbarProps = {
   pageNum: number
@@ -38,6 +38,7 @@ function PageToolbar({ pageNum, viewMode, pageData, onViewModeChange }: PageTool
 
       <div className="flex items-center gap-1 bg-secondary/50 rounded p-0.5">
         <button
+          type="button"
           onClick={() => onViewModeChange('svg')}
           className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
             viewMode === 'svg' ? 'bg-background shadow-sm font-medium' : 'hover:bg-background/50'
@@ -48,6 +49,7 @@ function PageToolbar({ pageNum, viewMode, pageData, onViewModeChange }: PageTool
           PDF
         </button>
         <button
+          type="button"
           onClick={() => onViewModeChange('markdown')}
           className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
             viewMode === 'markdown'
@@ -104,26 +106,27 @@ function SVGContent({
         className="w-full h-auto shadow-lg rounded"
         loading="lazy"
       />
-      <RegionSelect
-        repo={repo}
-        filePath={filePath}
-        pageNum={pageNum}
-        imgRef={imgRef}
-      />
-      {onCreateDraft && onMoveNote && onChangeColor && onSaveDraft && onSaveNote && onDeleteDraft && onDeleteNote && (
-        <PDFNotesLayer
-          pageNum={pageNum}
-          notes={[...(notes ?? []), ...(draftNotes ?? [])]}
-          containerRef={containerRef}
-          onCreateDraft={onCreateDraft}
-          onMoveNote={onMoveNote}
-          onChangeColor={onChangeColor}
-          onSaveDraft={onSaveDraft}
-          onSaveNote={onSaveNote}
-          onDeleteDraft={onDeleteDraft}
-          onDeleteNote={onDeleteNote}
-        />
-      )}
+      <RegionSelect repo={repo} filePath={filePath} pageNum={pageNum} imgRef={imgRef} />
+      {onCreateDraft &&
+        onMoveNote &&
+        onChangeColor &&
+        onSaveDraft &&
+        onSaveNote &&
+        onDeleteDraft &&
+        onDeleteNote && (
+          <PDFNotesLayer
+            pageNum={pageNum}
+            notes={[...(notes ?? []), ...(draftNotes ?? [])]}
+            containerRef={containerRef}
+            onCreateDraft={onCreateDraft}
+            onMoveNote={onMoveNote}
+            onChangeColor={onChangeColor}
+            onSaveDraft={onSaveDraft}
+            onSaveNote={onSaveNote}
+            onDeleteDraft={onDeleteDraft}
+            onDeleteNote={onDeleteNote}
+          />
+        )}
     </div>
   )
 }
@@ -220,7 +223,7 @@ export function PDFPage({
 
     try {
       const response = await fetch(
-        `/api/pdf/page?repo=${encodeURIComponent(repo)}&path=${encodeURIComponent(filePath)}&page=${pageNum}`
+        `/api/pdf/page?repo=${encodeURIComponent(repo)}&path=${encodeURIComponent(filePath)}&page=${pageNum}`,
       )
 
       if (!response.ok) {

@@ -1,15 +1,14 @@
-import { useRef, useState, useEffect } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { BookOpen, ChevronLeft, ChevronRight } from 'lucide-react'
-
+import { useEffect, useRef, useState } from 'react'
+import { createDraftPDFNote } from '@/app/notes/note-utils'
+import { useDocumentNotes } from '@/app/notes/use-document-notes'
+import { useNoteToolStore } from '@/stores/note-tool-store'
+import { useSetContext } from '@/stores/view-context'
+import type { DraftDocumentNote, PDFNotePosition } from '@/types/notes'
+import { SelectionToolbar } from '../selection/selection-toolbar'
 import { PDFPage } from './pdf-page'
 import type { PDFViewerProps, ViewMode } from './types'
-import { useSetContext } from '@/stores/view-context'
-import { SelectionToolbar } from '../selection/selection-toolbar'
-import { useDocumentNotes } from '@/app/notes/use-document-notes'
-import { createDraftPDFNote } from '@/app/notes/note-utils'
-import { useNoteToolStore } from '@/stores/note-tool-store'
-import type { DraftDocumentNote, PDFNotePosition } from '@/types/notes'
 
 type PDFHeaderProps = {
   title: string
@@ -57,6 +56,7 @@ function PDFPagination({ currentPage, totalPages, onPageChange }: PDFPaginationP
     <div className="border-t bg-background p-3">
       <div className="flex items-center justify-center gap-4">
         <button
+          type="button"
           onClick={() => onPageChange(Math.max(1, currentPage - 1))}
           disabled={currentPage <= 1}
           className="p-2 rounded hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed"
@@ -77,6 +77,7 @@ function PDFPagination({ currentPage, totalPages, onPageChange }: PDFPaginationP
         </form>
 
         <button
+          type="button"
           onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
           disabled={currentPage >= totalPages}
           className="p-2 rounded hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed"
@@ -147,9 +148,9 @@ export function PDFViewer({ repo, filePath, metadata }: PDFViewerProps) {
     }))
 
     useNoteToolStore.getState().setNotes(standardized)
-    useNoteToolStore.getState().setVisibleNotes(
-      standardized.filter(note => note.locator.page === currentPage),
-    )
+    useNoteToolStore
+      .getState()
+      .setVisibleNotes(standardized.filter(note => note.locator.page === currentPage))
   }, [notes, currentPage])
 
   useEffect(() => {
@@ -197,7 +198,9 @@ export function PDFViewer({ repo, filePath, metadata }: PDFViewerProps) {
                 onMoveNote={(noteId, position) => {
                   const draft = draftNotes.find(note => note.id === noteId)
                   if (draft) {
-                    setDraftNotes(prev => prev.map(note => note.id === noteId ? { ...note, position } : note))
+                    setDraftNotes(prev =>
+                      prev.map(note => (note.id === noteId ? { ...note, position } : note)),
+                    )
                     return
                   }
 
@@ -212,7 +215,9 @@ export function PDFViewer({ repo, filePath, metadata }: PDFViewerProps) {
                 onChangeColor={async (noteId, color) => {
                   const draft = draftNotes.find(note => note.id === noteId)
                   if (draft) {
-                    setDraftNotes(prev => prev.map(note => note.id === noteId ? { ...note, color } : note))
+                    setDraftNotes(prev =>
+                      prev.map(note => (note.id === noteId ? { ...note, color } : note)),
+                    )
                     return
                   }
 
@@ -249,7 +254,7 @@ export function PDFViewer({ repo, filePath, metadata }: PDFViewerProps) {
                 onDeleteNote={deleteNote}
                 onHeightChange={pageNum => {
                   rowVirtualizer.measureElement(
-                    parentRef.current?.querySelector(`[data-index="${pageNum - 1}"]`) || undefined
+                    parentRef.current?.querySelector(`[data-index="${pageNum - 1}"]`) || undefined,
                   )
                 }}
               />

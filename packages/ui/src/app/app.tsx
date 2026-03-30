@@ -1,9 +1,8 @@
-import { Routes, Route } from 'react-router-dom'
-
-import { Layout } from './layout'
-import { FileViewer } from './file-viewer'
-import { BoardViewer } from './board-viewer'
+import { Route, Routes } from 'react-router-dom'
 import { VisibleContentProvider } from '../contexts/visible-content-context'
+import { BoardViewer } from './board-viewer'
+import { FileViewer } from './file-viewer'
+import { Layout } from './layout'
 
 function HomePage() {
   return (

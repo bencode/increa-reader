@@ -1,5 +1,5 @@
-import { ChatMessages } from './chat-messages'
 import type { Message } from '@/types/chat'
+import { ChatMessages } from './chat-messages'
 
 type HistoryPanelProps = {
   messages: Message[]

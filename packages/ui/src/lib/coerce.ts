@@ -8,12 +8,12 @@
 type JsonSchemaType = 'boolean' | 'integer' | 'number' | 'object' | 'array' | 'string'
 
 const typeChecks: Record<JsonSchemaType, (v: unknown) => boolean> = {
-  boolean: (v) => typeof v === 'boolean',
-  integer: (v) => typeof v === 'number' && Number.isInteger(v),
-  number: (v) => typeof v === 'number',
-  object: (v) => typeof v === 'object' && v !== null && !Array.isArray(v),
-  array: (v) => Array.isArray(v),
-  string: (v) => typeof v === 'string',
+  boolean: v => typeof v === 'boolean',
+  integer: v => typeof v === 'number' && Number.isInteger(v),
+  number: v => typeof v === 'number',
+  object: v => typeof v === 'object' && v !== null && !Array.isArray(v),
+  array: v => Array.isArray(v),
+  string: v => typeof v === 'string',
 }
 
 function parseLoose(str: string): unknown {

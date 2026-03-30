@@ -1,8 +1,8 @@
-import { type Dispatch, type SetStateAction } from 'react'
-import type { Session } from '@/types/chat'
-import type { useSessionManager } from './use-session-manager'
+import type { Dispatch, SetStateAction } from 'react'
 import { useEventCallback } from '@/hooks/use-event-callback'
+import type { Session } from '@/types/chat'
 import { HELP_TEXT } from '../utils'
+import type { useSessionManager } from './use-session-manager'
 
 type CommandContext = {
   currentSession: Session | null
@@ -146,7 +146,7 @@ export const useCommands = (ctx: CommandContext) => {
         const sessions = sessionManager.sessions
         let targetId = args
         const index = parseInt(args, 10)
-        if (!isNaN(index) && index > 0 && index <= sessions.length) {
+        if (!Number.isNaN(index) && index > 0 && index <= sessions.length) {
           targetId = sessions[index - 1].id
         }
         try {
@@ -178,11 +178,15 @@ export const useCommands = (ctx: CommandContext) => {
 
       model: () => {
         if (!args) {
-          setCurrentSession(prev => prev ? { ...prev, model: undefined, lastActiveAt: Date.now() } : prev)
+          setCurrentSession(prev =>
+            prev ? { ...prev, model: undefined, lastActiveAt: Date.now() } : prev,
+          )
           addMessage('system', 'Model reset to default')
           return
         }
-        setCurrentSession(prev => prev ? { ...prev, model: args, lastActiveAt: Date.now() } : prev)
+        setCurrentSession(prev =>
+          prev ? { ...prev, model: args, lastActiveAt: Date.now() } : prev,
+        )
         addMessage('system', `Model switched to **${args}**`)
       },
 
@@ -194,7 +198,7 @@ export const useCommands = (ctx: CommandContext) => {
         const sessions = sessionManager.sessions
         let targetId = args
         const index = parseInt(args, 10)
-        if (!isNaN(index) && index > 0 && index <= sessions.length) {
+        if (!Number.isNaN(index) && index > 0 && index <= sessions.length) {
           targetId = sessions[index - 1].id
         }
         try {

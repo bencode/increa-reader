@@ -63,13 +63,16 @@ pnpm dev
 ## 常用命令
 
 ```bash
+pnpm check
 pnpm dev
 pnpm build
 pnpm test
 
 pnpm --filter @increa-reader/ui dev
-pnpm --filter @increa-reader/ui typecheck
+pnpm --filter @increa-reader/ui check
 pnpm --filter @increa-reader/ui lint
+pnpm --filter @increa-reader/ui lint:fix
+pnpm --filter @increa-reader/ui format
 
 pnpm --filter @increa-reader/server dev
 pnpm --filter @increa-reader/server test

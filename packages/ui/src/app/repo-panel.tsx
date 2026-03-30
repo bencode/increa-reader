@@ -1,6 +1,6 @@
+import { ChevronDown, ChevronRight, RefreshCw } from 'lucide-react'
 import { useCallback, useEffect, useState, useTransition } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ChevronDown, ChevronRight, RefreshCw } from 'lucide-react'
 
 import { fetchRepoTree, type TreeNode } from './api'
 import { FileTree } from './file-tree'
@@ -65,7 +65,7 @@ export function RepoPanel({ repoName, searchQuery }: RepoPanelProps) {
 
   const toggleCollapse = () => {
     if (searchActive) return
-    setIsCollapsed((v) => !v)
+    setIsCollapsed(v => !v)
   }
 
   const isEffectivelyCollapsed = searchActive ? false : isCollapsed
@@ -91,7 +91,8 @@ export function RepoPanel({ repoName, searchQuery }: RepoPanelProps) {
           )}
         </div>
         <button
-          onClick={(e) => {
+          type="button"
+          onClick={e => {
             e.stopPropagation()
             loadTree()
           }}
@@ -114,7 +115,7 @@ export function RepoPanel({ repoName, searchQuery }: RepoPanelProps) {
             selectedPath={currentPath}
             searchActive={searchActive}
             forcedOpenPaths={filterResult.forcedOpenPaths}
-            onFileClick={(path) => {
+            onFileClick={path => {
               const cleanPath = path.startsWith('/') ? path.slice(1) : path
               navigate(`/views/${repoName}/${cleanPath}`)
             }}

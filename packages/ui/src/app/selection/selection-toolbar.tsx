@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { collectSelectionContext, useSelectionQueue } from '@/contexts/selection-context'
 import { useViewContext } from '@/stores/view-context'
@@ -107,6 +107,7 @@ export function SelectionToolbar({ containerRef }: SelectionToolbarProps) {
       className="flex items-center gap-0.5 bg-popover border border-border rounded-lg shadow-lg px-1 py-1"
     >
       <button
+        type="button"
         onClick={handleSelect}
         className="px-2.5 py-1 text-xs rounded-md hover:bg-accent hover:text-accent-foreground transition-colors whitespace-nowrap"
       >

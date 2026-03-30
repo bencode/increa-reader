@@ -1,4 +1,4 @@
-import { createContext, useContext, useRef, type ReactNode } from 'react'
+import { createContext, type ReactNode, useContext, useRef } from 'react'
 
 type VisibleElementsRef = { current: Set<HTMLElement> }
 
@@ -7,7 +7,9 @@ const VisibleContentContext = createContext<VisibleElementsRef | null>(null)
 export function VisibleContentProvider({ children }: { children: ReactNode }) {
   const elementsRef = useRef<Set<HTMLElement>>(new Set())
 
-  return <VisibleContentContext.Provider value={elementsRef}>{children}</VisibleContentContext.Provider>
+  return (
+    <VisibleContentContext.Provider value={elementsRef}>{children}</VisibleContentContext.Provider>
+  )
 }
 
 export function useVisibleContent() {

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
 import { Palette, SquarePen, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { NOTE_COLORS, type NoteColor } from '@/types/notes'
 
 type AnnotationToolbarProps = {
@@ -42,7 +42,9 @@ export function AnnotationToolbar({
   }, [placementColor, onCancelPlacement])
 
   return (
-    <div className={`pointer-events-auto absolute z-40 flex flex-col items-end gap-2 ${positionClassName}`}>
+    <div
+      className={`pointer-events-auto absolute z-40 flex flex-col items-end gap-2 ${positionClassName}`}
+    >
       <div className="flex items-center gap-2">
         <button
           type="button"
@@ -83,7 +85,9 @@ export function AnnotationToolbar({
                 setOpen(false)
               }}
               className={`h-6 w-6 rounded-full border transition-transform hover:scale-105 ${colorClassMap[color]} ${
-                placementColor === color ? 'ring-2 ring-ring ring-offset-2 ring-offset-background' : ''
+                placementColor === color
+                  ? 'ring-2 ring-ring ring-offset-2 ring-offset-background'
+                  : ''
               }`}
               title={`选择${color}便签`}
             />
@@ -93,9 +97,7 @@ export function AnnotationToolbar({
 
       {(placementColor || disabledMessage) && (
         <div className="max-w-56 rounded-lg border border-border/70 bg-background/90 px-3 py-2 text-right text-xs text-muted-foreground shadow-sm backdrop-blur">
-          {placementColor
-            ? '点击页面放置便签，拖到合适位置后保存，Esc 取消'
-            : disabledMessage}
+          {placementColor ? '点击页面放置便签，拖到合适位置后保存，Esc 取消' : disabledMessage}
         </div>
       )}
     </div>
