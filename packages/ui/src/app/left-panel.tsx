@@ -4,6 +4,7 @@ import { useCallback, useDeferredValue, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { fetchRepos, type RepoInfo } from './api'
+import { getLeftPanelSearchStatus } from './left-panel-search-status'
 import { RepoPanel } from './repo-panel'
 import { SettingsDrawer } from './settings-drawer'
 
@@ -14,6 +15,7 @@ export function LeftPanel() {
   const [searchQuery, setSearchQuery] = useState('')
   const deferredSearchQuery = useDeferredValue(searchQuery)
   const isFiltering = searchQuery !== deferredSearchQuery
+  const searchStatusText = getLeftPanelSearchStatus(deferredSearchQuery, isFiltering)
 
   const loadRepos = useCallback(() => {
     fetchRepos()
@@ -61,13 +63,9 @@ export function LeftPanel() {
             </Button>
           )}
         </div>
-        <div className="mt-1 h-5 text-xs text-muted-foreground">
-          {isFiltering
-            ? 'Filtering...'
-            : deferredSearchQuery
-              ? `Filtering by "${deferredSearchQuery}"`
-              : ''}
-        </div>
+        {searchStatusText ? (
+          <div className="mt-1 text-xs text-muted-foreground">{searchStatusText}</div>
+        ) : null}
       </div>
 
       <div className="flex-1 overflow-auto">
