@@ -1,11 +1,10 @@
 import { FileQuestion } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { useParams } from 'react-router-dom'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { useVisibleContent } from '@/contexts/visible-content-context'
 import { useNoteToolStore } from '@/stores/note-tool-store'
-import { useRefreshKey, useSetContext } from '@/stores/view-context'
+import { useRefreshKey } from '@/stores/view-context'
 import type { BoardFile } from '@/types/board'
 import { fetchPreview } from './api'
 import { BoardViewer } from './board-viewer'
@@ -36,8 +35,12 @@ type PDFMetadata = {
   encrypted: boolean
 }
 
-export function FileViewer() {
-  const { repoName, '*': filePath } = useParams<{ repoName: string; '*': string }>()
+type FileViewerProps = {
+  repo: string
+  path: string
+}
+
+export function FileViewer({ repo, path }: FileViewerProps) {
   const [state, setState] = useState<{
     preview: PreviewData | null
     loading: boolean
@@ -47,30 +50,31 @@ export function FileViewer() {
     loading: true,
     error: null,
   })
-  const setContext = useSetContext()
   const refreshKey = useRefreshKey()
   const scrollBodyRef = useRef<HTMLDivElement>(null)
   const elementsRef = useVisibleContent()
-  const prevRouteRef = useRef({ repoName, filePath })
+  const fetchedFileRef = useRef<string | null>(null)
+  const fetchedRefreshKeyRef = useRef<number | null>(null)
   const fetchIdRef = useRef(0)
 
   useEffect(() => {
-    if (!repoName || !filePath) return
+    if (!repo || !path) return
 
-    const isRouteChange =
-      prevRouteRef.current.repoName !== repoName || prevRouteRef.current.filePath !== filePath
-    prevRouteRef.current = { repoName, filePath }
+    const fileKey = `${repo}:${path}`
+    const isSameFetch =
+      fetchedFileRef.current === fileKey && fetchedRefreshKeyRef.current === refreshKey
+    if (isSameFetch) return
 
-    // Update view context (clear pageNumber for non-PDF files)
-    setContext({ repo: repoName, path: filePath, pageNumber: null })
+    const isRouteChange = fetchedFileRef.current !== fileKey
+    fetchedFileRef.current = fileKey
+    fetchedRefreshKeyRef.current = refreshKey
 
-    // Only show loading state on route change, not on refresh
     if (isRouteChange) {
       setState({ preview: null, loading: true, error: null })
     }
 
     const id = ++fetchIdRef.current
-    fetchPreview(repoName, filePath)
+    fetchPreview(repo, path)
       .then(data => {
         if (id === fetchIdRef.current) {
           setState({ preview: data, loading: false, error: null })
@@ -81,26 +85,23 @@ export function FileViewer() {
           setState({ preview: null, loading: false, error: err.message || 'Failed to load file' })
         }
       })
-  }, [repoName, filePath, setContext, refreshKey])
+  }, [repo, path, refreshKey])
 
   // Setup IntersectionObserver to track visible elements
   useEffect(() => {
     const scrollBody = scrollBodyRef.current
     if (!scrollBody) return
 
-    // Capture ref value for cleanup
-    const elements = elementsRef.current
-
-    // Clear previous elements
-    elements.clear()
+    const elementsSet = elementsRef.current
+    const observedElements = new Set<HTMLElement>()
 
     const observer = new IntersectionObserver(
       entries => {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
-            elementsRef.current.add(entry.target as HTMLElement)
+            elementsSet.add(entry.target as HTMLElement)
           } else {
-            elementsRef.current.delete(entry.target as HTMLElement)
+            elementsSet.delete(entry.target as HTMLElement)
           }
         })
       },
@@ -115,11 +116,14 @@ export function FileViewer() {
     const targets = scrollBody.querySelectorAll('.prose > *, pre, code, [data-index]')
     targets.forEach(el => {
       observer.observe(el)
+      observedElements.add(el as HTMLElement)
     })
 
     return () => {
       observer.disconnect()
-      elements.clear()
+      observedElements.forEach(el => {
+        elementsSet.delete(el)
+      })
     }
   }, [state.preview, elementsRef])
 
@@ -160,8 +164,8 @@ export function FileViewer() {
       <div className="h-full relative">
         <MarkdownViewer
           body={preview.body}
-          repoName={repoName!}
-          filePath={filePath!}
+          repoName={repo}
+          filePath={path}
           elementsRef={elementsRef}
         />
       </div>
@@ -185,15 +189,15 @@ export function FileViewer() {
       )}
 
       {preview.type === 'image' && (
-        <ImageViewer src={`/api/raw/${repoName}/${preview.path}`} alt={preview.path} />
+        <ImageViewer src={`/api/raw/${repo}/${preview.path}`} alt={preview.path} />
       )}
 
       {preview.type === 'pdf' && (
-        <PDFViewer repo={repoName!} filePath={preview.path} metadata={preview.metadata} />
+        <PDFViewer repo={repo} filePath={preview.path} metadata={preview.metadata} />
       )}
 
       {preview.type === 'board' && (
-        <BoardViewer repo={repoName} filePath={preview.path} data={preview.data} />
+        <BoardViewer repo={repo} filePath={preview.path} data={preview.data} />
       )}
 
       {preview.type === 'unsupported' && (

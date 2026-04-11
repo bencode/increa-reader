@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createDraftPDFNote } from '@/app/notes/note-utils'
 import { useDocumentNotes } from '@/app/notes/use-document-notes'
 import { useNoteToolStore } from '@/stores/note-tool-store'
-import { useSetContext } from '@/stores/view-context'
+import { makeTabId, useTabsStore } from '@/stores/tabs-store'
 import type { DraftDocumentNote, PDFNotePosition } from '@/types/notes'
 import { SelectionToolbar } from '../selection/selection-toolbar'
 import { PDFPage } from './pdf-page'
@@ -90,12 +90,17 @@ function PDFPagination({ currentPage, totalPages, onPageChange }: PDFPaginationP
   )
 }
 
+const ESTIMATED_PAGE_SIZE = 1000
+
 export function PDFViewer({ repo, filePath, metadata }: PDFViewerProps) {
   const parentRef = useRef<HTMLDivElement>(null)
-  const [currentPage, setCurrentPage] = useState(1)
+  const tabId = makeTabId(repo, filePath)
+  const [initialPage] = useState(
+    () => useTabsStore.getState().tabs.find(t => t.id === tabId)?.pageNumber ?? 1,
+  )
+  const [currentPage, setCurrentPage] = useState(initialPage)
   const [viewMode, setViewMode] = useState<ViewMode>('svg')
   const [draftNotes, setDraftNotes] = useState<DraftDocumentNote<PDFNotePosition>[]>([])
-  const setContext = useSetContext()
   const { notes, createNote, updateNote, deleteNote } = useDocumentNotes<PDFNotePosition>(
     repo,
     filePath,
@@ -105,13 +110,13 @@ export function PDFViewer({ repo, filePath, metadata }: PDFViewerProps) {
   const rowVirtualizer = useVirtualizer({
     count: metadata.page_count,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 1000,
+    estimateSize: () => ESTIMATED_PAGE_SIZE,
     overscan: 2,
+    initialOffset: (initialPage - 1) * ESTIMATED_PAGE_SIZE,
   })
 
   const items = rowVirtualizer.getVirtualItems()
 
-  // 追踪可见项中间的页面
   useEffect(() => {
     if (items.length > 0) {
       const middleIndex = items[Math.floor(items.length / 2)].index
@@ -119,17 +124,14 @@ export function PDFViewer({ repo, filePath, metadata }: PDFViewerProps) {
     }
   }, [items])
 
-  // 更新 context 中的页码
   useEffect(() => {
-    setContext({ pageNumber: currentPage })
-  }, [currentPage, setContext])
+    useTabsStore.getState().setPageNumber(tabId, currentPage)
+  }, [currentPage, tabId])
 
-  // 跳转到指定页面
   const scrollToPage = (page: number) => {
     rowVirtualizer.scrollToIndex(page - 1, { align: 'center' })
   }
 
-  // 提取文件名作为 fallback 标题
   const fileName = filePath.split('/').pop() || 'document.pdf'
   const displayTitle = metadata.title || fileName
 

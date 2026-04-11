@@ -1,8 +1,8 @@
 import { Route, Routes } from 'react-router-dom'
 import { VisibleContentProvider } from '../contexts/visible-content-context'
 import { BoardViewer } from './board-viewer'
-import { FileViewer } from './file-viewer'
 import { Layout } from './layout'
+import { TabbedViewer } from './tabs/tabbed-viewer'
 
 function HomePage() {
   return (
@@ -19,7 +19,7 @@ function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/board" element={<BoardViewer />} />
-          <Route path="/views/:repoName/*" element={<FileViewer />} />
+          <Route path="/views/:repoName/*" element={<TabbedViewer />} />
         </Route>
       </Routes>
     </VisibleContentProvider>

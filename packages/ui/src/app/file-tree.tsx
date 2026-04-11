@@ -71,7 +71,7 @@ const TYPE_TO_ICON: Record<FileIconType, React.ReactElement> = {
   default: <File className="size-4 shrink-0 text-gray-400" />,
 }
 
-function getFileIcon(filename: string) {
+export function getFileIcon(filename: string) {
   const ext = filename.split('.').pop()?.toLowerCase()
   const type = ext ? EXT_TO_TYPE[ext] || 'default' : 'default'
   return TYPE_TO_ICON[type]
