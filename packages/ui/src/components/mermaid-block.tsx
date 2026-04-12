@@ -40,6 +40,8 @@ export function MermaidBlock({ code }: { code: string }) {
           setError(err instanceof Error ? err.message : 'Failed to render mermaid diagram')
           container.innerHTML = ''
         }
+        // Clean up orphaned mermaid error element inserted into document.body
+        document.getElementById(idRef.current)?.remove()
       }
     }
 
@@ -47,6 +49,7 @@ export function MermaidBlock({ code }: { code: string }) {
 
     return () => {
       cancelled = true
+      document.getElementById(idRef.current)?.remove()
     }
   }, [code])
 
