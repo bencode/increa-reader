@@ -5,14 +5,46 @@ The chat backend is powered by the Claude Code SDK stack via `claude-agent-sdk`.
 
 ## Features
 
-- Three-panel workspace: repository tree, document viewer, and chat
-- Multi-repository browsing with left-panel filtering
+### Multi-format Document Viewer
+
+- **Markdown** — GFM, KaTeX math formulas, Mermaid diagrams, heading outline with scroll sync
+- **PDF** — dual modes: native SVG rendering and Markdown reading view; region selection and text extraction
+- **Code** — syntax highlighting for 50+ languages
+- **Images** — auto-scaled preview
+- **HTML** — iframe rendering with source toggle
+- **Board** — interactive p5.js canvas with 2D/WebGL 3D drawing, animation, and interactive controls
+
+### Workspace
+
+- Three-panel layout: repository tree, document viewer, and AI chat
+- Multi-repository browsing with file tree filtering
+- Tabbed file viewer for multiple files simultaneously
 - In-app settings for repository paths and API configuration
-- Preview support for Markdown, PDF, code, images, HTML, and `.board`
-- Dual PDF reading modes: native PDF view and Markdown reading view
-- Notes for Markdown and PDF documents
-- AI tools that can read visible content, selections, the current PDF page, and notes
-- `.board` support powered by p5.js drawing instructions and snapshots
+
+### AI Chat
+
+- Streaming conversation with Claude, powered by `claude-agent-sdk`
+- Session history and persistence
+- Context-aware tools: read visible content, selections, current PDF page, and notes
+- Image upload via clipboard paste
+- Canvas drawing and screenshot tools for `.board` files
+
+### Notes
+
+- Sticky notes for Markdown and PDF documents
+- Markdown notes anchored to heading paths and block positions
+- PDF notes anchored by page and coordinate ratios
+- Color options: yellow, blue, green, pink
+- AI tools can read document-wide and visible notes
+
+### Board / Canvas
+
+- p5.js drawing instructions with live rendering
+- WebGL 3D support (box, sphere, lighting, camera, etc.)
+- KaTeX math formula rendering on canvas
+- Animation loop with configurable FPS and persistent variables
+- Interactive controls: range sliders, number inputs
+- Save/load board state, screenshot snapshots
 
 ## Quick Start
 
@@ -24,10 +56,10 @@ cd increa-reader
 pnpm run setup
 ```
 
-`setup` installs frontend dependencies, creates `packages/server/.venv`, and generates
-`packages/server/.env`.
+`setup` checks prerequisites (Node.js 22+, Python 3.10+, pnpm), installs all dependencies,
+creates `packages/server/.venv`, and generates `packages/server/.env`.
 
-### 2. Configure repositories and AI
+### 2. Configure
 
 Edit `packages/server/.env`:
 
@@ -36,17 +68,14 @@ INCREA_REPO="/path/to/repo1:/path/to/repo2"
 ANTHROPIC_API_KEY="your-api-key"
 ```
 
-The SDK currently reads `ANTHROPIC_*` variables. If you use a Claude-compatible proxy, keep the same
-variable names and point `ANTHROPIC_BASE_URL` at your proxy.
+You can also configure repositories and API settings from the UI settings drawer after starting the app.
 
-If you use a proxy:
+If you use a Claude-compatible proxy:
 
 ```bash
 ANTHROPIC_BASE_URL="https://your-proxy-url/api/anthropic"
 ANTHROPIC_AUTH_TOKEN="your-proxy-token"
 ```
-
-You can also start the app first and configure repositories from the UI settings drawer.
 
 ### 3. Start development
 
@@ -59,39 +88,30 @@ pnpm dev
 
 ## Common Commands
 
+| Command | Description |
+|---------|-------------|
+| `pnpm dev` | Start frontend and backend concurrently |
+| `pnpm build` | Build all packages |
+| `pnpm check` | Run typecheck and lint |
+| `pnpm lint` | Lint frontend code (Biome) |
+| `pnpm lint:fix` | Lint and auto-fix |
+| `pnpm format` | Format frontend code (Biome) |
+| `pnpm test` | Run all tests |
+
+Filter to a single package with `--filter`:
+
 ```bash
-pnpm check
-pnpm dev
-pnpm build
-pnpm test
-pnpm lint
-pnpm lint:fix
-pnpm format
-
 pnpm --filter @increa-reader/ui dev
-pnpm --filter @increa-reader/ui check
-pnpm --filter @increa-reader/ui lint
-pnpm --filter @increa-reader/ui lint:fix
-pnpm --filter @increa-reader/ui format
-pnpm --filter @increa-reader/ui test
-
 pnpm --filter @increa-reader/server dev
-pnpm --filter @increa-reader/server test
 ```
-
-## Notes
-
-- Notes are currently supported for Markdown and PDF documents only.
-- Markdown notes are anchored to document blocks.
-- PDF notes are anchored by `page + ratio`.
-- PDF notes appear only in the native PDF view, not in the PDF Markdown view.
-- AI tools can read both document-wide notes and currently visible notes.
 
 ## Packages
 
-- `packages/ui`: React 19 + TypeScript + Vite + Biome
-- `packages/server`: FastAPI + `claude-agent-sdk` (Claude Code SDK stack) + PyMuPDF
-- `packages/pdf-reader-mcp`: PDF MCP service
+| Package | Stack |
+|---------|-------|
+| `packages/ui` | React 19, TypeScript, Vite (rolldown-vite), Tailwind CSS 4, shadcn/ui, Zustand |
+| `packages/server` | FastAPI, claude-agent-sdk, PyMuPDF |
+| `packages/pdf-reader-mcp` | Standalone MCP server for PDF reading (can be registered in Claude Code / Claude Desktop) |
 
 ## Troubleshooting
 
@@ -104,17 +124,16 @@ packages/server/.venv/bin/pip install -r packages/server/requirements.txt
 
 **Chat is not available**
 
-Check that `ANTHROPIC_API_KEY` is set in `packages/server/.env`. The backend uses the Claude Code
-SDK environment naming, so `ANTHROPIC_*` is expected here.
+Check that `ANTHROPIC_API_KEY` is set in `packages/server/.env`.
 
 **No repositories are shown**
 
-Check `INCREA_REPO`, or reconfigure repositories from the UI settings drawer.
+Check `INCREA_REPO` in `.env`, or configure from the UI settings drawer.
 
-**You changed the backend port**
+**Backend port changed**
 
 If you change `PORT`, update the proxy target in `packages/ui/vite.config.ts`.
 
 ## License
 
-Private repository
+MIT
