@@ -8,6 +8,7 @@ import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import 'katex/dist/katex.min.css'
 import { ListTree } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { MarkdownNotesLayer } from '@/app/notes/markdown-notes-layer'
 import { MermaidBlock } from '@/components/mermaid-block'
 import { useExternalLinks } from '@/hooks/use-external-links'
@@ -104,19 +105,22 @@ export function MarkdownViewer({ body, repoName, filePath, elementsRef }: Markdo
         if (match?.[1] === 'mermaid') {
           return <MermaidBlock code={String(children).replace(/\n$/, '')} />
         }
-        return match ? (
-          <SyntaxHighlighter
-            language={match[1]}
-            /* @ts-expect-error SyntaxHighlighter style type mismatch */
-            style={vscDarkPlus}
-            PreTag="div"
-            customStyle={{ margin: 0, padding: 0, background: 'transparent' }}
-            {...props}
-          >
-            {String(children).replace(/\n$/, '')}
-          </SyntaxHighlighter>
-        ) : (
-          <code className={className} {...props}>
+        if (match) {
+          return (
+            <SyntaxHighlighter
+              language={match[1]}
+              /* @ts-expect-error SyntaxHighlighter style type mismatch */
+              style={vscDarkPlus}
+              PreTag="div"
+              customStyle={{ margin: 0, padding: 0, background: 'transparent' }}
+              {...props}
+            >
+              {String(children).replace(/\n$/, '')}
+            </SyntaxHighlighter>
+          )
+        }
+        return (
+          <code className={cn('font-mono', className)} {...props}>
             {children}
           </code>
         )

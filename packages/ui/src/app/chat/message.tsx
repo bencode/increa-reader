@@ -128,16 +128,26 @@ export const Message = ({ role, content, isStreaming, toolCalls }: MessageType) 
                     if (!inline && match?.[1] === 'mermaid') {
                       return <MermaidBlock code={String(children).replace(/\n$/, '')} />
                     }
-                    return !inline && match ? (
-                      <SyntaxHighlighter
-                        style={syntaxTheme}
-                        language={match[1]}
-                        PreTag="div"
-                        {...props}
-                      >
-                        {String(children).replace(/\n$/, '')}
-                      </SyntaxHighlighter>
-                    ) : (
+                    if (!inline && match) {
+                      return (
+                        <SyntaxHighlighter
+                          style={syntaxTheme}
+                          language={match[1]}
+                          PreTag="div"
+                          {...props}
+                        >
+                          {String(children).replace(/\n$/, '')}
+                        </SyntaxHighlighter>
+                      )
+                    }
+                    if (!inline) {
+                      return (
+                        <code className="block font-mono text-sm overflow-x-auto bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 p-3 rounded" {...props}>
+                          {children}
+                        </code>
+                      )
+                    }
+                    return (
                       <code
                         className={cn(
                           'bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-gray-800 dark:text-gray-200',
