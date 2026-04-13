@@ -2,7 +2,7 @@ import { FileText, Image as ImageIcon, Loader2 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import rehypeKatex from 'rehype-katex'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
@@ -10,6 +10,7 @@ import 'katex/dist/katex.min.css'
 
 import { PDFNotesLayer } from '@/app/notes/pdf-notes-layer'
 import { MermaidBlock } from '@/components/mermaid-block'
+import { cn } from '@/lib/utils'
 import { RegionSelect } from './region-select'
 import type { PDFPageData, PDFPageProps, ViewMode } from './types'
 
@@ -158,7 +159,7 @@ function MarkdownContent({ pageData, loading, error }: MarkdownContentProps) {
   if (!pageData) return null
 
   return (
-    <div className="prose prose-slate dark:prose-invert max-w-none prose-headings:text-lg prose-headings:my-2 prose-h1:text-2xl prose-h1:my-3 prose-h2:text-xl prose-h2:my-2.5 prose-h3:text-lg prose-h3:my-2 prose-h4:text-base prose-h4:my-1.5 prose-h5:text-sm prose-h5:my-1 prose-h6:text-xs prose-h6:my-1 prose-p:my-2.5 prose-p:leading-relaxed">
+    <div className="prose prose-slate dark:prose-invert max-w-none prose-headings:text-lg prose-headings:my-2 prose-h1:text-2xl prose-h1:my-3 prose-h2:text-xl prose-h2:my-2.5 prose-h3:text-lg prose-h3:my-2 prose-h4:text-base prose-h4:my-1.5 prose-h5:text-sm prose-h5:my-1 prose-h6:text-xs prose-h6:my-1 prose-p:my-2.5 prose-p:leading-relaxed prose-pre:bg-transparent prose-pre:p-0 prose-pre:border-0">
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex]}
@@ -172,15 +173,21 @@ function MarkdownContent({ pageData, loading, error }: MarkdownContentProps) {
               <SyntaxHighlighter
                 language={match[1]}
                 /* @ts-expect-error SyntaxHighlighter style type mismatch */
-                style={vscDarkPlus}
+                style={oneLight}
                 PreTag="div"
-                customStyle={{ margin: 0, padding: 0, background: 'transparent' }}
+                customStyle={{ margin: 0, borderRadius: '0.375rem', fontSize: '0.875rem' }}
                 {...props}
               >
                 {String(children).replace(/\n$/, '')}
               </SyntaxHighlighter>
             ) : (
-              <code className={className} {...props}>
+              <code
+                className={cn(
+                  'font-mono text-sm bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded',
+                  className,
+                )}
+                {...props}
+              >
                 {children}
               </code>
             )
