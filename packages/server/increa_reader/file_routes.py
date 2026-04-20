@@ -212,6 +212,12 @@ def create_file_routes(app, workspace_config: WorkspaceConfig):
                 content = await f.read()
             return {"type": "markdown", "body": content}
 
+        # Mermaid diagram files
+        if ext == ".mmd":
+            async with aiofiles.open(file_path, "r", encoding="utf-8") as f:
+                content = await f.read()
+            return {"type": "mermaid", "body": content}
+
         # Known code/text files by extension or filename
         lang = FILENAME_TO_LANG.get(filename) or EXT_TO_LANG.get(ext)
         if lang:

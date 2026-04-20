@@ -11,6 +11,7 @@ coverage
 # Claude Code local settings
 .claude/
 .docs/
+.playwright-mcp/
 
 # Python
 __pycache__/

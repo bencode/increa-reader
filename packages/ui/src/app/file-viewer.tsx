@@ -2,6 +2,7 @@ import { FileQuestion } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import { MermaidBlock } from '@/components/mermaid-block'
 import { useVisibleContent } from '@/contexts/visible-content-context'
 import { useNoteToolStore } from '@/stores/note-tool-store'
 import { useRefreshKey } from '@/stores/view-context'
@@ -16,6 +17,7 @@ import { SelectionToolbar } from './selection/selection-toolbar'
 
 type PreviewData =
   | { type: 'markdown'; body: string }
+  | { type: 'mermaid'; body: string }
   | { type: 'code'; lang: string; body: string }
   | { type: 'image'; path: string }
   | { type: 'pdf'; path: string; metadata: PDFMetadata }
@@ -185,6 +187,12 @@ export function FileViewer({ repo, path }: FileViewerProps) {
           >
             {preview.body}
           </SyntaxHighlighter>
+        </div>
+      )}
+
+      {preview.type === 'mermaid' && (
+        <div className="p-4">
+          <MermaidBlock code={preview.body} />
         </div>
       )}
 
