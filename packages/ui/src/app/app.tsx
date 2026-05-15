@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router-dom'
 import { VisibleContentProvider } from '../contexts/visible-content-context'
 import { BoardViewer } from './board-viewer'
 import { Layout } from './layout'
+import { OnboardingPage } from './onboarding'
 import { TabbedViewer } from './tabs/tabbed-viewer'
 
 function HomePage() {
@@ -16,6 +17,7 @@ function App() {
   return (
     <VisibleContentProvider>
       <Routes>
+        <Route path="/onboarding" element={<OnboardingPage />} />
         <Route element={<Layout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/board" element={<BoardViewer />} />

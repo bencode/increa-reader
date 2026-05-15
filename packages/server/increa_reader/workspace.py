@@ -69,6 +69,18 @@ def save_api_settings(settings: dict) -> None:
     save_raw_config(data)
 
 
+def mark_onboarding_complete() -> None:
+    """Persist that the first-run setup has been completed"""
+    data = load_raw_config()
+    data["onboarding_completed"] = True
+    save_raw_config(data)
+
+
+def is_onboarding_complete() -> bool:
+    """Return whether first-run setup has been completed"""
+    return bool(load_raw_config().get("onboarding_completed"))
+
+
 def _load_repos_from_config() -> List[RepoItem] | None:
     """Try loading repos from config.json, return None if not found"""
     data = load_raw_config()
