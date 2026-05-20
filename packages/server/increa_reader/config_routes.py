@@ -2,13 +2,22 @@
 Configuration API routes
 """
 
+import os
+import platform
+import sys
 from pathlib import Path
 
 from fastapi import FastAPI
 from pydantic import BaseModel
 
 from .models import RepoItem, WorkspaceConfig
-from .workspace import load_api_settings, save_api_settings, save_workspace_config
+from .workspace import (
+    is_onboarding_complete,
+    load_api_settings,
+    mark_onboarding_complete,
+    save_api_settings,
+    save_workspace_config,
+)
 
 
 class RepoEntry(BaseModel):
@@ -23,6 +32,30 @@ class ApiSettingsRequest(BaseModel):
     base_url: str | None = None
     api_key: str | None = None
     default_model: str | None = None
+
+
+class CompleteOnboardingRequest(BaseModel):
+    repo_path: str
+    api_key: str | None = None
+    base_url: str | None = None
+    auth_token: str | None = None
+    default_model: str | None = None
+
+
+def _has_real_value(value: str | None) -> bool:
+    if not value:
+        return False
+    normalized = value.strip().strip('"').strip("'")
+    return bool(normalized and normalized not in {"your-api-key", "your-proxy-token"})
+
+
+def _check_pdf_support() -> dict:
+    try:
+        import fitz  # type: ignore
+
+        return {"ok": True, "detail": f"PyMuPDF {fitz.version[0]}"}
+    except Exception as exc:
+        return {"ok": False, "detail": str(exc)}
 
 
 def _mask_api_key(key: str | None) -> str | None:
@@ -111,4 +144,58 @@ def create_config_routes(app: FastAPI, workspace_config: WorkspaceConfig):
             "base_url": updated["base_url"],
             "api_key": _mask_api_key(updated.get("api_key")),
             "default_model": updated["default_model"],
+        }
+
+    @app.get("/api/config/onboarding")
+    async def get_onboarding_state():
+        """Return first-run setup state and environment diagnostics"""
+        settings = load_api_settings()
+        has_auth = any(
+            [
+                _has_real_value(settings.get("api_key")),
+                _has_real_value(os.getenv("ANTHROPIC_API_KEY")),
+                _has_real_value(os.getenv("ANTHROPIC_AUTH_TOKEN")),
+            ]
+        )
+        valid_repos = [repo for repo in workspace_config.repos if Path(repo.root).exists()]
+        return {
+            "completed": is_onboarding_complete(),
+            "needs_onboarding": not is_onboarding_complete() or not valid_repos,
+            "has_repos": bool(valid_repos),
+            "has_api_credentials": has_auth,
+            "diagnostics": {
+                "backend": {"ok": True, "detail": "FastAPI server is reachable"},
+                "python": {
+                    "ok": sys.version_info >= (3, 10),
+                    "detail": f"Python {platform.python_version()}",
+                },
+                "pdf": _check_pdf_support(),
+            },
+        }
+
+    @app.post("/api/config/onboarding/complete")
+    async def complete_onboarding(request: CompleteOnboardingRequest):
+        """Save first-run setup settings and mark onboarding complete"""
+        path_obj = Path(request.repo_path).expanduser().resolve()
+        repo = RepoItem(name=path_obj.name, root=str(path_obj))
+        save_workspace_config([repo])
+        workspace_config.repos.clear()
+        workspace_config.repos.append(repo)
+
+        api_key = request.api_key.strip() if request.api_key else None
+        auth_token = request.auth_token.strip() if request.auth_token else None
+        settings = {
+            "base_url": request.base_url.strip() if request.base_url else None,
+            "api_key": api_key or auth_token,
+            "default_model": request.default_model.strip() if request.default_model else None,
+        }
+        save_api_settings(settings)
+        mark_onboarding_complete()
+        return {
+            "repo": {"name": repo.name, "root": repo.root, "exists": path_obj.exists()},
+            "api_settings": {
+                "base_url": settings["base_url"],
+                "api_key": _mask_api_key(settings.get("api_key")),
+                "default_model": settings["default_model"],
+            },
         }

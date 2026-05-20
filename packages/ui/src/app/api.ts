@@ -143,6 +143,26 @@ export type ApiSettings = {
   default_model: string | null
 }
 
+export type OnboardingState = {
+  completed: boolean
+  needs_onboarding: boolean
+  has_repos: boolean
+  has_api_credentials: boolean
+  diagnostics: {
+    backend: { ok: boolean; detail: string }
+    python: { ok: boolean; detail: string }
+    pdf: { ok: boolean; detail: string }
+  }
+}
+
+export type CompleteOnboardingRequest = {
+  repo_path: string
+  api_key?: string | null
+  base_url?: string | null
+  auth_token?: string | null
+  default_model?: string | null
+}
+
 export async function fetchApiSettings(): Promise<ApiSettings> {
   const response = await fetch('/api/config/api-settings')
   return response.json()
@@ -155,6 +175,23 @@ export async function updateApiSettings(settings: Partial<ApiSettings>): Promise
     body: JSON.stringify(settings),
   })
   return response.json()
+}
+
+export async function fetchOnboardingState(): Promise<OnboardingState> {
+  const response = await fetch('/api/config/onboarding')
+  return response.json()
+}
+
+export async function completeOnboarding(settings: CompleteOnboardingRequest): Promise<void> {
+  const response = await fetch('/api/config/onboarding/complete', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(settings),
+  })
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(error.detail || 'Failed to complete onboarding')
+  }
 }
 
 export type { RepoConfigInfo, RepoInfo, RepoTreeData, TreeNode }
