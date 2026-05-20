@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchApiSettings } from '@/app/api'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import { useSelectionQueue } from '@/contexts/selection-context'
+import { useSuggestionStore } from '@/stores/suggestion-store'
 import { useGetContext } from '@/stores/view-context'
 import { ActiveChatPanel } from './active-chat-panel'
 import { ChatHeader } from './chat-header'
@@ -89,6 +90,21 @@ export const ChatPanel = () => {
     [setInput],
   )
 
+  const handlePickSuggestion = useCallback(
+    (prompt: string) => {
+      setInput(prompt)
+    },
+    [setInput],
+  )
+
+  const handleInputChange = useCallback(
+    (value: string) => {
+      if (value.length > 0) useSuggestionStore.getState().clear()
+      setInput(value)
+    },
+    [setInput],
+  )
+
   return (
     <div className="flex flex-col h-full font-mono">
       <ChatHeader isSplitView={isSplitView} onToggleSplit={() => setIsSplitView(!isSplitView)} />
@@ -105,9 +121,10 @@ export const ChatPanel = () => {
               scrollRef={scrollRef}
               input={input}
               isStreaming={isStreaming}
-              onInputChange={setInput}
+              onInputChange={handleInputChange}
               onKeyDown={handleKeyDown}
               onInsertText={handleInsertText}
+              onPickSuggestion={handlePickSuggestion}
               context={getContext()}
               repos={repos}
               sessionId={sessionId}
@@ -123,9 +140,10 @@ export const ChatPanel = () => {
             scrollRef={scrollRef}
             input={input}
             isStreaming={isStreaming}
-            onInputChange={setInput}
+            onInputChange={handleInputChange}
             onKeyDown={handleKeyDown}
             onInsertText={handleInsertText}
+            onPickSuggestion={handlePickSuggestion}
             context={getContext()}
             repos={repos}
             sessionId={sessionId}

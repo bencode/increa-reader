@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useEventCallback } from '@/hooks/use-event-callback'
+import { useSuggestionStore } from '@/stores/suggestion-store'
 import type { ContextData } from '@/stores/view-context'
 import type { Message, Repo, Session } from '@/types/chat'
 import { detectToolFromParams, extractTextContent, parseCommand } from '../utils'
@@ -45,6 +46,8 @@ export const useChat = (getContext: () => ContextData) => {
     async (directMessage?: string) => {
       const text = directMessage ?? input
       if (!text.trim()) return
+
+      useSuggestionStore.getState().clear()
 
       const normalized = text.replace(/^／/, '/')
       const cmd = parseCommand(normalized)

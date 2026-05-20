@@ -6,6 +6,7 @@ import type { SelectionContext } from '@/contexts/selection-context'
 import { coerce } from '@/lib/coerce'
 import { uploadImage } from '@/lib/upload'
 import type { getDocumentNotesPayload, getVisibleNotesPayload } from '@/stores/note-tool-store'
+import { useSuggestionStore } from '@/stores/suggestion-store'
 import { useViewContext } from '@/stores/view-context'
 import type { BoardAnimation, RendererMode } from '@/types/board'
 import { compileInstruction } from '../board-viewer/p5-executor'
@@ -209,6 +210,14 @@ const scrollToHeading = async (
   return `Scrolled to: ${target.textContent?.trim()}`
 }
 
+const suggestAction = async (_ctx: ToolContext, args: Record<string, unknown>): Promise<string> => {
+  const label = String(args.label ?? '').trim()
+  const prompt = String(args.prompt ?? '').trim()
+  if (!label || !prompt) throw new Error('suggest_action requires non-empty label and prompt')
+  useSuggestionStore.getState().setSuggestion({ label, prompt })
+  return 'shown'
+}
+
 const toolHandlers: Record<string, ToolHandler> = {
   get_visible_content: ctx => getVisibleContent(ctx),
   get_selection: (ctx, args) => getSelection(ctx, args),
@@ -223,6 +232,7 @@ const toolHandlers: Record<string, ToolHandler> = {
   canvas_setup: (ctx, args) => canvasSetup(ctx, args),
   get_headings: () => getHeadings(),
   scroll_to_heading: (ctx, args) => scrollToHeading(ctx, args),
+  suggest_action: (ctx, args) => suggestAction(ctx, args),
 }
 
 /**

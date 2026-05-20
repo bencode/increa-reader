@@ -4,6 +4,7 @@ import { ChatInput } from './chat-input'
 import { ChatMessages } from './chat-messages'
 import { ChatStats } from './chat-stats'
 import { QuoteBar } from './selection-queue-panel'
+import { SuggestionChip } from './suggestion-chip'
 
 type ActiveChatPanelProps = {
   messages: Message[]
@@ -13,6 +14,7 @@ type ActiveChatPanelProps = {
   onInputChange: (value: string) => void
   onKeyDown: (e: React.KeyboardEvent) => void
   onInsertText: (text: string) => void
+  onPickSuggestion: (prompt: string) => void
   context: ContextData
   repos: Repo[]
   sessionId?: string
@@ -37,6 +39,7 @@ export const ActiveChatPanel = ({
   onInputChange,
   onKeyDown,
   onInsertText,
+  onPickSuggestion,
   context,
   repos,
   sessionId,
@@ -47,6 +50,7 @@ export const ActiveChatPanel = ({
     <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900">
       <ChatMessages messages={messages} scrollRef={scrollRef} autoScroll={true} />
       <QuoteBar />
+      <SuggestionChip onPick={onPickSuggestion} />
       <ChatInput
         input={input}
         isStreaming={isStreaming}

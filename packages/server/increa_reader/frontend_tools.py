@@ -332,6 +332,52 @@ async def scroll_to_heading(args: dict[str, Any]) -> dict[str, Any]:
     return await frontend_tool_wrapper("scroll_to_heading", heading=heading)
 
 
+@tool(
+    "suggest_action",
+    "Offer ONE high-value follow-up action as a clickable chip above the chat input. "
+    "Call AT MOST ONCE per turn, AFTER your main answer is finished (as a final action). "
+    "When the chip is clicked, `prompt` is inserted into the user's input box so they can edit "
+    "before sending — write `prompt` as a ready-to-send instruction in the user's voice (first person, imperative).\n"
+    "\n"
+    "DO call when EITHER of these holds:\n"
+    "  (a) Your answer is substantial enough to be worth saving/exporting "
+    "(a synthesized summary, structured explanation, translation, reusable snippet, long-form analysis).\n"
+    "  (b) There is one OBVIOUS, SPECIFIC next step tied to THIS output — e.g. "
+    "summary → save as doc / draw a diagram / give a concrete example; "
+    "translate snippet → translate the rest; "
+    "comparison → produce a side-by-side table; "
+    "found functions → write tests / rename in batch; "
+    "cited section → scroll to that section.\n"
+    "\n"
+    "DO NOT call when:\n"
+    "  - Answer is a short fact / lookup / clarification / confirmation.\n"
+    "  - User is mid-flow (you just ran several tools, or user's question is itself a continuation).\n"
+    "  - You already offered a suggestion in the last 1-2 turns.\n"
+    "  - The only follow-up you can think of is generic ('tell me more', 'any questions?').\n"
+    "\n"
+    "Self-check before calling: \"If I don't offer this chip, the user would have to type my suggested "
+    "prompt themselves — is that prompt something they would clearly, specifically want to send next?\" "
+    "If you hesitate, skip the tool. Silence is better than noise.",
+    {
+        "label": {
+            "type": "string",
+            "description": "Short button text shown on the chip (4-12 chars). Example: '保存为文档' / 'Save as doc'.",
+        },
+        "prompt": {
+            "type": "string",
+            "description": "Full ready-to-send prompt that fills the input box when clicked. Write in the user's voice (first person, imperative). Example: '把刚才这段整理成 markdown 文档保存到 notes/ 下'.",
+        },
+    },
+)
+async def suggest_action(args: dict[str, Any]) -> dict[str, Any]:
+    """Show a single follow-up action chip above the chat input"""
+    return await frontend_tool_wrapper(
+        "suggest_action",
+        label=args.get("label", ""),
+        prompt=args.get("prompt", ""),
+    )
+
+
 # Export tools for MCP server creation
 FRONTEND_TOOLS = [
     get_visible_content,
@@ -347,4 +393,5 @@ FRONTEND_TOOLS = [
     canvas_setup,
     get_headings,
     scroll_to_heading,
+    suggest_action,
 ]
