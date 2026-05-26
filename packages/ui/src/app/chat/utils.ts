@@ -1,3 +1,6 @@
+import type { CommandGroup } from './command-registry'
+import { COMMANDS } from './command-registry'
+
 type MessageBlock = {
   type: string
   text?: string
@@ -17,28 +20,20 @@ type StreamMessage = {
   }
 }
 
-export const HELP_TEXT = `## Available Commands
+const HELP_GROUPS: CommandGroup[] = ['Basic', 'Session Management', 'Model']
 
-**Basic**
-- \`/save\` - Save chat history to file
-- \`/clear\` - Clear messages and start new session
-- \`/abort\` - Abort current generation
-- \`/help\` - Show this help
+const buildHelpText = (): string => {
+  const sections = HELP_GROUPS.map(group => {
+    const lines = COMMANDS.filter(c => c.group === group).map(c => {
+      const usage = c.args ? `/${c.name} ${c.args}` : `/${c.name}`
+      return `- \`${usage}\` - ${c.description}`
+    })
+    return `**${group}**\n${lines.join('\n')}`
+  })
+  return `## Available Commands\n\n${sections.join('\n\n')}\n\n💡 Tip: Context follows the file you select in the left panel.\n`
+}
 
-**Session Management**
-- \`/sessions\` - List all sessions
-- \`/new [title]\` - Create new session with optional title
-- \`/switch <id>\` - Switch to session by id or index
-- \`/rename <title>\` - Rename current session
-- \`/autoname\` - Summarize current conversation into a title
-- \`/delete <id>\` - Delete session by id or index
-
-**Model**
-- \`/model\` - Show current model
-- \`/model <name>\` - Switch model (sonnet, opus, haiku)
-
-💡 Tip: Context follows the file you select in the left panel.
-`
+export const HELP_TEXT = buildHelpText()
 
 export const parseCommand = (input: string) => {
   const match = input.match(/^\/(\w+)(?:\s+(.*))?$/)
