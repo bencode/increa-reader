@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import type { Session, SessionMetadata } from '@/types/chat'
+import type { Message, Session, SessionMetadata } from '@/types/chat'
 
 type SessionsData = {
   sessions: SessionMetadata[]
@@ -81,6 +81,17 @@ export const useSessionManager = () => {
     return session
   }, [])
 
+  const generateTitle = useCallback(async (messages: Message[]): Promise<string | null> => {
+    const res = await fetch('/api/chat/generate-title', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages }),
+    })
+    if (!res.ok) return null
+    const data: { title: string | null } = await res.json()
+    return data.title || null
+  }, [])
+
   return {
     sessions,
     loadSessions,
@@ -88,5 +99,6 @@ export const useSessionManager = () => {
     saveSession,
     deleteSession,
     createSession,
+    generateTitle,
   }
 }

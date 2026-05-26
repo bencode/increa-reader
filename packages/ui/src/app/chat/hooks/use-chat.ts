@@ -4,6 +4,7 @@ import { useSuggestionStore } from '@/stores/suggestion-store'
 import type { ContextData } from '@/stores/view-context'
 import type { Message, Repo, Session } from '@/types/chat'
 import { detectToolFromParams, extractTextContent, parseCommand } from '../utils'
+import { useAutoName } from './use-auto-name'
 import { useCommands } from './use-commands'
 import { useSessionManager } from './use-session-manager'
 
@@ -18,6 +19,14 @@ export const useChat = (getContext: () => ContextData) => {
 
   // Commands handling
   const { handleCommand } = useCommands({ currentSession, setCurrentSession, sessionManager })
+
+  // Auto-summarize session title after the first reply
+  useAutoName({
+    currentSession,
+    setCurrentSession,
+    isStreaming,
+    generateTitle: sessionManager.generateTitle,
+  })
 
   // Wrap functions with useEventCallback for stable references
   const createSessionEvent = useEventCallback(() => sessionManager.createSession())

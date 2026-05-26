@@ -176,6 +176,26 @@ export const useCommands = (ctx: CommandContext) => {
         addMessage('system', `Session renamed to: **${args}**`)
       },
 
+      autoname: async () => {
+        if (!currentSession || currentSession.messages.length === 0) {
+          addMessage('error', 'No conversation to summarize')
+          return
+        }
+        const title = await sessionManager.generateTitle(currentSession.messages)
+        if (!title) {
+          addMessage('error', 'Failed to generate title')
+          return
+        }
+        let toSave: Session | null = null
+        setCurrentSession(prev => {
+          if (!prev) return prev
+          toSave = { ...prev, title, lastActiveAt: Date.now() }
+          return toSave
+        })
+        if (toSave) await sessionManager.saveSession(toSave)
+        addMessage('system', `Session renamed to: **${title}**`)
+      },
+
       model: () => {
         if (!args) {
           setCurrentSession(prev =>

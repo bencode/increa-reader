@@ -30,6 +30,7 @@ export const HELP_TEXT = `## Available Commands
 - \`/new [title]\` - Create new session with optional title
 - \`/switch <id>\` - Switch to session by id or index
 - \`/rename <title>\` - Rename current session
+- \`/autoname\` - Summarize current conversation into a title
 - \`/delete <id>\` - Delete session by id or index
 
 **Model**

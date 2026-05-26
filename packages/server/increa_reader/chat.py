@@ -14,8 +14,13 @@ from claude_agent_sdk import ClaudeAgentOptions, ClaudeSDKClient, create_sdk_mcp
 from fastapi import HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 
-from .chat_utils import generate_semantic_filename
-from .models import ChatRequest, ChatSaveRequest, WorkspaceConfig
+from .chat_utils import generate_chat_title, generate_semantic_filename
+from .models import (
+    ChatRequest,
+    ChatSaveRequest,
+    GenerateTitleRequest,
+    WorkspaceConfig,
+)
 from .pdf_tools import (
     close_pdf,
     extract_text,
@@ -104,6 +109,12 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
             raise HTTPException(status_code=404, detail="File not found")
 
         return FileResponse(filepath, media_type="image/png")
+
+    @app.post("/api/chat/generate-title")
+    async def chat_generate_title(request: GenerateTitleRequest):
+        """Summarize a conversation into a short session title"""
+        title = await generate_chat_title(request.messages)
+        return {"title": title}
 
     @app.post("/api/chat/save")
     async def chat_save(request: ChatSaveRequest):

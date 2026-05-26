@@ -54,3 +54,7 @@ class ChatSaveRequest(BaseModel):
     sessionId: str
     messages: List[dict]
     stats: Optional[dict] = None
+
+
+class GenerateTitleRequest(BaseModel):
+    messages: List[dict]

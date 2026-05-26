@@ -14,6 +14,26 @@ from .workspace import build_sdk_env
 DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 
 
+async def _first_text_response(client: ClaudeSDKClient) -> str | None:
+    """
+    Return the first non-empty assistant text from the response stream.
+
+    Skips thinking blocks (which carry no `.text`), so it works with models
+    that emit a separate thinking AssistantMessage before the text one.
+    """
+    async for msg in client.receive_response():
+        if type(msg).__name__ != "AssistantMessage":
+            continue
+        text = "".join(
+            block.text
+            for block in msg.content
+            if hasattr(block, "text") and isinstance(block.text, str)
+        ).strip()
+        if text:
+            return text
+    return None
+
+
 def sanitize_filename(name: str, max_length: int = 40) -> str:
     """
     Sanitize filename by removing invalid characters
@@ -92,18 +112,8 @@ async def generate_semantic_filename(messages: list[dict]) -> str | None:
         # Set timeout for generation
         await asyncio.wait_for(client.query(prompt), timeout=5.0)
 
-        # Collect response
-        filename = None
-        async for msg in client.receive_response():
-            msg_type = type(msg).__name__
-            if msg_type == "AssistantMessage":
-                # Extract text from content blocks
-                filename = "".join(
-                    block.text
-                    for block in msg.content
-                    if hasattr(block, "text")
-                ).strip()
-                break
+        # Collect response (skip thinking blocks)
+        filename = await _first_text_response(client)
 
         if filename:
             # Sanitize the generated filename
@@ -118,4 +128,77 @@ async def generate_semantic_filename(messages: list[dict]) -> str | None:
     except Exception as e:
         if DEBUG:
             print(f"❌ Failed to generate semantic filename: {e}")
+        return None
+
+
+async def generate_chat_title(messages: list[dict]) -> str | None:
+    """
+    Generate a short chat title using Claude Haiku based on conversation content
+
+    Args:
+        messages: Chat messages list
+
+    Returns:
+        Generated title in the conversation's language, or None if failed
+    """
+    if not messages:
+        return None
+
+    try:
+        sample_messages = messages[:5]
+
+        conversation = []
+        for msg in sample_messages:
+            role = msg.get("role", "unknown")
+            content = msg.get("content", "")
+            if content:
+                truncated = content[:200] + "..." if len(content) > 200 else content
+                conversation.append(f"[{role.upper()}] {truncated}")
+
+        if not conversation:
+            return None
+
+        conversation_text = "\n".join(conversation)
+
+        prompt = f"""根据以下对话内容，生成一个简洁的会话标题。
+
+要求：
+- 使用对话本身所用的语言（中文对话用中文，英文对话用英文）
+- 4-12 个汉字，或 2-6 个英文单词
+- 概括对话的主题
+- 不要加引号、不要加标点结尾、不要其他说明文字
+
+对话内容：
+{conversation_text}
+
+只返回标题。"""
+
+        options = ClaudeAgentOptions(
+            allowed_tools=[],
+            permission_mode="bypassPermissions",
+            max_turns=1,
+            env=build_sdk_env(),
+        )
+
+        client = ClaudeSDKClient(options=options)
+        await client.connect()
+
+        await asyncio.wait_for(client.query(prompt), timeout=5.0)
+
+        title = await _first_text_response(client)
+
+        if not title:
+            return None
+
+        # Strip surrounding quotes and cap length (titles allow spaces/punctuation)
+        title = title.strip("\"'“”‘’ ")
+        return title[:30] if title else None
+
+    except asyncio.TimeoutError:
+        if DEBUG:
+            print("⏱️  Title generation timeout")
+        return None
+    except Exception as e:
+        if DEBUG:
+            print(f"❌ Failed to generate chat title: {e}")
         return None
