@@ -7,8 +7,13 @@ from pathlib import Path
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from .models import RepoItem, WorkspaceConfig
-from .workspace import load_api_settings, save_api_settings, save_workspace_config
+from .models import WorkspaceConfig
+from .workspace import (
+    build_repo_items,
+    load_api_settings,
+    save_api_settings,
+    save_workspace_config,
+)
 
 
 class RepoEntry(BaseModel):
@@ -52,10 +57,7 @@ def create_config_routes(app: FastAPI, workspace_config: WorkspaceConfig):
     @app.put("/api/config/repos")
     async def update_config_repos(request: UpdateReposRequest):
         """Update repository configuration"""
-        new_repos = []
-        for entry in request.repos:
-            path_obj = Path(entry.path).resolve()
-            new_repos.append(RepoItem(name=path_obj.name, root=str(path_obj)))
+        new_repos = build_repo_items([entry.path for entry in request.repos])
 
         save_workspace_config(new_repos)
 

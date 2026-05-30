@@ -4,6 +4,7 @@ Workspace management and file tree functionality
 
 import json
 import os
+from collections import defaultdict
 from pathlib import Path
 from typing import List
 
@@ -69,17 +70,81 @@ def save_api_settings(settings: dict) -> None:
     save_raw_config(data)
 
 
+def _display_name(path: Path, depth: int) -> str:
+    """Build a display name from the last `depth` path segments.
+
+    depth=1 → bare basename (e.g. "docs"); deeper levels append parent
+    context in parens joined by ":" (e.g. "docs (projectA)", "docs (x:projA)").
+    ":" is used instead of "/" so the name stays URL-safe and never breaks
+    the single-segment ":repoName" route.
+    """
+    parts = path.parts
+    basename = parts[-1]
+    parents = [p for p in parts[max(0, len(parts) - depth) : -1] if p != "/"]
+    if depth <= 1 or not parents:
+        return basename
+    return f"{basename} ({':'.join(parents)})"
+
+
+def _unique_repo_names(paths: List[Path]) -> List[str]:
+    """Assign collision-free names by climbing parent dirs until unique."""
+    depths = [1] * len(paths)
+    while True:
+        names = [_display_name(p, d) for p, d in zip(paths, depths)]
+        groups: dict[str, List[int]] = defaultdict(list)
+        for i, name in enumerate(names):
+            groups[name].append(i)
+
+        progressed = False
+        for indices in groups.values():
+            if len(indices) <= 1:
+                continue
+            # Climb one more level for any member that still has room
+            for i in indices:
+                if depths[i] < len(paths[i].parts):
+                    depths[i] += 1
+                    progressed = True
+        if not progressed:
+            break
+
+    # Final safety net: append a counter to any names still colliding
+    seen: dict[str, int] = {}
+    result = []
+    for name in names:
+        if name in seen:
+            seen[name] += 1
+            result.append(f"{name} {seen[name]}")
+        else:
+            seen[name] = 1
+            result.append(name)
+    return result
+
+
+def build_repo_items(paths: List[str]) -> List[RepoItem]:
+    """Resolve paths, dedupe identical ones, assign collision-free names."""
+    resolved: List[Path] = []
+    seen: set[str] = set()
+    for raw in paths:
+        path_obj = Path(raw).resolve()
+        key = str(path_obj)
+        if key in seen:
+            continue
+        seen.add(key)
+        resolved.append(path_obj)
+
+    names = _unique_repo_names(resolved)
+    return [
+        RepoItem(name=name, root=str(path)) for name, path in zip(names, resolved)
+    ]
+
+
 def _load_repos_from_config() -> List[RepoItem] | None:
     """Try loading repos from config.json, return None if not found"""
     data = load_raw_config()
     if not data or "repos" not in data:
         return None
     try:
-        repos = []
-        for entry in data["repos"]:
-            path_obj = Path(entry["path"]).resolve()
-            repos.append(RepoItem(name=path_obj.name, root=str(path_obj)))
-        return repos
+        return build_repo_items([entry["path"] for entry in data["repos"]])
     except KeyError:
         return None
 
@@ -89,15 +154,9 @@ def _load_repos_from_env() -> List[RepoItem]:
     increa_repo = os.getenv("INCREA_REPO", "")
     if not increa_repo:
         return []
-    repos = []
-    for repo_path in increa_repo.split(":"):
-        repo_path = repo_path.strip()
-        if not repo_path:
-            continue
-        path_obj = Path(repo_path).resolve()
-        if path_obj.exists():
-            repos.append(RepoItem(name=path_obj.name, root=str(path_obj)))
-    return repos
+    paths = [p.strip() for p in increa_repo.split(":") if p.strip()]
+    existing = [p for p in paths if Path(p).resolve().exists()]
+    return build_repo_items(existing)
 
 
 def load_workspace_config() -> WorkspaceConfig:
