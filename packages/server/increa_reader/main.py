@@ -29,7 +29,7 @@ from .models import WorkspaceConfig
 from .notes_routes import create_notes_routes
 from .pdf_routes import create_pdf_routes
 from .session_routes import create_session_routes
-from .workspace import load_workspace_config
+from .workspace import build_sdk_env, load_workspace_config
 from .workspace_routes import create_workspace_routes
 
 
@@ -39,8 +39,13 @@ def _print_startup_warnings(workspace_config: WorkspaceConfig) -> None:
         print("   ⚠ No repositories configured.")
         print("     Set INCREA_REPO in .env or configure via the UI settings panel.")
 
-    if not os.getenv("ANTHROPIC_API_KEY"):
-        print("   ⚠ ANTHROPIC_API_KEY is not set. AI chat will not be available.")
+    if not build_sdk_env().get("ANTHROPIC_API_KEY") and not build_sdk_env().get(
+        "ANTHROPIC_AUTH_TOKEN"
+    ):
+        print(
+            "   ⚠ No Anthropic credential found (config api_key / ANTHROPIC_API_KEY / "
+            "ANTHROPIC_AUTH_TOKEN). AI chat will not be available."
+        )
 
 
 @asynccontextmanager

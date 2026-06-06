@@ -48,18 +48,38 @@ def load_api_settings() -> dict:
 
 
 def build_sdk_env() -> dict[str, str]:
-    """Build env dict for Claude SDK, filtering out None values"""
+    """Build env dict for Claude SDK, filtering out None/empty values.
+
+    Unsets CLAUDECODE to prevent "nested session" detection when the
+    server itself runs inside a Claude Code terminal.
+    """
     api_settings = load_api_settings()
+    # Config first: a token in config.json always matches config's base_url.
+    # Shell env is unreliable here — multiple provider blocks in .zshrc can
+    # leave a token that belongs to a different base_url.
+    auth_token = api_settings.get("auth_token") or os.getenv("ANTHROPIC_AUTH_TOKEN")
+    api_key = api_settings.get("api_key") or os.getenv("ANTHROPIC_API_KEY")
     return {
         k: v
         for k, v in {
             "ANTHROPIC_BASE_URL": api_settings.get("base_url")
             or os.getenv("ANTHROPIC_BASE_URL"),
-            "ANTHROPIC_AUTH_TOKEN": os.getenv("ANTHROPIC_AUTH_TOKEN"),
-            "ANTHROPIC_API_KEY": api_settings.get("api_key")
-            or os.getenv("ANTHROPIC_API_KEY", ""),
+            # Use exactly one credential: AUTH_TOKEN takes priority (proxy mode),
+            # otherwise fall back to API_KEY. Never set both — the CLI errors on
+            # conflicting credentials.
+            "ANTHROPIC_AUTH_TOKEN": auth_token,
+            "ANTHROPIC_API_KEY": "" if auth_token else api_key,
+            "ANTHROPIC_DEFAULT_HAIKU_MODEL": api_settings.get("haiku_model")
+            or os.getenv("ANTHROPIC_DEFAULT_HAIKU_MODEL"),
+            "ANTHROPIC_DEFAULT_SONNET_MODEL": api_settings.get("sonnet_model")
+            or os.getenv("ANTHROPIC_DEFAULT_SONNET_MODEL"),
+            "ANTHROPIC_DEFAULT_OPUS_MODEL": api_settings.get("opus_model")
+            or os.getenv("ANTHROPIC_DEFAULT_OPUS_MODEL"),
+            # Prevent nested-session detection when server runs inside
+            # a Claude Code terminal (CLAUDECODE=1).
+            "CLAUDECODE": "",
         }.items()
-        if v is not None
+        if v is not None and v != ""
     }
 
 

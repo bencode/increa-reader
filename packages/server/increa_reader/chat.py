@@ -39,6 +39,17 @@ from .workspace import build_sdk_env, load_api_settings
 # Debug logging flag
 DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 
+
+def _is_valid_uuid(value: str | None) -> bool:
+    """Check if a string looks like a UUID (used by Claude Code --resume)."""
+    if not value:
+        return False
+    try:
+        uuid.UUID(value)
+        return True
+    except (ValueError, TypeError, AttributeError):
+        return False
+
 # Global session pool for abort support
 active_sessions: dict[str, ClaudeSDKClient] = {}
 session_lock = asyncio.Lock()
@@ -389,12 +400,12 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
                 else "bypassPermissions"
             ),
             include_partial_messages=True,
-            resume=request.sessionId,
+            resume=request.sessionId if _is_valid_uuid(request.sessionId) else None,
             system_prompt={"type": "preset", "preset": "claude_code"},
             max_turns=request.options.get("maxTurns") if request.options else None,
             env=build_sdk_env(),
             add_dirs=add_dirs,
-            stderr=lambda line: print(f"[CLI] {line}", flush=True) if DEBUG else None,
+            stderr=lambda line: cli_stderr_lines.append(line),
         )
 
         if DEBUG:
@@ -406,7 +417,9 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
 
         # Create client outside generator for abort support
         client = ClaudeSDKClient(options=query_options)
-        await client.connect()
+
+        # Collect CLI stderr for error reporting
+        cli_stderr_lines: list[str] = []
 
         # Track session ID for cleanup
         current_session_id = request.sessionId
@@ -415,6 +428,10 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
             """Generate streaming response using ClaudeSDKClient"""
             nonlocal current_session_id
             try:
+                # connect() can throw (nested session, bad key, CLI not found, etc.)
+                # Running it inside the generator ensures the error reaches the
+                # frontend as an SSE event instead of a generic 500.
+                await client.connect()
                 # Build workspace info
                 repos_info = "\n".join(
                     [f"  - {repo.name}: {repo.root}" for repo in workspace_config.repos]
@@ -516,11 +533,25 @@ User Question:
                         yield f"data: {json.dumps({'type': 'result', 'session_id': msg.session_id, 'duration_ms': msg.duration_ms, 'usage': msg.usage.__dict__ if hasattr(msg.usage, '__dict__') else msg.usage}, ensure_ascii=False)}\n\n"
 
             except Exception as e:
-                print(f"❌ Error in chat response: {e}")
                 import traceback
 
-                traceback.print_exc()
-                yield f"data: {json.dumps({'type': 'error', 'message': str(e)}, ensure_ascii=False)}\n\n"
+                tb = traceback.format_exc()
+                print(f"❌ Error in chat response: {e}\n{tb}")
+
+                # Include SDK version and CLI path in error for debugging
+                import claude_agent_sdk
+                from pathlib import Path
+
+                cli_path = Path(claude_agent_sdk.__file__).parent / "_bundled" / "claude"
+                debug_info = (
+                    f"{e}\n\n"
+                    f"SDK: {claude_agent_sdk.__version__} | "
+                    f"CLI: {cli_path} | "
+                    f"Model: {query_options.model}"
+                )
+                if cli_stderr_lines:
+                    debug_info += f"\n\nCLI stderr:\n" + "\n".join(cli_stderr_lines)
+                yield f"data: {json.dumps({'type': 'error', 'message': debug_info}, ensure_ascii=False)}\n\n"
             finally:
                 # Cleanup: remove from active sessions (SDK will auto-cleanup on GC)
                 if current_session_id:
