@@ -385,6 +385,9 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
             or api_settings.get("default_model")
         )
 
+        # Collect CLI stderr for error reporting (referenced by stderr callback)
+        cli_stderr_lines: list[str] = []
+
         query_options = ClaudeAgentOptions(
             model=model,
             cwd=cwd,
@@ -417,9 +420,6 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
 
         # Create client outside generator for abort support
         client = ClaudeSDKClient(options=query_options)
-
-        # Collect CLI stderr for error reporting
-        cli_stderr_lines: list[str] = []
 
         # Track session ID for cleanup
         current_session_id = request.sessionId

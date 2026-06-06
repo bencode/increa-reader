@@ -48,10 +48,12 @@ def load_api_settings() -> dict:
 
 
 def build_sdk_env() -> dict[str, str]:
-    """Build env dict for Claude SDK, filtering out None/empty values.
+    """Build env dict for Claude SDK.
 
-    Unsets CLAUDECODE to prevent "nested session" detection when the
-    server itself runs inside a Claude Code terminal.
+    The SDK *merges* this dict over the inherited process env, so masking an
+    inherited variable requires explicitly passing "" — dropping the key only
+    leaves the parent's value in place. Hence None means "omit" while ""
+    means "mask".
     """
     api_settings = load_api_settings()
     # Config first: a token in config.json always matches config's base_url.
@@ -65,21 +67,23 @@ def build_sdk_env() -> dict[str, str]:
             "ANTHROPIC_BASE_URL": api_settings.get("base_url")
             or os.getenv("ANTHROPIC_BASE_URL"),
             # Use exactly one credential: AUTH_TOKEN takes priority (proxy mode),
-            # otherwise fall back to API_KEY. Never set both — the CLI errors on
-            # conflicting credentials.
-            "ANTHROPIC_AUTH_TOKEN": auth_token,
-            "ANTHROPIC_API_KEY": "" if auth_token else api_key,
+            # otherwise fall back to API_KEY. Mask the loser with "" so an
+            # inherited value can't surface — the CLI errors on conflicting
+            # credentials.
+            "ANTHROPIC_AUTH_TOKEN": auth_token or "",
+            "ANTHROPIC_API_KEY": "" if auth_token else (api_key or ""),
             "ANTHROPIC_DEFAULT_HAIKU_MODEL": api_settings.get("haiku_model")
             or os.getenv("ANTHROPIC_DEFAULT_HAIKU_MODEL"),
             "ANTHROPIC_DEFAULT_SONNET_MODEL": api_settings.get("sonnet_model")
             or os.getenv("ANTHROPIC_DEFAULT_SONNET_MODEL"),
             "ANTHROPIC_DEFAULT_OPUS_MODEL": api_settings.get("opus_model")
             or os.getenv("ANTHROPIC_DEFAULT_OPUS_MODEL"),
-            # Prevent nested-session detection when server runs inside
-            # a Claude Code terminal (CLAUDECODE=1).
+            # Mask nested-session detection when server runs inside a Claude
+            # Code terminal (CLAUDECODE=1). SDK >= 0.2.x strips this itself,
+            # but keep the mask for older SDKs.
             "CLAUDECODE": "",
         }.items()
-        if v is not None and v != ""
+        if v is not None
     }
 
 

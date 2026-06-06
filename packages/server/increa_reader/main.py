@@ -39,7 +39,8 @@ def _print_startup_warnings(workspace_config: WorkspaceConfig) -> None:
         print("   ⚠ No repositories configured.")
         print("     Set INCREA_REPO in .env or configure via the UI settings panel.")
 
-    if not build_sdk_env().get("ANTHROPIC_API_KEY") and not build_sdk_env().get(
+    sdk_env = build_sdk_env()
+    if not sdk_env.get("ANTHROPIC_API_KEY") and not sdk_env.get(
         "ANTHROPIC_AUTH_TOKEN"
     ):
         print(
