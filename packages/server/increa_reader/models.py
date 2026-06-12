@@ -46,6 +46,8 @@ class ChatContext(BaseModel):
 class ChatRequest(BaseModel):
     prompt: str
     sessionId: Optional[str] = None
+    # Stable UI session id used for transcript files (SDK sessionId forks per turn)
+    clientSessionId: Optional[str] = None
     context: Optional[ChatContext] = None
     options: Optional[dict] = None
 

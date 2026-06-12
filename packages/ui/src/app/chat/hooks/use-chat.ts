@@ -3,6 +3,7 @@ import { useEventCallback } from '@/hooks/use-event-callback'
 import { useSuggestionStore } from '@/stores/suggestion-store'
 import type { ContextData } from '@/stores/view-context'
 import type { Message, Repo, Session } from '@/types/chat'
+import { REFINE_TRIGGER_PROMPT } from '../command-registry'
 import { detectToolFromParams, extractTextContent, parseCommand } from '../utils'
 import { useAutoName } from './use-auto-name'
 import { useCommands } from './use-commands'
@@ -61,7 +62,8 @@ export const useChat = (getContext: () => ContextData) => {
       const normalized = text.replace(/^／/, '/')
       const cmd = parseCommand(normalized)
 
-      if (cmd) {
+      // /refine passes through to the agent (refine-memory skill) instead of a local handler
+      if (cmd && cmd.name !== 'refine') {
         setCurrentSession(prev => {
           if (!prev) return prev
           return {
@@ -125,8 +127,9 @@ export const useChat = (getContext: () => ContextData) => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            prompt: text,
+            prompt: cmd?.name === 'refine' ? REFINE_TRIGGER_PROMPT : text,
             sessionId: workingSession.stats?.sessionId,
+            clientSessionId: workingSession.id,
             context,
             options: workingSession.model ? { model: workingSession.model } : undefined,
           }),

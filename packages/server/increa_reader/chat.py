@@ -15,6 +15,12 @@ from fastapi import HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 
 from .chat_utils import generate_chat_title, generate_semantic_filename
+from .memory import (
+    PLUGIN_DIR,
+    append_turn,
+    ensure_memory_dirs,
+    memory_prompt_note,
+)
 from .models import (
     ChatRequest,
     ChatSaveRequest,
@@ -312,6 +318,7 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
         # Determine working directory and accessible directories
         cwd = None
         add_dirs = [r.root for r in workspace_config.repos]
+        add_dirs.append(str(ensure_memory_dirs()))
 
         # Use context.repo if available, otherwise use first repo as default
         target_repo = request.context.repo if request.context else None
@@ -404,7 +411,12 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
             ),
             include_partial_messages=True,
             resume=request.sessionId if _is_valid_uuid(request.sessionId) else None,
-            system_prompt={"type": "preset", "preset": "claude_code"},
+            system_prompt={
+                "type": "preset",
+                "preset": "claude_code",
+                "append": memory_prompt_note(),
+            },
+            plugins=[{"type": "local", "path": str(PLUGIN_DIR)}],
             max_turns=request.options.get("maxTurns") if request.options else None,
             env=build_sdk_env(),
             add_dirs=add_dirs,
@@ -497,6 +509,10 @@ User Question:
 
                 await client.query(enhanced_prompt)
 
+                # Collected per-turn for the memory transcript
+                turn_texts: list[str] = []
+                turn_tools: list[str] = []
+
                 async for msg in client.receive_response():
                     msg_type = type(msg).__name__
 
@@ -527,9 +543,22 @@ User Question:
                             for block in msg.content
                             if hasattr(block, "text")
                         )
+                        if content_text:
+                            turn_texts.append(content_text)
+                        turn_tools.extend(
+                            block.name
+                            for block in msg.content
+                            if type(block).__name__ == "ToolUseBlock"
+                        )
                         yield f"data: {json.dumps({'type': 'assistant', 'content': content_text}, ensure_ascii=False)}\n\n"
 
                     elif msg_type == "ResultMessage":
+                        append_turn(
+                            request.clientSessionId,
+                            request.prompt,
+                            turn_texts,
+                            turn_tools,
+                        )
                         yield f"data: {json.dumps({'type': 'result', 'session_id': msg.session_id, 'duration_ms': msg.duration_ms, 'usage': msg.usage.__dict__ if hasattr(msg.usage, '__dict__') else msg.usage}, ensure_ascii=False)}\n\n"
 
             except Exception as e:

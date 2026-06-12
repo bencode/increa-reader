@@ -2,6 +2,8 @@
 Main application entry point for Increa Reader Server
 """
 
+import asyncio
+import contextlib
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -22,6 +24,7 @@ from fastapi import FastAPI
 from .board_routes import create_board_routes
 from .chat import cleanup_active_sessions, create_chat_routes
 from .config_routes import create_config_routes
+from .memory import memory_refine_loop
 
 # Import local modules
 from .file_routes import create_file_routes
@@ -59,11 +62,15 @@ async def lifespan(app: FastAPI):
     for repo in workspace_config.repos:
         print(f"   - {repo.name}: {repo.root}")
     _print_startup_warnings(workspace_config)
+    refine_task = asyncio.create_task(memory_refine_loop())
 
     yield
 
     # Shutdown
     print("\n🛑 Shutting down Increa Reader Server...")
+    refine_task.cancel()
+    with contextlib.suppress(asyncio.CancelledError):
+        await refine_task
     await cleanup_active_sessions()
     print("✓ Cleanup completed\n")
 

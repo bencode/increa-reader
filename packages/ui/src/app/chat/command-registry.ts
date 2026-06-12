@@ -43,12 +43,26 @@ export const COMMANDS: CommandSpec[] = [
     group: 'Session Management',
   },
   {
+    name: 'refine',
+    description: 'Distill chat transcripts into agent memory notes',
+    group: 'Session Management',
+  },
+  {
     name: 'model',
     args: '[name]',
     description: 'Switch model (sonnet, opus, haiku) or show current',
     group: 'Model',
   },
 ]
+
+/**
+ * /refine is not handled locally: this prompt is sent to the agent, which runs
+ * the refine-memory skill (shipped as a server-side plugin) with its own tools.
+ */
+export const REFINE_TRIGGER_PROMPT =
+  'Use the refine-memory skill: read all transcripts under the memory ' +
+  "directory's sessions/ folder and distill durable knowledge into " +
+  'topic files under refine/.'
 
 /**
  * Whether the input is still in the "picking a command" stage:
