@@ -12,11 +12,13 @@ from datetime import datetime
 from pathlib import Path
 
 PLUGIN_DIR = Path(__file__).parent / "plugin"
+REFINE_SCRIPT = PLUGIN_DIR / "skills" / "refine-memory" / "scripts" / "refine_delta.py"
 
 REFINE_PROMPT = (
-    "Use the refine-memory skill: read all transcripts under the memory "
-    "directory's sessions/ folder and distill durable knowledge into "
-    "topic files under refine/."
+    "Use the refine-memory skill to distill new conversation turns into "
+    "retrieval atoms under refine/. The skill's deterministic tool lives at "
+    f"{REFINE_SCRIPT} — run `prepare` first to get refine/.inbox.md, distill "
+    "only that, then run `commit`. The memory dir is your current directory."
 )
 
 
