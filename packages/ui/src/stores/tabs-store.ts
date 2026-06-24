@@ -16,6 +16,9 @@ type TabsState = {
   activeId: string | null
   openTab: (repo: string, path: string) => void
   closeTab: (id: string) => void
+  closeOtherTabs: (id: string) => void
+  closeTabsToRight: (id: string) => void
+  closeAllTabs: () => void
   setActiveTab: (id: string) => void
   setPageNumber: (id: string, page: number | null) => void
 }
@@ -82,6 +85,21 @@ export const useTabsStore = create<TabsState>()(
           }
           return { tabs: nextTabs, activeId: nextActive }
         }),
+      closeOtherTabs: id =>
+        set(state => {
+          const target = state.tabs.find(t => t.id === id)
+          if (!target) return state
+          return { tabs: [target], activeId: id }
+        }),
+      closeTabsToRight: id =>
+        set(state => {
+          const idx = state.tabs.findIndex(t => t.id === id)
+          if (idx === -1) return state
+          const nextTabs = state.tabs.slice(0, idx + 1)
+          const activeStillOpen = nextTabs.some(t => t.id === state.activeId)
+          return { tabs: nextTabs, activeId: activeStillOpen ? state.activeId : id }
+        }),
+      closeAllTabs: () => set({ tabs: [], activeId: null }),
       setActiveTab: id =>
         set(state => ({
           activeId: id,
