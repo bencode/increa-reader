@@ -48,6 +48,15 @@ export type SessionMetadata = {
   lastActiveAt: number
 }
 
+export type SessionsPage = {
+  sessions: SessionMetadata[]
+  lastActiveSessionId: string | null
+  total: number
+  limit: number
+  offset: number
+  hasMore: boolean
+}
+
 export type Repo = {
   name: string
   path: string

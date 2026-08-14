@@ -41,7 +41,9 @@ export const ChatPanel = () => {
     stats,
     currentSession,
     sendMessage,
+    switchSession,
     initializeFromStorage,
+    sessionManager,
   } = useChat(getContextWithQuotes)
 
   const effectiveModel = currentSession?.model || defaultModel || null
@@ -50,7 +52,9 @@ export const ChatPanel = () => {
 
   // Initialize session from storage on mount
   useEffect(() => {
-    initializeFromStorage()
+    initializeFromStorage().catch(error => {
+      console.error('Failed to initialize chat session:', error)
+    })
   }, [initializeFromStorage])
 
   useEffect(() => {
@@ -107,7 +111,20 @@ export const ChatPanel = () => {
 
   return (
     <div className="flex flex-col h-full font-mono">
-      <ChatHeader isSplitView={isSplitView} onToggleSplit={() => setIsSplitView(!isSplitView)} />
+      <ChatHeader
+        isSplitView={isSplitView}
+        sessions={sessionManager.sessions}
+        totalSessions={sessionManager.totalSessions}
+        currentSessionId={currentSession?.id ?? null}
+        hasMoreSessions={sessionManager.hasMoreSessions}
+        isLoadingSessions={sessionManager.isLoadingSessions}
+        isStreaming={isStreaming}
+        sessionsError={sessionManager.sessionsError}
+        onToggleSplit={() => setIsSplitView(!isSplitView)}
+        onRefreshSessions={sessionManager.loadSessions}
+        onLoadMoreSessions={sessionManager.loadMoreSessions}
+        onSelectSession={switchSession}
+      />
 
       {isSplitView ? (
         <ResizablePanelGroup direction="vertical" className="flex-1">

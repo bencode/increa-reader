@@ -126,7 +126,7 @@ export const useCommands = (ctx: CommandContext) => {
             return `${i + 1}. **${s.title}**${marker} - ${date}`
           })
           .join('\n')
-        addMessage('system', `## Sessions (${sessions.length})\n\n${list}`)
+        addMessage('system', `## Recent Sessions (${sessions.length})\n\n${list}`)
       },
 
       new: async () => {

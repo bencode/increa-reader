@@ -284,7 +284,9 @@ export const useChat = (getContext: () => ContextData) => {
     }
 
     saveTimeoutRef.current = setTimeout(() => {
-      saveSessionEvent(currentSession)
+      saveSessionEvent(currentSession).catch(error => {
+        console.error('Failed to auto-save session:', error)
+      })
     }, 1000)
 
     return () => {
@@ -297,6 +299,22 @@ export const useChat = (getContext: () => ContextData) => {
   const loadSession = useEventCallback(async (id: string) => {
     const session = await sessionManager.loadSession(id)
     setCurrentSession(session)
+  })
+
+  const switchSession = useEventCallback(async (id: string) => {
+    if (id === currentSession?.id) return
+    if (isStreaming) {
+      throw new Error('Wait for the current response to finish before switching sessions.')
+    }
+    if (currentSession && currentSession.messages.length > 0) {
+      await sessionManager.saveSession(currentSession)
+    }
+
+    const targetSession = await sessionManager.loadSession(id)
+    const activatedSession = { ...targetSession, lastActiveAt: Date.now() }
+    await sessionManager.saveSession(activatedSession)
+    setCurrentSession(activatedSession)
+    setInput('')
   })
 
   const initializeFromStorage = useEventCallback(async () => {
@@ -318,6 +336,7 @@ export const useChat = (getContext: () => ContextData) => {
     currentSession,
     sendMessage,
     loadSession,
+    switchSession,
     initializeFromStorage,
     sessionManager,
   }

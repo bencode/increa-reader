@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-from fastapi import HTTPException
+from fastapi import HTTPException, Query
 
 
 def create_session_routes(app, workspace_config):
@@ -30,14 +30,43 @@ def create_session_routes(app, workspace_config):
         return sessions_dir / f"session_{session_id}.json"
 
     @app.get("/api/sessions")
-    async def get_sessions_metadata():
-        """Get all sessions metadata (lightweight list)"""
+    async def get_sessions_metadata(
+        limit: int = Query(default=50, ge=1, le=100),
+        offset: int = Query(default=0, ge=0),
+    ):
+        """Get a page of session metadata ordered by recent activity."""
         meta_file = get_sessions_meta_file()
         if not meta_file.exists():
-            return {"sessions": [], "lastActiveSessionId": None}
+            return {
+                "sessions": [],
+                "lastActiveSessionId": None,
+                "total": 0,
+                "limit": limit,
+                "offset": offset,
+                "hasMore": False,
+            }
 
         with open(meta_file, "r", encoding="utf-8") as f:
-            return json.load(f)
+            meta = json.load(f)
+
+        sessions = sorted(
+            meta.get("sessions", []),
+            key=lambda session: (
+                session.get("lastActiveAt") or 0,
+                session.get("id") or "",
+            ),
+            reverse=True,
+        )
+        total = len(sessions)
+
+        return {
+            "sessions": sessions[offset : offset + limit],
+            "lastActiveSessionId": meta.get("lastActiveSessionId"),
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "hasMore": offset + limit < total,
+        }
 
     @app.get("/api/sessions/{session_id}")
     async def get_session(session_id: str):

@@ -12,7 +12,7 @@ export const COMMANDS: CommandSpec[] = [
   { name: 'clear', description: 'Clear messages and start new session', group: 'Basic' },
   { name: 'abort', description: 'Abort current generation', group: 'Basic' },
   { name: 'help', description: 'Show available commands', group: 'Basic' },
-  { name: 'sessions', description: 'List all sessions', group: 'Session Management' },
+  { name: 'sessions', description: 'List recently loaded sessions', group: 'Session Management' },
   {
     name: 'new',
     args: '[title]',
