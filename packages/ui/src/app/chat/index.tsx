@@ -41,6 +41,7 @@ export const ChatPanel = () => {
     stats,
     currentSession,
     sendMessage,
+    abortGeneration,
     switchSession,
     initializeFromStorage,
     sessionManager,
@@ -78,6 +79,11 @@ export const ChatPanel = () => {
   }, [messages])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape' && isStreaming) {
+      e.preventDefault()
+      void abortGeneration()
+      return
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       sendMessage()

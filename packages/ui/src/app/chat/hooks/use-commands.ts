@@ -75,31 +75,6 @@ export const useCommands = (ctx: CommandContext) => {
     addMessage('system', 'Messages cleared. Starting fresh conversation.')
   }
 
-  const handleAbort = async () => {
-    const claudeSessionId = currentSession?.stats?.sessionId
-    if (!claudeSessionId) {
-      addMessage('error', 'No active session to abort')
-      return
-    }
-
-    try {
-      const response = await fetch('/api/chat/abort', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId: claudeSessionId }),
-      })
-
-      if (response.ok) {
-        addMessage('system', 'Aborted current generation')
-      } else {
-        const error = await response.json()
-        addMessage('error', error.detail || 'Failed to abort')
-      }
-    } catch (error) {
-      addMessage('error', error instanceof Error ? error.message : 'Failed to abort')
-    }
-  }
-
   const loadSession = async (id: string) => {
     const session = await sessionManager.loadSession(id)
     setCurrentSession(session)
@@ -110,7 +85,6 @@ export const useCommands = (ctx: CommandContext) => {
       help: () => addMessage('system', HELP_TEXT),
       save: () => handleSave(),
       clear: () => handleClear(),
-      abort: () => handleAbort(),
 
       sessions: () => {
         const sessions = sessionManager.sessions

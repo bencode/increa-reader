@@ -10,7 +10,6 @@ export type CommandSpec = {
 export const COMMANDS: CommandSpec[] = [
   { name: 'save', description: 'Save chat history to file', group: 'Basic' },
   { name: 'clear', description: 'Clear messages and start new session', group: 'Basic' },
-  { name: 'abort', description: 'Abort current generation', group: 'Basic' },
   { name: 'help', description: 'Show available commands', group: 'Basic' },
   { name: 'sessions', description: 'List recently loaded sessions', group: 'Session Management' },
   {

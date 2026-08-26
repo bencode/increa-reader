@@ -16,6 +16,13 @@ const mergeSessions = (current: SessionMetadata[], incoming: SessionMetadata[]) 
   return sortSessions([...sessionsById.values()])
 }
 
+const normalizeSession = (session: Session): Session => ({
+  ...session,
+  messages: session.messages.map(message =>
+    message.isStreaming ? { ...message, isStreaming: false } : message,
+  ),
+})
+
 export const useSessionManager = () => {
   const [sessions, setSessions] = useState<SessionMetadata[]>([])
   const [totalSessions, setTotalSessions] = useState(0)
@@ -67,14 +74,15 @@ export const useSessionManager = () => {
     if (!response.ok) {
       throw new Error(`Failed to load session: ${response.status} ${response.statusText}`)
     }
-    return await response.json()
+    const session: Session = await response.json()
+    return normalizeSession(session)
   }, [])
 
   const saveSession = useCallback(async (session: Session): Promise<void> => {
     const response = await fetch(`/api/sessions/${session.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(session),
+      body: JSON.stringify(normalizeSession(session)),
     })
     if (!response.ok) {
       throw new Error(`Failed to save session: ${response.status} ${response.statusText}`)

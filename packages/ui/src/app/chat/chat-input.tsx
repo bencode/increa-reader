@@ -23,10 +23,14 @@ export const ChatInput = ({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      if (isStreaming && e.key === 'Escape') {
+        onKeyDown(e)
+        return
+      }
       if (menu.handleKeyDown(e)) return
       onKeyDown(e)
     },
-    [menu, onKeyDown],
+    [isStreaming, menu, onKeyDown],
   )
 
   // Auto-resize textarea based on content
@@ -85,9 +89,7 @@ export const ChatInput = ({
           className="w-full bg-transparent outline-none caret-blue-500 text-blue-700 dark:text-blue-300 placeholder:text-gray-500 dark:placeholder:text-gray-400 resize-none overflow-hidden leading-normal"
           style={{ maxHeight: '12rem' }}
           placeholder={
-            isStreaming
-              ? 'type /abort to stop generation'
-              : 'type /help for commands (Shift+Enter for new line)'
+            isStreaming ? 'Esc to interrupt' : 'type /help for commands (Shift+Enter for new line)'
           }
           spellCheck={false}
         />

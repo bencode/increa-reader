@@ -1,3 +1,4 @@
+import type { Components } from 'react-markdown'
 import ReactMarkdown from 'react-markdown'
 import rehypeKatex from 'rehype-katex'
 import remarkGfm from 'remark-gfm'
@@ -44,6 +45,19 @@ const formatToolParams = (toolName: string, params?: Record<string, unknown>) =>
 const resolveImageSrc = (src?: string) =>
   src?.includes('.increa/uploads/') ? `/api/uploads/${src.split('/').pop()}` : src
 
+const MarkdownTable: NonNullable<Components['table']> = ({
+  node: _node,
+  className,
+  children,
+  ...props
+}) => (
+  <div className="my-5 max-w-full overflow-x-auto [overflow-wrap:normal]">
+    <table className={cn('my-0 min-w-full', className)} {...props}>
+      {children}
+    </table>
+  </div>
+)
+
 export const Message = ({ role, content, isStreaming, toolCalls }: MessageType) => {
   const prefix = role === 'user' ? '$' : role === 'system' ? '>' : role === 'error' ? '!' : '<'
   const textColor =
@@ -60,7 +74,7 @@ export const Message = ({ role, content, isStreaming, toolCalls }: MessageType) 
     <div className={cn('py-2 px-4 font-mono text-sm', textColor, bgColor)}>
       <div className="flex gap-2">
         <span className="opacity-70">{prefix}</span>
-        <div className="flex-1">
+        <div className="min-w-0 flex-1 [overflow-wrap:anywhere]">
           {/* Tool calls display */}
           {toolCalls && toolCalls.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-2">
@@ -90,13 +104,14 @@ export const Message = ({ role, content, isStreaming, toolCalls }: MessageType) 
           ) : role === 'user' ? (
             <div
               ref={markdownRef}
-              className="prose prose-sm prose-slate dark:prose-invert max-w-none prose-p:leading-relaxed prose-img:max-w-xs prose-img:rounded"
+              className="prose prose-sm prose-slate dark:prose-invert max-w-none min-w-0 prose-p:leading-relaxed prose-pre:max-w-full prose-pre:overflow-x-auto prose-img:max-w-xs prose-img:rounded"
             >
               <ReactMarkdown
                 components={{
                   img({ src, alt, ...props }) {
                     return <img src={resolveImageSrc(src)} alt={alt} {...props} />
                   },
+                  table: MarkdownTable,
                 }}
               >
                 {content}
@@ -105,7 +120,7 @@ export const Message = ({ role, content, isStreaming, toolCalls }: MessageType) 
           ) : (
             <div
               ref={markdownRef}
-              className="prose prose-sm prose-slate dark:prose-invert max-w-none prose-headings:text-base prose-headings:my-1 prose-h1:text-lg prose-h1:my-1.5 prose-h2:text-base prose-h2:my-1 prose-h3:text-sm prose-h3:my-1 prose-h4:text-sm prose-h4:my-0.5 prose-h5:text-xs prose-h5:my-0.5 prose-h6:text-xs prose-h6:my-0.5 prose-p:leading-relaxed prose-pre:p-0 prose-pre:bg-transparent"
+              className="prose prose-sm prose-slate dark:prose-invert max-w-none min-w-0 prose-headings:text-base prose-headings:my-1 prose-h1:text-lg prose-h1:my-1.5 prose-h2:text-base prose-h2:my-1 prose-h3:text-sm prose-h3:my-1 prose-h4:text-sm prose-h4:my-0.5 prose-h5:text-xs prose-h5:my-0.5 prose-h6:text-xs prose-h6:my-0.5 prose-p:leading-relaxed prose-pre:max-w-full prose-pre:overflow-x-auto prose-pre:p-0 prose-pre:bg-transparent [&_.katex-display]:max-w-full [&_.katex-display]:overflow-x-auto [&_.katex-display]:overflow-y-hidden"
             >
               <ReactMarkdown
                 remarkPlugins={[remarkGfm, remarkMath]}
@@ -114,6 +129,7 @@ export const Message = ({ role, content, isStreaming, toolCalls }: MessageType) 
                   img({ src, alt, ...props }) {
                     return <img src={resolveImageSrc(src)} alt={alt} {...props} />
                   },
+                  table: MarkdownTable,
                   code({
                     inline,
                     className,
@@ -142,7 +158,10 @@ export const Message = ({ role, content, isStreaming, toolCalls }: MessageType) 
                     }
                     if (!inline) {
                       return (
-                        <code className="block font-mono text-sm overflow-x-auto bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 p-3 rounded" {...props}>
+                        <code
+                          className="block max-w-full overflow-x-auto rounded bg-gray-100 p-3 font-mono text-sm text-gray-800 dark:bg-gray-800 dark:text-gray-200"
+                          {...props}
+                        >
                           {children}
                         </code>
                       )

@@ -20,6 +20,14 @@ type StreamMessage = {
   }
 }
 
+export const splitSseLines = (remainder: string, chunk: string) => {
+  const parts = `${remainder}${chunk}`.split(/\r?\n/)
+  return {
+    lines: parts.slice(0, -1),
+    remainder: parts.at(-1) ?? '',
+  }
+}
+
 const HELP_GROUPS: CommandGroup[] = ['Basic', 'Session Management', 'Model']
 
 const buildHelpText = (): string => {
