@@ -78,6 +78,8 @@ def build_sdk_env() -> dict[str, str]:
             or os.getenv("ANTHROPIC_DEFAULT_SONNET_MODEL"),
             "ANTHROPIC_DEFAULT_OPUS_MODEL": api_settings.get("opus_model")
             or os.getenv("ANTHROPIC_DEFAULT_OPUS_MODEL"),
+            "CLAUDE_CODE_AUTO_COMPACT_WINDOW": api_settings.get("auto_compact_window")
+            or os.getenv("CLAUDE_CODE_AUTO_COMPACT_WINDOW"),
             # Mask nested-session detection when server runs inside a Claude
             # Code terminal (CLAUDECODE=1). SDK >= 0.2.x strips this itself,
             # but keep the mask for older SDKs.
