@@ -99,7 +99,7 @@ export function PDFViewer({ repo, filePath, metadata }: PDFViewerProps) {
     () => useTabsStore.getState().tabs.find(t => t.id === tabId)?.pageNumber ?? 1,
   )
   const [currentPage, setCurrentPage] = useState(initialPage)
-  const [viewMode, setViewMode] = useState<ViewMode>('svg')
+  const [viewModes, setViewModes] = useState<Record<number, ViewMode>>({})
   const [draftNotes, setDraftNotes] = useState<DraftDocumentNote<PDFNotePosition>[]>([])
   const { notes, createNote, updateNote, deleteNote } = useDocumentNotes<PDFNotePosition>(
     repo,
@@ -157,7 +157,12 @@ export function PDFViewer({ repo, filePath, metadata }: PDFViewerProps) {
 
   useEffect(() => {
     setDraftNotes([])
+    setViewModes({})
   }, [repo, filePath])
+
+  const handleViewModeChange = (pageNum: number, mode: ViewMode) => {
+    setViewModes(prev => ({ ...prev, [pageNum]: mode }))
+  }
 
   const handleCreateDraft = (page: number, xRatio: number, yRatio: number) => {
     setDraftNotes(prev => [...prev, createDraftPDFNote('yellow', { page, xRatio, yRatio })])
@@ -192,11 +197,11 @@ export function PDFViewer({ repo, filePath, metadata }: PDFViewerProps) {
                 repo={repo}
                 filePath={filePath}
                 pageNum={virtualItem.index + 1}
-                viewMode={viewMode}
-                onViewModeChange={setViewMode}
+                viewMode={viewModes[virtualItem.index + 1] ?? 'svg'}
+                onViewModeChange={mode => handleViewModeChange(virtualItem.index + 1, mode)}
                 notes={notes.filter(note => note.position.page === virtualItem.index + 1)}
                 draftNotes={draftNotes.filter(note => note.position.page === virtualItem.index + 1)}
-                onCreateDraft={viewMode === 'svg' ? handleCreateDraft : undefined}
+                onCreateDraft={handleCreateDraft}
                 onMoveNote={(noteId, position) => {
                   const draft = draftNotes.find(note => note.id === noteId)
                   if (draft) {
