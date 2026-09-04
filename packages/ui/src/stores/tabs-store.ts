@@ -9,6 +9,7 @@ export type Tab = {
   path: string
   pageNumber: number | null
   lastActiveAt: number
+  refreshCounter: number
 }
 
 type TabsState = {
@@ -20,6 +21,7 @@ type TabsState = {
   closeTabsToRight: (id: string) => void
   closeAllTabs: () => void
   setActiveTab: (id: string) => void
+  refreshTab: (id: string) => void
   setPageNumber: (id: string, page: number | null) => void
 }
 
@@ -64,6 +66,7 @@ export const useTabsStore = create<TabsState>()(
             path: cleanPath,
             pageNumber: null,
             lastActiveAt: now,
+            refreshCounter: 0,
           }
           if (state.tabs.length < MAX_TABS) {
             return { activeId: id, tabs: [...state.tabs, newTab] }
@@ -104,6 +107,14 @@ export const useTabsStore = create<TabsState>()(
         set(state => ({
           activeId: id,
           tabs: state.tabs.map(t => (t.id === id ? { ...t, lastActiveAt: Date.now() } : t)),
+        })),
+      // Bump the counter to force a remount of the tab content (old persisted
+      // tabs predate this field, so default before incrementing)
+      refreshTab: id =>
+        set(state => ({
+          tabs: state.tabs.map(t =>
+            t.id === id ? { ...t, refreshCounter: (t.refreshCounter ?? 0) + 1 } : t,
+          ),
         })),
       setPageNumber: (id, page) =>
         set(state => {

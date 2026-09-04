@@ -1,4 +1,4 @@
-import { X } from 'lucide-react'
+import { RefreshCw, X } from 'lucide-react'
 import type { MouseEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -13,20 +13,32 @@ import { getFileIcon } from '../file-tree'
 export function TabBar() {
   const tabs = useTabsStore(s => s.tabs)
   const activeId = useTabsStore(s => s.activeId)
+  const refreshTab = useTabsStore(s => s.refreshTab)
 
   if (tabs.length === 0) return null
 
   return (
-    <div className="flex h-9 shrink-0 items-center overflow-x-auto border-b bg-muted/30">
-      {tabs.map((tab, index) => (
-        <TabItem
-          key={tab.id}
-          tab={tab}
-          isActive={tab.id === activeId}
-          index={index}
-          total={tabs.length}
-        />
-      ))}
+    <div className="flex h-9 shrink-0 items-center border-b bg-muted/30">
+      <div className="flex h-full min-w-0 flex-1 items-center overflow-x-auto">
+        {tabs.map((tab, index) => (
+          <TabItem
+            key={tab.id}
+            tab={tab}
+            isActive={tab.id === activeId}
+            index={index}
+            total={tabs.length}
+          />
+        ))}
+      </div>
+      <button
+        type="button"
+        onClick={() => activeId && refreshTab(activeId)}
+        className="mx-1.5 shrink-0 rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+        title="Refresh active tab"
+        aria-label="Refresh active tab"
+      >
+        <RefreshCw className="size-3.5" />
+      </button>
     </div>
   )
 }
@@ -44,6 +56,7 @@ function TabItem({ tab, isActive, index, total }: TabItemProps) {
   const closeOtherTabs = useTabsStore(s => s.closeOtherTabs)
   const closeTabsToRight = useTabsStore(s => s.closeTabsToRight)
   const closeAllTabs = useTabsStore(s => s.closeAllTabs)
+  const refreshTab = useTabsStore(s => s.refreshTab)
   const filename = tab.path.split('/').pop() ?? tab.path
 
   // After closing, align the URL with the surviving active tab
@@ -93,6 +106,7 @@ function TabItem({ tab, isActive, index, total }: TabItemProps) {
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent>
+        <ContextMenuItem onSelect={() => refreshTab(tab.id)}>Refresh</ContextMenuItem>
         <ContextMenuItem
           disabled={total <= 1}
           onSelect={() => {

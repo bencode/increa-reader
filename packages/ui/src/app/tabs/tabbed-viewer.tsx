@@ -34,7 +34,10 @@ export function TabbedViewer() {
       <TabBar />
       <div className="relative min-h-0 flex-1">
         {tabs.map(tab => (
-          <Activity key={tab.id} mode={tab.id === activeId ? 'visible' : 'hidden'}>
+          <Activity
+            key={`${tab.id}:${tab.refreshCounter ?? 0}`}
+            mode={tab.id === activeId ? 'visible' : 'hidden'}
+          >
             <div className="absolute inset-0">
               <FileViewer repo={tab.repo} path={tab.path} />
             </div>
