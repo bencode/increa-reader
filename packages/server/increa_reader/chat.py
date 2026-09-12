@@ -538,7 +538,8 @@ User Question:
                         yield f"data: {json.dumps({'type': 'stream_event', 'event': msg.event}, ensure_ascii=False)}\n\n"
 
                     elif msg_type == "AssistantMessage":
-                        turn_model = msg.model
+                        if msg.parent_tool_use_id is None:
+                            turn_model = msg.model
                         content_text = "".join(
                             block.text
                             for block in msg.content
