@@ -70,11 +70,11 @@ ANTHROPIC_API_KEY="your-api-key"
 
 You can also configure repositories and API settings from the UI settings drawer after starting the app.
 
-If you use a Claude-compatible proxy:
+To use GLM through its Anthropic-compatible API (defaults to `glm-5.3`):
 
 ```bash
-ANTHROPIC_BASE_URL="https://your-proxy-url/api/anthropic"
-ANTHROPIC_AUTH_TOKEN="your-proxy-token"
+ANTHROPIC_BASE_URL="https://open.bigmodel.cn/api/anthropic"
+ANTHROPIC_AUTH_TOKEN="your-glm-api-key"
 ```
 
 ### 3. Start development
