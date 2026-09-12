@@ -94,24 +94,29 @@ def create_config_routes(app: FastAPI, workspace_config: WorkspaceConfig):
         api_key handling:
         - None  → not sent, keep existing key
         - ""    → explicitly clear the key
-        - "xxx" → set new key (ignoring masked values containing "...")
+        - "xxx" → set new key and replace a configured auth token
+          (ignoring masked values containing "...")
         """
         current = load_api_settings()
-        updated = {
-            "base_url": request.base_url,
-            "default_model": request.default_model,
-        }
+        updated = {**current}
+        submitted_fields = request.model_fields_set
+        if "base_url" in submitted_fields:
+            updated["base_url"] = request.base_url
+        if "default_model" in submitted_fields:
+            updated["default_model"] = request.default_model
+
         if request.api_key is None:
             updated["api_key"] = current.get("api_key")
         elif request.api_key == "":
             updated["api_key"] = None
         elif "..." not in request.api_key:
             updated["api_key"] = request.api_key
+            updated.pop("auth_token", None)
         else:
             updated["api_key"] = current.get("api_key")
         save_api_settings(updated)
         return {
-            "base_url": updated["base_url"],
+            "base_url": updated.get("base_url"),
             "api_key": _mask_api_key(updated.get("api_key")),
             "default_model": resolve_default_model(updated),
         }

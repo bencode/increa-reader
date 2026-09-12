@@ -71,7 +71,7 @@ export function SettingsDrawer({ open, onOpenChange, onReposChanged }: SettingsD
 
   return (
     <Drawer direction="right" open={open} onOpenChange={onOpenChange}>
-      <DrawerContent>
+      <DrawerContent className="sm:max-w-lg!">
         <DrawerHeader>
           <DrawerTitle>Settings</DrawerTitle>
           <DrawerDescription>Manage repositories and API configuration</DrawerDescription>

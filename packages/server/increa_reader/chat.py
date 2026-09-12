@@ -511,6 +511,7 @@ User Question:
                 # Collected per-turn for the memory transcript
                 turn_texts: list[str] = []
                 turn_tools: list[str] = []
+                turn_model: str | None = None
 
                 async for msg in client.receive_response():
                     msg_type = type(msg).__name__
@@ -537,6 +538,8 @@ User Question:
                         yield f"data: {json.dumps({'type': 'stream_event', 'event': msg.event}, ensure_ascii=False)}\n\n"
 
                     elif msg_type == "AssistantMessage":
+                        if msg.parent_tool_use_id is None:
+                            turn_model = msg.model
                         content_text = "".join(
                             block.text
                             for block in msg.content
@@ -558,7 +561,7 @@ User Question:
                             turn_texts,
                             turn_tools,
                         )
-                        yield f"data: {json.dumps({'type': 'result', 'session_id': msg.session_id, 'duration_ms': msg.duration_ms, 'usage': msg.usage.__dict__ if hasattr(msg.usage, '__dict__') else msg.usage}, ensure_ascii=False)}\n\n"
+                        yield f"data: {json.dumps({'type': 'result', 'session_id': msg.session_id, 'duration_ms': msg.duration_ms, 'usage': msg.usage.__dict__ if hasattr(msg.usage, '__dict__') else msg.usage, 'model': turn_model}, ensure_ascii=False)}\n\n"
 
             except Exception as e:
                 import traceback

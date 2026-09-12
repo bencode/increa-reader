@@ -23,6 +23,7 @@ export type Message = {
 export type ChatStats = {
   sessionId?: string
   duration?: number
+  model?: string
   usage?: {
     input_tokens: number
     output_tokens: number
@@ -69,6 +70,12 @@ export type SSEMessage =
       event: { delta?: { type: string; text?: string; partial_json?: string } }
     }
   | { type: 'assistant'; content: string }
-  | { type: 'result'; session_id: string; duration_ms: number; usage: Message['usage'] }
+  | {
+      type: 'result'
+      session_id: string
+      duration_ms: number
+      usage: Message['usage']
+      model: string | null
+    }
   | { type: 'error'; message: string }
   | { type: 'tool_call'; call_id: string; name: string; arguments: Record<string, unknown> }

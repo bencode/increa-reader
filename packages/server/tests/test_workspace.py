@@ -40,3 +40,56 @@ def test_bigmodel_defaults_claude_model_aliases(monkeypatch):
     assert sdk_env["ANTHROPIC_DEFAULT_HAIKU_MODEL"] == "glm-5.3"
     assert sdk_env["ANTHROPIC_DEFAULT_SONNET_MODEL"] == "glm-5.3"
     assert sdk_env["ANTHROPIC_DEFAULT_OPUS_MODEL"] == "glm-5.3"
+
+
+def test_configured_api_key_masks_inherited_auth_token(monkeypatch):
+    monkeypatch.setattr(
+        workspace,
+        "load_api_settings",
+        lambda: {"api_key": "configured-key"},
+    )
+    monkeypatch.setenv("ANTHROPIC_AUTH_TOKEN", "inherited-token")
+
+    sdk_env = workspace.build_sdk_env()
+
+    assert sdk_env["ANTHROPIC_AUTH_TOKEN"] == ""
+    assert sdk_env["ANTHROPIC_API_KEY"] == "configured-key"
+
+
+def test_configured_auth_token_masks_api_keys(monkeypatch):
+    monkeypatch.setattr(
+        workspace,
+        "load_api_settings",
+        lambda: {
+            "auth_token": "configured-token",
+            "api_key": "configured-key",
+        },
+    )
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "inherited-key")
+
+    sdk_env = workspace.build_sdk_env()
+
+    assert sdk_env["ANTHROPIC_AUTH_TOKEN"] == "configured-token"
+    assert sdk_env["ANTHROPIC_API_KEY"] == ""
+
+
+def test_inherited_api_key_is_used_without_configured_credentials(monkeypatch):
+    monkeypatch.setattr(workspace, "load_api_settings", lambda: {})
+    monkeypatch.delenv("ANTHROPIC_AUTH_TOKEN", raising=False)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "inherited-key")
+
+    sdk_env = workspace.build_sdk_env()
+
+    assert sdk_env["ANTHROPIC_AUTH_TOKEN"] == ""
+    assert sdk_env["ANTHROPIC_API_KEY"] == "inherited-key"
+
+
+def test_inherited_auth_token_masks_inherited_api_key(monkeypatch):
+    monkeypatch.setattr(workspace, "load_api_settings", lambda: {})
+    monkeypatch.setenv("ANTHROPIC_AUTH_TOKEN", "inherited-token")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "inherited-key")
+
+    sdk_env = workspace.build_sdk_env()
+
+    assert sdk_env["ANTHROPIC_AUTH_TOKEN"] == "inherited-token"
+    assert sdk_env["ANTHROPIC_API_KEY"] == ""

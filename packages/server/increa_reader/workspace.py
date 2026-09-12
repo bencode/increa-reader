@@ -79,23 +79,29 @@ def build_sdk_env() -> dict[str, str]:
     means "mask".
     """
     api_settings = load_api_settings()
-    # Config first: a token in config.json always matches config's base_url.
-    # Shell env is unreliable here — multiple provider blocks in .zshrc can
-    # leave a token that belongs to a different base_url.
-    auth_token = api_settings.get("auth_token") or os.getenv("ANTHROPIC_AUTH_TOKEN")
-    api_key = api_settings.get("api_key") or os.getenv("ANTHROPIC_API_KEY")
+    configured_auth_token = api_settings.get("auth_token")
+    configured_api_key = api_settings.get("api_key")
+    if configured_auth_token:
+        auth_token = configured_auth_token
+        api_key = ""
+    elif configured_api_key:
+        auth_token = ""
+        api_key = configured_api_key
+    else:
+        auth_token = os.getenv("ANTHROPIC_AUTH_TOKEN")
+        api_key = "" if auth_token else (os.getenv("ANTHROPIC_API_KEY") or "")
+
     base_url = api_settings.get("base_url") or os.getenv("ANTHROPIC_BASE_URL")
     provider_default_model = _provider_default_model(base_url)
     return {
         k: v
         for k, v in {
             "ANTHROPIC_BASE_URL": base_url,
-            # Use exactly one credential: AUTH_TOKEN takes priority (proxy mode),
-            # otherwise fall back to API_KEY. Mask the loser with "" so an
-            # inherited value can't surface — the CLI errors on conflicting
-            # credentials.
+            # Configured credentials outrank inherited environment values.
+            # Within one source, AUTH_TOKEN takes priority (proxy mode). Mask
+            # the loser because the CLI rejects conflicting credentials.
             "ANTHROPIC_AUTH_TOKEN": auth_token or "",
-            "ANTHROPIC_API_KEY": "" if auth_token else (api_key or ""),
+            "ANTHROPIC_API_KEY": api_key,
             "ANTHROPIC_DEFAULT_HAIKU_MODEL": api_settings.get("haiku_model")
             or os.getenv("ANTHROPIC_DEFAULT_HAIKU_MODEL")
             or provider_default_model,

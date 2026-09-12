@@ -292,6 +292,7 @@ export const useChat = (getContext: () => ContextData) => {
                 stats: {
                   sessionId: msg.session_id,
                   duration: msg.duration_ms,
+                  model: msg.model ?? undefined,
                   usage: msg.usage,
                 },
                 lastActiveAt: Date.now(),
