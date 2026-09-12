@@ -7,10 +7,13 @@ import os
 from collections import defaultdict
 from pathlib import Path
 from typing import List
+from urllib.parse import urlparse
 
 from .models import RepoItem, TreeNode, WorkspaceConfig
 
 DEFAULT_EXCLUDES = ["node_modules", ".*", "*.log"]
+BIGMODEL_ANTHROPIC_HOST = "open.bigmodel.cn"
+BIGMODEL_DEFAULT_MODEL = "glm-5.3"
 
 
 def get_config_path() -> Path:
@@ -47,6 +50,26 @@ def load_api_settings() -> dict:
     return load_raw_config().get("api_settings", {})
 
 
+def _provider_default_model(base_url: str | None) -> str | None:
+    if not base_url:
+        return None
+    try:
+        hostname = urlparse(base_url).hostname
+    except ValueError:
+        return None
+    return BIGMODEL_DEFAULT_MODEL if hostname == BIGMODEL_ANTHROPIC_HOST else None
+
+
+def resolve_default_model(api_settings: dict | None = None) -> str | None:
+    """Resolve the configured model, with a provider-specific default."""
+    settings = load_api_settings() if api_settings is None else api_settings
+    configured_model = settings.get("default_model")
+    if configured_model:
+        return configured_model
+    base_url = settings.get("base_url") or os.getenv("ANTHROPIC_BASE_URL")
+    return _provider_default_model(base_url)
+
+
 def build_sdk_env() -> dict[str, str]:
     """Build env dict for Claude SDK.
 
@@ -61,11 +84,12 @@ def build_sdk_env() -> dict[str, str]:
     # leave a token that belongs to a different base_url.
     auth_token = api_settings.get("auth_token") or os.getenv("ANTHROPIC_AUTH_TOKEN")
     api_key = api_settings.get("api_key") or os.getenv("ANTHROPIC_API_KEY")
+    base_url = api_settings.get("base_url") or os.getenv("ANTHROPIC_BASE_URL")
+    provider_default_model = _provider_default_model(base_url)
     return {
         k: v
         for k, v in {
-            "ANTHROPIC_BASE_URL": api_settings.get("base_url")
-            or os.getenv("ANTHROPIC_BASE_URL"),
+            "ANTHROPIC_BASE_URL": base_url,
             # Use exactly one credential: AUTH_TOKEN takes priority (proxy mode),
             # otherwise fall back to API_KEY. Mask the loser with "" so an
             # inherited value can't surface — the CLI errors on conflicting
@@ -73,11 +97,14 @@ def build_sdk_env() -> dict[str, str]:
             "ANTHROPIC_AUTH_TOKEN": auth_token or "",
             "ANTHROPIC_API_KEY": "" if auth_token else (api_key or ""),
             "ANTHROPIC_DEFAULT_HAIKU_MODEL": api_settings.get("haiku_model")
-            or os.getenv("ANTHROPIC_DEFAULT_HAIKU_MODEL"),
+            or os.getenv("ANTHROPIC_DEFAULT_HAIKU_MODEL")
+            or provider_default_model,
             "ANTHROPIC_DEFAULT_SONNET_MODEL": api_settings.get("sonnet_model")
-            or os.getenv("ANTHROPIC_DEFAULT_SONNET_MODEL"),
+            or os.getenv("ANTHROPIC_DEFAULT_SONNET_MODEL")
+            or provider_default_model,
             "ANTHROPIC_DEFAULT_OPUS_MODEL": api_settings.get("opus_model")
-            or os.getenv("ANTHROPIC_DEFAULT_OPUS_MODEL"),
+            or os.getenv("ANTHROPIC_DEFAULT_OPUS_MODEL")
+            or provider_default_model,
             "CLAUDE_CODE_AUTO_COMPACT_WINDOW": api_settings.get("auto_compact_window")
             or os.getenv("CLAUDE_CODE_AUTO_COMPACT_WINDOW"),
             # Mask nested-session detection when server runs inside a Claude

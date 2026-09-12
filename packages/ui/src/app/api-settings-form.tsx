@@ -109,7 +109,7 @@ export function ApiSettingsForm({ open }: { open: boolean }) {
         </label>
         <Input
           id={defaultModelId}
-          placeholder="claude-sonnet-4-20250514"
+          placeholder="glm-5.3"
           value={defaultModel}
           onChange={e => setDefaultModel(e.target.value)}
         />

@@ -11,6 +11,7 @@ from .models import WorkspaceConfig
 from .workspace import (
     build_repo_items,
     load_api_settings,
+    resolve_default_model,
     save_api_settings,
     save_workspace_config,
 )
@@ -83,7 +84,7 @@ def create_config_routes(app: FastAPI, workspace_config: WorkspaceConfig):
         return {
             "base_url": settings.get("base_url"),
             "api_key": _mask_api_key(settings.get("api_key")),
-            "default_model": settings.get("default_model"),
+            "default_model": resolve_default_model(settings),
         }
 
     @app.put("/api/config/api-settings")
@@ -112,5 +113,5 @@ def create_config_routes(app: FastAPI, workspace_config: WorkspaceConfig):
         return {
             "base_url": updated["base_url"],
             "api_key": _mask_api_key(updated.get("api_key")),
-            "default_model": updated["default_model"],
+            "default_model": resolve_default_model(updated),
         }

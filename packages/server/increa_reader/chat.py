@@ -40,7 +40,7 @@ from .frontend_tools import (
     complete_tool_call,
     frontend_tool_queue,
 )
-from .workspace import build_sdk_env, load_api_settings
+from .workspace import build_sdk_env, load_api_settings, resolve_default_model
 
 # Debug logging flag
 DEBUG = os.getenv("DEBUG", "false").lower() == "true"
@@ -388,9 +388,8 @@ def create_chat_routes(app, workspace_config: WorkspaceConfig):
         # Config-first resolution: config.json > env vars
         api_settings = load_api_settings()
         model = (
-            (request.options.get("model") if request.options else None)
-            or api_settings.get("default_model")
-        )
+            request.options.get("model") if request.options else None
+        ) or resolve_default_model(api_settings)
 
         # Collect CLI stderr for error reporting (referenced by stderr callback)
         cli_stderr_lines: list[str] = []
