@@ -11,6 +11,7 @@ type ChatStatsProps = {
   stats?: {
     sessionId?: string
     duration?: number
+    model?: string
     usage?: {
       input_tokens: number
       output_tokens: number
@@ -41,6 +42,7 @@ export const ChatStats = ({
   stats,
 }: ChatStatsProps) => {
   const displayRepo = context.repo || (repos.length > 0 ? repos[0].name : 'loading...')
+  const displayModel = stats?.model ?? model
   if (!stats?.sessionId) {
     return null
   }
@@ -53,8 +55,10 @@ export const ChatStats = ({
             <span className="text-blue-600 dark:text-blue-400">user@{displayRepo}</span>
           </div>
 
-          {model && (
-            <span className="text-purple-600 dark:text-purple-400">{formatModelName(model)}</span>
+          {displayModel && (
+            <span className="text-purple-600 dark:text-purple-400">
+              {formatModelName(displayModel)}
+            </span>
           )}
 
           {stats.sessionId && (

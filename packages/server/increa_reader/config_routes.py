@@ -98,6 +98,7 @@ def create_config_routes(app: FastAPI, workspace_config: WorkspaceConfig):
         """
         current = load_api_settings()
         updated = {
+            **current,
             "base_url": request.base_url,
             "default_model": request.default_model,
         }
