@@ -79,6 +79,7 @@ EXT_TO_LANG = {
     ".scala": "scala",
     ".clj": "clojure",
     ".cljs": "clojure",
+    ".scm": "scheme",
     ".ex": "elixir",
     ".exs": "elixir",
     ".erl": "erlang",
